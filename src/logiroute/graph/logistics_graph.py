@@ -6,15 +6,18 @@
 存储结构
 --------
 
-* 邻接表（核心）：``Dict[str, Dict[str, Edge]]`` —— 每节点维护以 target_id 为键的
-  出边字典，可在 O(1) 内查 (source, target) 边、维持唯一性。
-* 节点表：``Dict[str, Node]`` —— O(1) 节点存在性判断。
-* 邻接矩阵：按需导出，不与邻接表重复维护状态。
+* 邻接表（**唯一可变状态**）：
+
+    ``_nodes``     : Dict[node_id, Node]                                 -- O(1) 节点查找
+    ``_out_edges`` : Dict[source_id, Dict[target_id, Edge]]              -- 邻接表（出边）
+    ``_in_edges``  : Dict[target_id, Dict[source_id, Edge]]              -- 反向邻接表（入边）
+
+* **邻接矩阵按需导出**，不与邻接表重复维护状态。
 
 并发边策略
 ----------
 
-Phase 1 不支持多重边（同一对 source_id/target_id 间仅允许一条边）。
+Phase 1 **不**支持多重边（同一对 source_id/target_id 间仅允许一条边）。
 重复添加边将抛 ``ValueError``；如需修改权重，应先 ``remove_edge`` 再 ``add_edge``。
 
 自环策略
@@ -25,7 +28,6 @@ Phase 1 不支持多重边（同一对 source_id/target_id 间仅允许一条边
 
 from __future__ import annotations
 
-import math
 from typing import Any, Iterable
 
 from logiroute.core.edges import Edge
@@ -68,6 +70,11 @@ class UnknownNodeError(GraphError):
         self.node_id = node_id
 
 
+# 用于邻接矩阵输出「无直接边」位置的哨兵值。
+# 选择 ``float('inf')`` 是图论 / 矩阵运算标准做法，便于 Dijkstra 等算法识别。
+_INF = float("inf")
+
+
 # ---------------------------------------------------------------------------
 #  LogisticsGraph
 # ---------------------------------------------------------------------------
@@ -76,7 +83,8 @@ class UnknownNodeError(GraphError):
 class LogisticsGraph:
     """有向带权图：节点 + 邻接表 + （按需导出的）邻接矩阵。
 
-    此类是后续所有路径规划算法的容器基础，应在 Phase 1 阶段确认其行为稳定。
+    该类是后续所有路径规划算法的容器基础。本类不依赖任何第三方库，
+    所有操作均基于 Python 内置 ``dict`` 手写实现。
     """
 
     _SUPPORTED_METRICS = ("distance", "travel_time", "cost")
@@ -84,11 +92,8 @@ class LogisticsGraph:
     __slots__ = ("_nodes", "_out_edges", "_in_edges")
 
     def __init__(self) -> None:
-        # node_id -> Node
         self._nodes: dict[str, Node] = {}
-        # source_id -> {target_id: Edge}  出边邻接表
         self._out_edges: dict[str, dict[str, Edge]] = {}
-        # target_id -> {source_id: Edge}  反向邻接表，仅服务于 remove_node / 查询入边
         self._in_edges: dict[str, dict[str, Edge]] = {}
 
     # ------------------------------------------------------------------ #
@@ -96,7 +101,11 @@ class LogisticsGraph:
     # ------------------------------------------------------------------ #
 
     def add_node(self, node: Node) -> None:
-        """添加节点；ID 必须唯一，否则抛 ``DuplicateNodeError``。"""
+        """添加节点；ID 必须唯一，否则抛 ``DuplicateNodeError``。
+
+        Time   : O(1) avg  —— dict 写入均摊常数。
+        Space  : O(1) 新增。
+        """
         if not isinstance(node, Node):
             raise TypeError(f"add_node requires a Node, got {type(node).__name__}")
         if node.id in self._nodes:
@@ -106,47 +115,74 @@ class LogisticsGraph:
         self._in_edges.setdefault(node.id, {})
 
     def remove_node(self, node_id: str) -> None:
-        """删除节点，同时删除与之关联的所有入边和出边。"""
+        """删除节点，同时原子化删除所有指向 / 来自该节点的边。
+
+        Time   : O(deg_in + deg_out) —— 仅扫描与该节点直接相连的边。
+        Space  : O(1) 仅就地修改字典。
+        """
         if node_id not in self._nodes:
             raise UnknownNodeError(node_id)
-        # 删除作为 source 的所有出边；同时清理对端 in_edges 反向索引
+        # 1) 删除作为 source 的所有出边；同时清理对端 in_edges 反向索引
         for target_id, edge in list(self._out_edges.get(node_id, {}).items()):
             self._in_edges.get(target_id, {}).pop(node_id, None)
         self._out_edges.pop(node_id, None)
-        # 删除作为 target 的所有入边；同时清理对端 out_edges 反向索引
+        # 2) 删除作为 target 的所有入边；同时清理对端 out_edges 反向索引
         for source_id in list(self._in_edges.get(node_id, {}).keys()):
             self._out_edges.get(source_id, {}).pop(node_id, None)
         self._in_edges.pop(node_id, None)
-        # 最终删除节点
+        # 3) 最终删除节点
         self._nodes.pop(node_id, None)
 
     def has_node(self, node_id: str) -> bool:
-        """判断节点是否存在。"""
+        """判断节点是否存在。Time: O(1)."""
         return node_id in self._nodes
 
     def get_node(self, node_id: str) -> Node:
-        """根据 ID 取节点；不存在时抛 ``UnknownNodeError``。"""
+        """根据 ID 取节点；不存在时抛 ``UnknownNodeError``。
+
+        Time   : O(1) avg.
+        Space  : O(1).
+        """
         if node_id not in self._nodes:
             raise UnknownNodeError(node_id)
         return self._nodes[node_id]
 
     def try_get_node(self, node_id: str) -> Node | None:
-        """安全取节点：不存在时返回 ``None``，不抛错。"""
+        """安全取节点：不存在时返回 ``None``，不抛错。Time: O(1)."""
         return self._nodes.get(node_id)
+
+    def get_all_nodes(self) -> list[Node]:
+        """返回图中所有节点的快照列表（按插入顺序）。
+
+        Time   : O(V) —— V 为节点数。
+        Space  : O(V) 返回新列表。
+        """
+        return list(self._nodes.values())
+
+    def get_all_edges(self) -> list[Edge]:
+        """返回图中所有边的快照列表（去重，每条边出现一次）。
+
+        Time   : O(E) —— E 为边数。
+        Space  : O(E) 返回新列表。
+        """
+        all_edges: list[Edge] = []
+        for out_map in self._out_edges.values():
+            all_edges.extend(out_map.values())
+        return all_edges
 
     @property
     def nodes(self) -> list[Node]:
-        """返回图中所有节点的快照列表（按插入顺序）。"""
-        return list(self._nodes.values())
+        """返回所有节点的快照列表。等价于 ``get_all_nodes()``。"""
+        return self.get_all_nodes()
 
     @property
     def node_ids(self) -> list[str]:
-        """返回所有节点 ID 的快照列表。"""
+        """返回所有节点 ID 的快照列表。Time: O(V)."""
         return list(self._nodes.keys())
 
     @property
     def node_count(self) -> int:
-        """节点数量。"""
+        """节点数量。Time: O(1)."""
         return len(self._nodes)
 
     # ------------------------------------------------------------------ #
@@ -161,6 +197,9 @@ class LogisticsGraph:
         * ``edge`` 必须是 :class:`Edge` 实例；
         * ``source_id`` / ``target_id`` 必须对应已存在节点；
         * 同对节点不允许重复边（无多边支持）。
+
+        Time   : O(1) avg —— 单次 dict 写入。
+        Space  : O(1).
         """
         if not isinstance(edge, Edge):
             raise TypeError(f"add_edge requires an Edge, got {type(edge).__name__}")
@@ -174,10 +213,12 @@ class LogisticsGraph:
         self._in_edges.setdefault(edge.target_id, {})[edge.source_id] = edge
 
     def remove_edge(self, source_id: str, target_id: str) -> None:
-        """删除一条有向边；边不存在时抛 ``GraphError``。"""
-        if source_id not in self._out_edges:
-            raise UnknownNodeError(source_id)
-        if source_id not in self._nodes:
+        """删除一条有向边；边不存在时抛 ``GraphError``。
+
+        Time   : O(1) avg.
+        Space  : O(1).
+        """
+        if source_id not in self._out_edges or source_id not in self._nodes:
             raise UnknownNodeError(source_id)
         if target_id not in self._nodes:
             raise UnknownNodeError(target_id)
@@ -188,14 +229,14 @@ class LogisticsGraph:
         self._in_edges.get(target_id, {}).pop(source_id, None)
 
     def has_edge(self, source_id: str, target_id: str) -> bool:
-        """判断 (source, target) 边是否存在。"""
+        """判断 (source, target) 边是否存在。Time: O(1)."""
         return (
             source_id in self._out_edges
             and target_id in self._out_edges[source_id]
         )
 
     def get_edge(self, source_id: str, target_id: str) -> Edge:
-        """获取指定方向的边；不存在时抛错。"""
+        """获取指定方向的边；不存在时抛错。Time: O(1) avg."""
         if source_id not in self._out_edges:
             raise GraphError(f"edge {source_id!r} -> {target_id!r} does not exist")
         edge = self._out_edges[source_id].get(target_id)
@@ -204,42 +245,46 @@ class LogisticsGraph:
         return edge
 
     def try_get_edge(self, source_id: str, target_id: str) -> Edge | None:
-        """安全取边。"""
+        """安全取边。Time: O(1) avg."""
         if source_id not in self._out_edges:
             return None
         return self._out_edges[source_id].get(target_id)
 
     def get_neighbors(self, node_id: str) -> list[Edge]:
-        """获取节点的**所有出边**（即邻接节点的边集合）。"""
+        """获取节点的**所有出边**（邻接节点对应的边集合）。
+
+        Time   : O(deg_out) —— 仅拷贝与该节点相关的出边。
+        Space  : O(deg_out).
+        """
         if node_id not in self._nodes:
             raise UnknownNodeError(node_id)
-        # 返回副本，避免外部修改内部状态
         return list(self._out_edges.get(node_id, {}).values())
 
     def get_in_edges(self, node_id: str) -> list[Edge]:
-        """获取节点的**所有入边**，按 source_id 顺序返回。"""
+        """获取节点的**所有入边**。
+
+        Time   : O(deg_in).
+        Space  : O(deg_in).
+        """
         if node_id not in self._nodes:
             raise UnknownNodeError(node_id)
         return list(self._in_edges.get(node_id, {}).values())
 
     @property
     def edges(self) -> list[Edge]:
-        """返回图中所有边的快照列表（去重，每条边出现一次）。"""
-        all_edges: list[Edge] = []
-        for out_map in self._out_edges.values():
-            all_edges.extend(out_map.values())
-        return all_edges
+        """所有边的快照。等价于 ``get_all_edges()``。Time: O(E)."""
+        return self.get_all_edges()
 
     @property
     def edge_count(self) -> int:
-        """边的数量。"""
+        """边的数量。Time: O(V) —— 需遍历每个节点的邻接表相加。"""
         return sum(len(m) for m in self._out_edges.values())
 
     # ------------------------------------------------------------------ #
-    #  导出                                                                #
+    #  邻接表 / 邻接矩阵导出                                                 #
     # ------------------------------------------------------------------ #
 
-    def to_adjacency_list(self) -> dict[str, list[dict[str, Any]]]:
+    def get_adjacency_list(self) -> dict[str, list[dict[str, Any]]]:
         """导出邻接表为可序列化字典。
 
         返回结构形如::
@@ -250,7 +295,10 @@ class LogisticsGraph:
               ...
             }
 
-        节点的邻接列表按 target_id 升序，保证可复现性。
+        节点的邻接列表按 target_id 升序，保证输出可复现。
+
+        Time   : O(V + E) —— 写入所有节点与它们的出边。
+        Space  : O(V + E) 新建字典 / 列表。
         """
         result: dict[str, list[dict[str, Any]]] = {}
         for source_id in self.node_ids:
@@ -270,7 +318,7 @@ class LogisticsGraph:
             result[source_id] = neighbors
         return result
 
-    def to_adjacency_matrix(
+    def get_adjacency_matrix(
         self,
         metric: str = "distance",
         *,
@@ -286,6 +334,9 @@ class LogisticsGraph:
         Returns:
             ``(node_ids, matrix)``。``matrix[i][j]`` 为从 ``node_ids[i]`` 到
             ``node_ids[j]`` 的边权重；无对应边时为 ``float('inf')``。
+
+        Time   : O(V + E) —— 遍历邻接表填充矩阵。
+        Space  : O(V²) 新矩阵。
 
         Raises:
             ValueError: ``metric`` 不被支持，或 ``node_order`` 含未知节点。
@@ -305,9 +356,8 @@ class LogisticsGraph:
 
         index = {nid: i for i, nid in enumerate(ordered_ids)}
         n = len(ordered_ids)
-        # 使用 math.inf，比 float('inf') 表达更清晰
         matrix: list[list[float]] = [
-            [math.inf] * n for _ in range(n)
+            [_INF] * n for _ in range(n)
         ]
 
         for source_id, out_map in self._out_edges.items():
@@ -322,6 +372,15 @@ class LogisticsGraph:
 
         return ordered_ids, matrix
 
+    # 向后兼容别名（旧名 to_* 也可继续使用）—— 不计入 __all__，仅为降低迁移成本
+    def to_adjacency_list(self) -> dict[str, list[dict[str, Any]]]:
+        """``get_adjacency_list`` 的旧别名。"""
+        return self.get_adjacency_list()
+
+    def to_adjacency_matrix(self, metric: str = "distance") -> tuple[list[str], list[list[float]]]:
+        """``get_adjacency_matrix`` 的旧别名。"""
+        return self.get_adjacency_matrix(metric)
+
     # ------------------------------------------------------------------ #
     #  维护辅助                                                            #
     # ------------------------------------------------------------------ #
@@ -332,8 +391,10 @@ class LogisticsGraph:
         检查项：
 
         * 节点表 / 出边表 / 入边表的 key 集合一致；
-        * 每条出边的另一端都有对应入边；
+        * 每条出边都对应另一端的入边；
         * 没有任何边指向不存在的节点。
+
+        Time   : O(V + E).
         """
         node_set = set(self._nodes.keys())
         out_set = set(self._out_edges.keys())
@@ -367,7 +428,7 @@ class LogisticsGraph:
                     )
 
     def clear(self) -> None:
-        """清空整个图。"""
+        """清空整个图。Time: O(1)."""
         self._nodes.clear()
         self._out_edges.clear()
         self._in_edges.clear()
