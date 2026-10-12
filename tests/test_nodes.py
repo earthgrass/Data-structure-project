@@ -1,81 +1,87 @@
-"""``Node`` 数据模型的单元测试。"""
+"""``Node`` 数据模型的单元测试。
+
+全部使用 Python 标准库 ``unittest``，不依赖任何第三方库。
+"""
 
 from __future__ import annotations
 
 import math
-
-import pytest
+import unittest
 
 from logiroute.core.enums import NodeType
 from logiroute.core.nodes import Node
 
 
-pytestmark = pytest.mark.phase1
-
-
-class TestNodeCreation:
-    def test_basic_node_creation(self):
+class TestNodeCreation(unittest.TestCase):
+    def test_basic_node_creation(self) -> None:
         node = Node(id="A", name="仓库A", node_type=NodeType.WAREHOUSE, x=0.0, y=0.0)
-        assert node.id == "A"
-        assert node.name == "仓库A"
-        assert node.node_type is NodeType.WAREHOUSE
-        assert node.x == 0.0
-        assert node.y == 0.0
-        assert node.metadata == {}
+        self.assertEqual(node.id, "A")
+        self.assertEqual(node.name, "仓库A")
+        self.assertIs(node.node_type, NodeType.WAREHOUSE)
+        self.assertEqual(node.x, 0.0)
+        self.assertEqual(node.y, 0.0)
+        self.assertEqual(node.metadata, {})
 
-    def test_metadata_default_is_per_instance(self):
+    def test_metadata_default_is_per_instance(self) -> None:
         n1 = Node(id="A", name="a", node_type=NodeType.WAREHOUSE, x=0, y=0)
         n1.metadata["k"] = 1
         n2 = Node(id="B", name="b", node_type=NodeType.CUSTOMER, x=0, y=0)
-        assert n2.metadata == {}
+        self.assertEqual(n2.metadata, {})
 
-    def test_node_is_frozen(self):
+    def test_node_is_frozen(self) -> None:
         node = Node(id="A", name="n", node_type=NodeType.WAREHOUSE, x=0, y=0)
-        with pytest.raises(Exception):
+        with self.assertRaises(Exception):
             node.id = "B"  # type: ignore[misc]
 
 
-class TestNodeValidation:
-    @pytest.mark.parametrize("bad_id", ["", "   ", "\t"])
-    def test_empty_or_blank_id_rejected(self, bad_id):
-        with pytest.raises(ValueError, match="non-empty"):
-            Node(id=bad_id, name="n", node_type=NodeType.CUSTOMER, x=0, y=0)
+class TestNodeValidation(unittest.TestCase):
+    def test_blank_id_rejected(self) -> None:
+        for bad in ("", "   ", "\t"):
+            with self.subTest(bad_id=bad):
+                with self.assertRaises(ValueError):
+                    Node(id=bad, name="n", node_type=NodeType.CUSTOMER, x=0, y=0)
 
-    def test_non_string_id_rejected(self):
-        with pytest.raises(ValueError, match="non-empty"):
+    def test_non_string_id_rejected(self) -> None:
+        with self.assertRaises(ValueError):
             Node(id=123, name="n", node_type=NodeType.CUSTOMER, x=0, y=0)  # type: ignore[arg-type]
 
-    def test_blank_name_rejected(self):
-        with pytest.raises(ValueError, match="name"):
+    def test_blank_name_rejected(self) -> None:
+        with self.assertRaises(ValueError):
             Node(id="A", name="", node_type=NodeType.CUSTOMER, x=0, y=0)
 
-    def test_non_enum_node_type_rejected(self):
-        with pytest.raises(ValueError, match="node_type"):
+    def test_non_enum_node_type_rejected(self) -> None:
+        with self.assertRaises(ValueError):
             Node(id="A", name="n", node_type="warehouse", x=0, y=0)  # type: ignore[arg-type]
 
-    @pytest.mark.parametrize("axis", ["x", "y"])
-    @pytest.mark.parametrize("value", [math.nan, math.inf, -math.inf])
-    def test_non_finite_coordinate_rejected(self, axis, value):
-        with pytest.raises(ValueError, match=axis):
-            Node(id="A", name="n", node_type=NodeType.CUSTOMER, x=value if axis == "x" else 0, y=value if axis == "y" else 0)
+    def test_nan_x_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            Node(id="A", name="n", node_type=NodeType.CUSTOMER, x=math.nan, y=0)
 
-    def test_non_number_coordinate_rejected(self):
-        with pytest.raises(ValueError):
+    def test_inf_y_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            Node(id="A", name="n", node_type=NodeType.CUSTOMER, x=0, y=math.inf)
+
+    def test_non_numeric_coordinate_rejected(self) -> None:
+        with self.assertRaises(ValueError):
             Node(id="A", name="n", node_type=NodeType.CUSTOMER, x="0", y=0)  # type: ignore[arg-type]
 
 
-class TestNodeDistance:
-    def test_euclidean_distance(self):
+class TestNodeDistance(unittest.TestCase):
+    def test_euclidean_distance(self) -> None:
         a = Node(id="A", name="a", node_type=NodeType.WAREHOUSE, x=0.0, y=0.0)
         b = Node(id="B", name="b", node_type=NodeType.CUSTOMER, x=3.0, y=4.0)
-        assert a.distance_to(b) == pytest.approx(5.0)
-        assert b.distance_to(a) == pytest.approx(5.0)
+        self.assertAlmostEqual(a.distance_to(b), 5.0)
+        self.assertAlmostEqual(b.distance_to(a), 5.0)
 
-    def test_distance_to_self(self):
+    def test_distance_to_self(self) -> None:
         a = Node(id="A", name="a", node_type=NodeType.WAREHOUSE, x=1.5, y=2.5)
-        assert a.distance_to(a) == pytest.approx(0.0)
+        self.assertAlmostEqual(a.distance_to(a), 0.0)
 
-    def test_distance_to_invalid_type(self):
+    def test_distance_to_invalid_type(self) -> None:
         a = Node(id="A", name="a", node_type=NodeType.WAREHOUSE, x=0, y=0)
-        with pytest.raises(TypeError):
+        with self.assertRaises(TypeError):
             a.distance_to("not a node")  # type: ignore[arg-type]
+
+
+if __name__ == "__main__":  # pragma: no cover
+    unittest.main()

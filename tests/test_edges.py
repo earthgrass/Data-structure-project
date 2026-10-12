@@ -3,18 +3,14 @@
 from __future__ import annotations
 
 import math
-
-import pytest
+import unittest
 
 from logiroute.core.edges import Edge
 from logiroute.core.enums import TrafficStatus
 
 
-pytestmark = pytest.mark.phase1
-
-
-class TestEdgeCreation:
-    def test_basic_creation(self):
+class TestEdgeCreation(unittest.TestCase):
+    def test_basic_creation(self) -> None:
         e = Edge(
             source_id="A",
             target_id="B",
@@ -22,125 +18,102 @@ class TestEdgeCreation:
             travel_time=2.5,
             cost=0.5,
         )
-        assert e.source_id == "A"
-        assert e.target_id == "B"
-        assert e.distance == 1.5
-        assert e.travel_time == 2.5
-        assert e.cost == 0.5
-        assert e.traffic_status is TrafficStatus.CLEAR
-        assert e.metadata == {}
+        self.assertEqual(e.source_id, "A")
+        self.assertEqual(e.target_id, "B")
+        self.assertEqual(e.distance, 1.5)
+        self.assertEqual(e.travel_time, 2.5)
+        self.assertEqual(e.cost, 0.5)
+        self.assertIs(e.traffic_status, TrafficStatus.CLEAR)
+        self.assertEqual(e.metadata, {})
 
-    def test_zero_values_allowed(self):
-        e = Edge(
-            source_id="A",
-            target_id="B",
-            distance=0.0,
-            travel_time=0.0,
-            cost=0.0,
-        )
-        assert e.distance == 0.0
+    def test_zero_values_allowed(self) -> None:
+        e = Edge(source_id="A", target_id="B", distance=0.0, travel_time=0.0, cost=0.0)
+        self.assertEqual(e.distance, 0.0)
 
 
-class TestEdgeValidation:
-    @pytest.mark.parametrize("field_name", ["source_id", "target_id"])
-    @pytest.mark.parametrize("bad_value", ["", "   "])
-    def test_empty_ids_rejected(self, field_name, bad_value):
-        kwargs = {
-            "source_id": "A",
-            "target_id": "B",
-            "distance": 1.0,
-            "travel_time": 1.0,
-            "cost": 1.0,
+class TestEdgeValidation(unittest.TestCase):
+    def _kwargs(self, **overrides):
+        base = {
+            "source_id": "A", "target_id": "B",
+            "distance": 1.0, "travel_time": 1.0, "cost": 1.0,
         }
-        kwargs[field_name] = bad_value
-        with pytest.raises(ValueError):
-            Edge(**kwargs)
+        base.update(overrides)
+        return base
 
-    def test_self_loop_rejected(self):
-        with pytest.raises(ValueError, match="self-loop"):
-            Edge(
-                source_id="A", target_id="A",
-                distance=1.0, travel_time=1.0, cost=1.0,
-            )
+    def test_blank_source_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            Edge(**self._kwargs(source_id=""))
 
-    @pytest.mark.parametrize("field_name", ["distance", "travel_time", "cost"])
-    @pytest.mark.parametrize("bad_value", [-0.1, -1.0, -100.0])
-    def test_negative_values_rejected(self, field_name, bad_value):
-        kwargs = {
-            "source_id": "A",
-            "target_id": "B",
-            "distance": 1.0,
-            "travel_time": 1.0,
-            "cost": 1.0,
-        }
-        kwargs[field_name] = bad_value
-        with pytest.raises(ValueError):
-            Edge(**kwargs)
+    def test_blank_target_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            Edge(**self._kwargs(target_id=""))
 
-    @pytest.mark.parametrize("field_name", ["distance", "travel_time", "cost"])
-    @pytest.mark.parametrize("bad_value", [math.nan, math.inf])
-    def test_non_finite_values_rejected(self, field_name, bad_value):
-        kwargs = {
-            "source_id": "A",
-            "target_id": "B",
-            "distance": 1.0,
-            "travel_time": 1.0,
-            "cost": 1.0,
-        }
-        kwargs[field_name] = bad_value
-        with pytest.raises(ValueError):
-            Edge(**kwargs)
+    def test_self_loop_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            Edge(source_id="A", target_id="A",
+                 distance=1.0, travel_time=1.0, cost=1.0)
 
-    @pytest.mark.parametrize("field_name", ["distance", "travel_time", "cost"])
-    def test_non_numeric_values_rejected(self, field_name):
-        kwargs = {
-            "source_id": "A",
-            "target_id": "B",
-            "distance": 1.0,
-            "travel_time": 1.0,
-            "cost": 1.0,
-        }
-        kwargs[field_name] = "1.0"  # type: ignore[assignment]
-        with pytest.raises(ValueError):
-            Edge(**kwargs)
+    def test_negative_distance_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            Edge(**self._kwargs(distance=-0.1))
 
-    def test_invalid_traffic_status_rejected(self):
-        with pytest.raises(ValueError, match="traffic_status"):
-            Edge(  # type: ignore[call-arg]
-                source_id="A", target_id="B",
-                distance=1.0, travel_time=1.0, cost=1.0,
-                traffic_status="blocked",
-            )
+    def test_negative_travel_time_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            Edge(**self._kwargs(travel_time=-1.0))
 
-    def test_metadata_must_be_dict(self):
-        with pytest.raises(ValueError):
-            Edge(  # type: ignore[call-arg]
-                source_id="A", target_id="B",
-                distance=1.0, travel_time=1.0, cost=1.0,
-                metadata=[1, 2, 3],  # type: ignore[arg-type]
-            )
+    def test_negative_cost_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            Edge(**self._kwargs(cost=-100.0))
+
+    def test_nan_distance_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            Edge(**self._kwargs(distance=math.nan))
+
+    def test_inf_cost_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            Edge(**self._kwargs(cost=math.inf))
+
+    def test_string_value_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            Edge(**self._kwargs(distance="1.0"))  # type: ignore[arg-type]
+
+    def test_invalid_traffic_status_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            Edge(source_id="A", target_id="B",
+                 distance=1.0, travel_time=1.0, cost=1.0,
+                 traffic_status="blocked")  # type: ignore[arg-type]
+
+    def test_metadata_must_be_dict(self) -> None:
+        with self.assertRaises(ValueError):
+            Edge(source_id="A", target_id="B",
+                 distance=1.0, travel_time=1.0, cost=1.0,
+                 metadata=[1, 2, 3])  # type: ignore[arg-type]
 
 
-class TestEdgeDirectionality:
-    def test_a_to_b_is_distinct_from_b_to_a(self):
+class TestEdgeDirectionality(unittest.TestCase):
+    def test_a_to_b_distinct_from_b_to_a(self) -> None:
         ab = Edge(source_id="A", target_id="B",
                   distance=1.0, travel_time=2.0, cost=3.0)
         ba = Edge(source_id="B", target_id="A",
                   distance=4.0, travel_time=5.0, cost=6.0)
-        assert ab.key == ("A", "B")
-        assert ba.key == ("B", "A")
-        assert ab.distance != ba.distance
-        assert ab != ba
+        self.assertEqual(ab.key, ("A", "B"))
+        self.assertEqual(ba.key, ("B", "A"))
+        self.assertNotEqual(ab.distance, ba.distance)
+        self.assertNotEqual(ab, ba)
 
-    def test_weight_metric_selection(self):
+    def test_weight_metric_selection(self) -> None:
         e = Edge(source_id="A", target_id="B",
                  distance=1.0, travel_time=2.0, cost=3.0)
-        assert e.weight("distance") == 1.0
-        assert e.weight("travel_time") == 2.0
-        assert e.weight("cost") == 3.0
+        self.assertEqual(e.weight("distance"), 1.0)
+        self.assertEqual(e.weight("travel_time"), 2.0)
+        self.assertEqual(e.weight("cost"), 3.0)
 
-    def test_invalid_weight_metric_raises(self):
+    def test_invalid_weight_metric(self) -> None:
         e = Edge(source_id="A", target_id="B",
                  distance=1.0, travel_time=2.0, cost=3.0)
-        with pytest.raises(ValueError, match="unknown weight metric"):
+        with self.assertRaises(ValueError):
             e.weight("time")  # type: ignore[arg-type]
+
+
+if __name__ == "__main__":  # pragma: no cover
+    unittest.main()

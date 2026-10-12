@@ -14,30 +14,16 @@ authors = [
 ]
 keywords = ["data-structures", "graph", "logistics", "shortest-path", "course-project"]
 
-# 仅声明开发期测试与代码质量工具，避免提前引入运行期重型依赖。
+# Phase 1 阶段**完全无运行期依赖**：所有核心算法 / 数据结构均手搓实现，
+# 仅依赖 Python 标准库（dataclasses / enum / json / unittest / collections / math / pathlib）。
 dependencies = []
 
 [project.optional-dependencies]
-dev = [
-    "pytest>=8.0",
-    "pytest-cov>=4.1",
-]
+# 当前没有任何第三方开发依赖；保留分组方便后续（如 black / mypy）按需启用。
+dev = []
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
 logiroute = ["py.typed"]
-
-[tool.pytest.ini_options]
-minversion = "8.0"
-testpaths = ["tests"]
-addopts = "-ra -q --strict-markers"
-pythonpath = ["src"]
-filterwarnings = [
-    "error",
-]
-markers = [
-    "phase1: Phase 1 - 工程初始化与核心数据结构",
-    "phase2: Phase 2+ - 后续开发阶段",
-]

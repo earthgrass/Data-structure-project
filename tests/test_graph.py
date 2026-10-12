@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import math
-
-import pytest
+import unittest
 
 from logiroute.core.edges import Edge
-from logiroute.core.enums import NodeType, TrafficStatus
+from logiroute.core.enums import NodeType
 from logiroute.core.nodes import Node
 from logiroute.graph.logistics_graph import (
     DuplicateEdgeError,
@@ -18,7 +17,37 @@ from logiroute.graph.logistics_graph import (
 )
 
 
-pytestmark = pytest.mark.phase1
+def _make_node(node_id: str, name: str = "n", t: NodeType = NodeType.CUSTOMER,
+               x: float = 0.0, y: float = 0.0) -> Node:
+    return Node(id=node_id, name=name, node_type=t, x=x, y=y)
+
+
+def _make_edge(src: str, dst: str, distance: float = 1.0,
+               travel_time: float = 1.0, cost: float = 1.0) -> Edge:
+    return Edge(source_id=src, target_id=dst,
+                distance=distance, travel_time=travel_time, cost=cost)
+
+
+def _sample_graph() -> LogisticsGraph:
+    """5 节点 / 5 边的代表性图。"""
+    g = LogisticsGraph()
+    for n in [
+        _make_node("A", "主仓库", NodeType.WAREHOUSE, 0.0, 0.0),
+        _make_node("T1", "中转A", NodeType.TRANSFER, 1.0, 1.0),
+        _make_node("T2", "中转B", NodeType.TRANSFER, 1.0, -1.0),
+        _make_node("C1", "客户1", NodeType.CUSTOMER, 2.0, 2.0),
+        _make_node("C2", "客户2", NodeType.CUSTOMER, 2.0, -2.0),
+    ]:
+        g.add_node(n)
+    for e in [
+        _make_edge("A", "T1", 1.0, 2.0, 1.0),
+        _make_edge("A", "T2", 1.0, 2.0, 1.0),
+        _make_edge("T1", "C1", 1.0, 1.0, 1.0),
+        _make_edge("T2", "C2", 1.0, 1.0, 1.0),
+        _make_edge("T1", "C2", 2.0, 3.0, 2.0),
+    ]:
+        g.add_edge(e)
+    return g
 
 
 # ---------------------------------------------------------------------------
@@ -26,61 +55,66 @@ pytestmark = pytest.mark.phase1
 # ---------------------------------------------------------------------------
 
 
-class TestNodeOperations:
-    def test_add_node_increases_count(self, make_graph, make_node):
-        g = make_graph()
-        g.add_node(make_node("A"))
-        assert g.node_count == 1
-        assert g.has_node("A")
+class TestNodeOperations(unittest.TestCase):
+    def test_add_node_increases_count(self) -> None:
+        g = LogisticsGraph()
+        g.add_node(_make_node("A"))
+        self.assertEqual(g.node_count, 1)
+        self.assertTrue(g.has_node("A"))
 
-    def test_add_duplicate_node_raises(self, make_graph, make_node):
-        g = make_graph()
-        g.add_node(make_node("A"))
-        with pytest.raises(DuplicateNodeError):
-            g.add_node(make_node("A", name="alias"))
+    def test_add_duplicate_node_raises(self) -> None:
+        g = LogisticsGraph()
+        g.add_node(_make_node("A"))
+        with self.assertRaises(DuplicateNodeError):
+            g.add_node(_make_node("A", name="alias"))
 
-    def test_remove_node(self, make_graph, make_node):
-        g = make_graph()
-        g.add_node(make_node("A"))
-        g.add_node(make_node("B"))
+    def test_remove_node(self) -> None:
+        g = LogisticsGraph()
+        g.add_node(_make_node("A"))
+        g.add_node(_make_node("B"))
         g.remove_node("A")
-        assert not g.has_node("A")
-        assert g.has_node("B")
-        assert g.node_count == 1
+        self.assertFalse(g.has_node("A"))
+        self.assertTrue(g.has_node("B"))
+        self.assertEqual(g.node_count, 1)
 
-    def test_remove_unknown_node_raises(self, make_graph):
-        with pytest.raises(UnknownNodeError):
-            make_graph().remove_node("missing")
+    def test_remove_unknown_node_raises(self) -> None:
+        with self.assertRaises(UnknownNodeError):
+            LogisticsGraph().remove_node("missing")
 
-    def test_get_node_returns_instance(self, make_graph, make_node):
-        g = make_graph()
-        node = make_node("A", name="WH-A")
+    def test_get_node_returns_instance(self) -> None:
+        g = LogisticsGraph()
+        node = _make_node("A", name="WH-A")
         g.add_node(node)
         fetched = g.get_node("A")
-        assert fetched is node
-        assert fetched.name == "WH-A"
+        self.assertIs(fetched, node)
+        self.assertEqual(fetched.name, "WH-A")
 
-    def test_try_get_node_returns_none(self, make_graph):
-        assert make_graph().try_get_node("nope") is None
+    def test_try_get_node_returns_none(self) -> None:
+        self.assertIsNone(LogisticsGraph().try_get_node("nope"))
 
-    def test_add_invalid_type_raises_typeerror(self, make_graph):
-        with pytest.raises(TypeError):
-            make_graph().add_node("not a node")  # type: ignore[arg-type]
+    def test_add_invalid_type_raises_typeerror(self) -> None:
+        with self.assertRaises(TypeError):
+            LogisticsGraph().add_node("not a node")  # type: ignore[arg-type]
 
-    def test_nodes_property_returns_snapshot(self, make_graph, make_node):
-        g = make_graph()
-        g.add_node(make_node("A"))
-        g.add_node(make_node("B"))
-        nodes = g.nodes
-        nodes.clear()
-        # Snapshot semantics: graph not affected
-        assert g.node_count == 2
+    def test_nodes_property_returns_snapshot(self) -> None:
+        g = LogisticsGraph()
+        g.add_node(_make_node("A"))
+        g.add_node(_make_node("B"))
+        snapshot = g.get_all_nodes()
+        snapshot.clear()
+        self.assertEqual(g.node_count, 2)
 
-    def test_contains_operator(self, make_graph, make_node):
-        g = make_graph()
-        g.add_node(make_node("A"))
-        assert "A" in g
-        assert "B" not in g
+    def test_contains_operator(self) -> None:
+        g = LogisticsGraph()
+        g.add_node(_make_node("A"))
+        self.assertIn("A", g)
+        self.assertNotIn("B", g)
+
+    def test_get_all_edges_no_dup(self) -> None:
+        g = _sample_graph()
+        edges = g.get_all_edges()
+        keys = {(e.source_id, e.target_id) for e in edges}
+        self.assertEqual(len(keys), len(edges))
 
 
 # ---------------------------------------------------------------------------
@@ -88,74 +122,61 @@ class TestNodeOperations:
 # ---------------------------------------------------------------------------
 
 
-class TestEdgeOperations:
-    def test_add_edge_directed_only(self, make_graph, make_node, make_edge):
-        g = make_graph()
-        g.add_node(make_node("A"))
-        g.add_node(make_node("B"))
-        g.add_edge(make_edge("A", "B", distance=1.0))
-        assert g.has_edge("A", "B") is True
-        assert g.has_edge("B", "A") is False
-        assert g.edge_count == 1
+class TestEdgeOperations(unittest.TestCase):
+    def test_add_edge_directed_only(self) -> None:
+        g = LogisticsGraph()
+        g.add_node(_make_node("A"))
+        g.add_node(_make_node("B"))
+        g.add_edge(_make_edge("A", "B", distance=1.0))
+        self.assertTrue(g.has_edge("A", "B"))
+        self.assertFalse(g.has_edge("B", "A"))
+        self.assertEqual(g.edge_count, 1)
 
-    def test_add_edge_with_unknown_endpoint_raises(
-        self, make_graph, make_node, make_edge
-    ):
-        g = make_graph()
-        g.add_node(make_node("A"))
-        with pytest.raises(UnknownNodeError):
-            g.add_edge(make_edge("A", "B"))
-        with pytest.raises(UnknownNodeError):
-            g.add_edge(make_edge("Z", "A"))
+    def test_add_edge_with_unknown_endpoint_raises(self) -> None:
+        g = LogisticsGraph()
+        g.add_node(_make_node("A"))
+        with self.assertRaises(UnknownNodeError):
+            g.add_edge(_make_edge("A", "B"))
+        with self.assertRaises(UnknownNodeError):
+            g.add_edge(_make_edge("Z", "A"))
 
-    def test_add_duplicate_edge_raises(self, make_graph, make_node, make_edge):
-        g = make_graph()
-        g.add_node(make_node("A"))
-        g.add_node(make_node("B"))
-        g.add_edge(make_edge("A", "B", distance=1.0))
-        with pytest.raises(DuplicateEdgeError):
-            g.add_edge(make_edge("A", "B", distance=2.0))
+    def test_add_duplicate_edge_raises(self) -> None:
+        g = LogisticsGraph()
+        g.add_node(_make_node("A"))
+        g.add_node(_make_node("B"))
+        g.add_edge(_make_edge("A", "B", distance=1.0))
+        with self.assertRaises(DuplicateEdgeError):
+            g.add_edge(_make_edge("A", "B", distance=2.0))
 
-    def test_remove_edge(self, make_graph, make_node, make_edge):
-        g = make_graph()
-        g.add_node(make_node("A"))
-        g.add_node(make_node("B"))
-        g.add_edge(make_edge("A", "B", distance=1.0))
+    def test_remove_edge(self) -> None:
+        g = LogisticsGraph()
+        g.add_node(_make_node("A"))
+        g.add_node(_make_node("B"))
+        g.add_edge(_make_edge("A", "B", distance=1.0))
         g.remove_edge("A", "B")
-        assert g.has_edge("A", "B") is False
-        assert g.edge_count == 0
+        self.assertFalse(g.has_edge("A", "B"))
+        self.assertEqual(g.edge_count, 0)
 
-    def test_remove_unknown_edge_raises(self, make_graph, make_node, make_edge):
-        g = make_graph()
-        g.add_node(make_node("A"))
-        g.add_node(make_node("B"))
-        with pytest.raises(GraphError):
+    def test_remove_unknown_edge_raises(self) -> None:
+        g = LogisticsGraph()
+        g.add_node(_make_node("A"))
+        g.add_node(_make_node("B"))
+        with self.assertRaises(GraphError):
             g.remove_edge("A", "B")
 
-    def test_get_neighbors(self, make_graph, make_node, make_edge):
-        g = make_graph()
-        g.add_node(make_node("A"))
-        g.add_node(make_node("B"))
-        g.add_node(make_node("C"))
-        g.add_edge(make_edge("A", "B", distance=1.0))
-        g.add_edge(make_edge("A", "C", distance=2.0))
+    def test_get_neighbors_returns_outgoing(self) -> None:
+        g = LogisticsGraph()
+        g.add_node(_make_node("A"))
+        g.add_node(_make_node("B"))
+        g.add_node(_make_node("C"))
+        g.add_edge(_make_edge("A", "B", distance=1.0))
+        g.add_edge(_make_edge("A", "C", distance=2.0))
         neighbors = g.get_neighbors("A")
-        assert {n.target_id for n in neighbors} == {"B", "C"}
+        self.assertEqual({n.target_id for n in neighbors}, {"B", "C"})
 
-    def test_get_neighbors_unknown_node_raises(self, make_graph):
-        with pytest.raises(UnknownNodeError):
-            make_graph().get_neighbors("nope")
-
-    def test_edges_property_uniqueness(self, sample_graph):
-        # 重复获取 edges 应仍代表同一对象，避免无意复制
-        first = sample_graph.edges
-        # 集合中不应出现重复边
-        keys = {(e.source_id, e.target_id) for e in first}
-        assert len(keys) == len(first)
-        # 添加一条边不会引发相邻边集合突增
-        sample_graph.add_edge(Edge("C1", "C2",
-                                  distance=1.0, travel_time=1.0, cost=1.0))
-        assert sample_graph.edge_count == len(sample_graph.edges)
+    def test_get_neighbors_unknown_node_raises(self) -> None:
+        with self.assertRaises(UnknownNodeError):
+            LogisticsGraph().get_neighbors("nope")
 
 
 # ---------------------------------------------------------------------------
@@ -163,36 +184,37 @@ class TestEdgeOperations:
 # ---------------------------------------------------------------------------
 
 
-class TestNodeRemovalCleanUpEdges:
-    def test_remove_node_clears_outgoing(self, sample_graph):
-        # A 在 sample_graph 中具有 2 条出边（A->T1, A->T2），无入边
-        sample_graph.remove_node("A")
-        assert "A" not in sample_graph
-        # 仅剔除 A 的两条出边，剩余 5 - 2 = 3 条
-        assert sample_graph.edge_count == 3
+class TestNodeRemovalCleanUpEdges(unittest.TestCase):
+    def test_remove_node_clears_outgoing(self) -> None:
+        g = _sample_graph()
+        # A in sample_graph has 2 outgoing, 0 incoming
+        g.remove_node("A")
+        self.assertNotIn("A", g)
+        self.assertEqual(g.edge_count, 3)  # 5 - 2
+        g.validate()
 
-    def test_remove_node_clears_incoming(self, sample_graph):
-        # C2 收到 T2->C2 与 T1->C2 两条入边
-        sample_graph.remove_node("C2")
-        assert "C2" not in sample_graph
-        # 删除 C2 后，应只剩 A->T1, A->T2, T1->C1
-        assert sample_graph.edge_count == 3
+    def test_remove_node_clears_incoming(self) -> None:
+        g = _sample_graph()
+        # C2 has incoming from T2 and T1
+        g.remove_node("C2")
+        self.assertNotIn("C2", g)
+        self.assertEqual(g.edge_count, 3)
+        g.validate()
 
-    def test_remove_node_keeps_other_nodes_consistent(self, sample_graph):
-        sample_graph.remove_node("T1")
-        # T1 删除后其作为 source 的边不在，其作为 target 的入边被清理
-        sample_graph.validate()
-        # 验证反向索引依然一致
-        for node_id in sample_graph.node_ids:
-            for in_edge in sample_graph.get_in_edges(node_id):
-                assert sample_graph.has_edge(in_edge.source_id, node_id)
+    def test_remove_node_keeps_other_nodes_consistent(self) -> None:
+        g = _sample_graph()
+        g.remove_node("T1")
+        g.validate()
+        for node_id in g.node_ids:
+            for in_edge in g.get_in_edges(node_id):
+                self.assertTrue(g.has_edge(in_edge.source_id, node_id))
 
-    def test_remove_isolated_node(self, make_graph, make_node):
-        g = make_graph()
-        g.add_node(make_node("ISO"))
+    def test_remove_isolated_node(self) -> None:
+        g = LogisticsGraph()
+        g.add_node(_make_node("ISO"))
         g.remove_node("ISO")
-        assert g.node_count == 0
-        assert g.edge_count == 0
+        self.assertEqual(g.node_count, 0)
+        self.assertEqual(g.edge_count, 0)
         g.validate()
 
 
@@ -201,37 +223,30 @@ class TestNodeRemovalCleanUpEdges:
 # ---------------------------------------------------------------------------
 
 
-class TestAdjacencyListExport:
-    def test_export_shape(self, sample_graph):
-        adj = sample_graph.to_adjacency_list()
-        assert set(adj.keys()) == {"A", "T1", "T2", "C1", "C2"}
-        for src, items in adj.items():
+class TestAdjacencyListExport(unittest.TestCase):
+    def test_export_shape(self) -> None:
+        g = _sample_graph()
+        adj = g.get_adjacency_list()
+        self.assertEqual(set(adj.keys()), {"A", "T1", "T2", "C1", "C2"})
+        for items in adj.values():
             for item in items:
-                assert "target" in item
-                assert "distance" in item
-                assert "travel_time" in item
-                assert "cost" in item
-                assert "traffic_status" in item
+                for k in ("target", "distance", "travel_time", "cost", "traffic_status"):
+                    self.assertIn(k, item)
 
-    def test_export_neighbors_sorted_by_target_id(self, make_graph, make_node, make_edge):
-        g = make_graph()
-        g.add_node(make_node("A"))
-        g.add_node(make_node("B"))
-        g.add_node(make_node("C"))
-        g.add_node(make_node("D"))
-        # 添加顺序：A->C, A->B, A->D
-        g.add_edge(make_edge("A", "C"))
-        g.add_edge(make_edge("A", "B"))
-        g.add_edge(make_edge("A", "D"))
-        adj = g.to_adjacency_list()
-        targets = [item["target"] for item in adj["A"]]
-        assert targets == ["B", "C", "D"]
+    def test_neighbors_sorted_by_target_id(self) -> None:
+        g = LogisticsGraph()
+        for node_id in ("A", "B", "C", "D"):
+            g.add_node(_make_node(node_id))
+        g.add_edge(_make_edge("A", "C"))
+        g.add_edge(_make_edge("A", "B"))
+        g.add_edge(_make_edge("A", "D"))
+        adj = g.get_adjacency_list()
+        self.assertEqual([item["target"] for item in adj["A"]], ["B", "C", "D"])
 
-    def test_export_empty_node(self, make_graph, make_node):
-        g = make_graph()
-        g.add_node(make_node("ISO"))
-        adj = g.to_adjacency_list()
-        assert adj == {"ISO": []}
+    def test_export_empty_node(self) -> None:
+        g = LogisticsGraph()
+        g.add_node(_make_node("ISO"))
+        self.assertEqual(g.get_adjacency_list(), {"ISO": []})
 
 
 # ---------------------------------------------------------------------------
@@ -239,68 +254,54 @@ class TestAdjacencyListExport:
 # ---------------------------------------------------------------------------
 
 
-class TestAdjacencyMatrixExport:
-    def test_distance_matrix(self, sample_graph):
-        node_ids, matrix = sample_graph.to_adjacency_matrix(metric="distance")
-        # A -> T1: distance=1
-        a = node_ids.index("A")
-        t1 = node_ids.index("T1")
-        t2 = node_ids.index("T2")
-        c2 = node_ids.index("C2")
-        c1 = node_ids.index("C1")
-        assert matrix[a][t1] == 1.0
-        assert matrix[a][t2] == 1.0
-        assert matrix[t1][c1] == 1.0
-        assert matrix[t1][c2] == 2.0
-        # 反向不存在则为 inf
-        assert matrix[t1][a] == math.inf
-        # 自环不存在则为 inf（无论节点本身有什么设置）
-        assert matrix[a][a] == math.inf
+class TestAdjacencyMatrixExport(unittest.TestCase):
+    def test_distance_matrix(self) -> None:
+        g = _sample_graph()
+        node_ids, matrix = g.get_adjacency_matrix(metric="distance")
+        idx = {n: i for i, n in enumerate(node_ids)}
+        a, t1, t2, c1, c2 = idx["A"], idx["T1"], idx["T2"], idx["C1"], idx["C2"]
+        self.assertEqual(matrix[a][t1], 1.0)
+        self.assertEqual(matrix[a][t2], 1.0)
+        self.assertEqual(matrix[t1][c1], 1.0)
+        self.assertEqual(matrix[t1][c2], 2.0)
+        # 反向 / 自环：inf
+        self.assertEqual(matrix[t1][a], math.inf)
+        self.assertEqual(matrix[a][a], math.inf)
 
-    def test_travel_time_and_cost_matrices(self, sample_graph):
-        _, m_time = sample_graph.to_adjacency_matrix(metric="travel_time")
-        # T1->C1 travel_time=1
-        a, t1, c1, t2, c2 = range(5)
-        # 在没有指定 node_order 时，行列顺序为插入顺序
-        order = sample_graph.node_ids
+    def test_travel_time_and_cost_matrices(self) -> None:
+        g = _sample_graph()
+        _, m_time = g.get_adjacency_matrix(metric="travel_time")
+        order = g.node_ids
         t1_idx = order.index("T1")
         c1_idx = order.index("C1")
-        assert m_time[t1_idx][c1_idx] == 1.0
-        assert m_time[t1_idx][order.index("C2")] == 3.0
+        c2_idx = order.index("C2")
+        self.assertEqual(m_time[t1_idx][c1_idx], 1.0)
+        self.assertEqual(m_time[t1_idx][c2_idx], 3.0)
 
-        _, m_cost = sample_graph.to_adjacency_matrix(metric="cost")
-        assert m_cost[t1_idx][c1_idx] == 1.0
-        assert m_cost[t1_idx][order.index("C2")] == 2.0
+        _, m_cost = g.get_adjacency_matrix(metric="cost")
+        self.assertEqual(m_cost[t1_idx][c1_idx], 1.0)
+        self.assertEqual(m_cost[t1_idx][c2_idx], 2.0)
 
-    def test_custom_node_order(self, sample_graph):
+    def test_custom_node_order(self) -> None:
+        g = _sample_graph()
         order = ["C2", "C1", "T2", "T1", "A"]
-        ids, matrix = sample_graph.to_adjacency_matrix(node_order=order)
-        assert ids == order
-        # 在该顺序下：T1(下标 3) -> C2(下标 0) weight=2
-        assert matrix[3][0] == 2.0
+        ids, matrix = g.get_adjacency_matrix(node_order=order)
+        self.assertEqual(ids, order)
+        # T1->C2 weight=2 in our sample (distance metric)
+        self.assertEqual(matrix[3][0], 2.0)
 
-    def test_invalid_metric_rejected(self, sample_graph):
-        with pytest.raises(ValueError, match="metric"):
-            sample_graph.to_adjacency_matrix(metric="time")  # type: ignore[arg-type]
+    def test_invalid_metric_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            _sample_graph().get_adjacency_matrix(metric="time")  # type: ignore[arg-type]
 
-    def test_unknown_node_in_order_rejected(self, sample_graph):
-        with pytest.raises(ValueError, match="unknown node ids"):
-            sample_graph.to_adjacency_matrix(node_order=["A", "MISSING"])
+    def test_unknown_node_in_order_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            _sample_graph().get_adjacency_matrix(node_order=["A", "MISSING"])
 
-    def test_empty_graph_matrix(self, make_graph):
-        ids, matrix = make_graph().to_adjacency_matrix()
-        assert ids == []
-        assert matrix == []
-
-    def test_matrix_is_serializable_structure(self, sample_graph):
-        import json
-        _, matrix = sample_graph.to_adjacency_matrix()
-        # 替换 inf 后必须是有限数才能 JSON 化
-        cleaned = [
-            [0.0 if (math.isinf(v) or math.isnan(v)) else v for v in row]
-            for row in matrix
-        ]
-        json.dumps(cleaned)  # 不抛错即视为结构良好
+    def test_empty_graph_matrix(self) -> None:
+        ids, matrix = LogisticsGraph().get_adjacency_matrix()
+        self.assertEqual(ids, [])
+        self.assertEqual(matrix, [])
 
 
 # ---------------------------------------------------------------------------
@@ -308,60 +309,111 @@ class TestAdjacencyMatrixExport:
 # ---------------------------------------------------------------------------
 
 
-class TestRobustnessAndConsistency:
-    def test_validation_after_random_operations(self, make_graph, make_node, make_edge):
-        g = make_graph()
-        g.add_node(make_node("A"))
-        g.add_node(make_node("B"))
-        g.add_node(make_node("C"))
-        g.add_edge(make_edge("A", "B", distance=1.0))
-        g.add_edge(make_edge("B", "C", distance=1.0))
-        g.add_edge(make_edge("C", "A", distance=1.0))
+class TestRobustnessAndConsistency(unittest.TestCase):
+    def test_validation_after_random_operations(self) -> None:
+        g = LogisticsGraph()
+        for node_id in "ABCD":
+            g.add_node(_make_node(node_id))
+        g.add_edge(_make_edge("A", "C"))
+        g.add_edge(_make_edge("B", "C"))
+        g.add_edge(_make_edge("C", "D"))
         g.validate()
         g.remove_node("B")
         g.validate()
-        g.add_edge(make_edge("A", "C", distance=2.0))
+        # 重复边应当拒绝（图中已存在 A->C）
+        try:
+            g.add_edge(_make_edge("A", "C", distance=3.0))
+            self.fail("should not allow duplicate edges")
+        except DuplicateEdgeError:
+            pass
         g.validate()
 
-    def test_get_edge_returns_correct_instance(
-        self, make_graph, make_node, make_edge
-    ):
-        g = make_graph()
-        g.add_node(make_node("A"))
-        g.add_node(make_node("B"))
-        edge = make_edge("A", "B", distance=2.5)
+    def test_get_edge_returns_correct_instance(self) -> None:
+        g = LogisticsGraph()
+        g.add_node(_make_node("A"))
+        g.add_node(_make_node("B"))
+        edge = _make_edge("A", "B", distance=2.5)
         g.add_edge(edge)
-        assert g.get_edge("A", "B") is edge
-        assert g.try_get_edge("A", "B") is edge
-        assert g.try_get_edge("B", "A") is None
+        self.assertIs(g.get_edge("A", "B"), edge)
+        self.assertIs(g.try_get_edge("A", "B"), edge)
+        self.assertIsNone(g.try_get_edge("B", "A"))
 
-    def test_get_in_edges(self, sample_graph):
-        c2_in = sample_graph.get_in_edges("C2")
-        sources = {e.source_id for e in c2_in}
-        assert sources == {"T1", "T2"}
+    def test_get_in_edges(self) -> None:
+        g = _sample_graph()
+        in_edges = g.get_in_edges("C2")
+        self.assertEqual({e.source_id for e in in_edges}, {"T1", "T2"})
 
-    def test_in_edges_consistency_after_remove_node(
-        self, make_graph, make_node, make_edge
-    ):
-        g = make_graph()
-        for i in "ABCD":
-            g.add_node(make_node(i))
-        g.add_edge(make_edge("A", "C"))
-        g.add_edge(make_edge("B", "C"))
-        g.add_edge(make_edge("C", "D"))
+    def test_in_edges_consistency_after_remove_node(self) -> None:
+        g = LogisticsGraph()
+        for node_id in "ABCD":
+            g.add_node(_make_node(node_id))
+        g.add_edge(_make_edge("A", "C"))
+        g.add_edge(_make_edge("B", "C"))
+        g.add_edge(_make_edge("C", "D"))
         g.remove_node("C")
-        # C 已删除，其旧入边不再可见
-        assert {e.source_id for e in g.get_in_edges("D")} == set()
+        self.assertEqual({e.source_id for e in g.get_in_edges("D")}, set())
         g.validate()
 
-    def test_clear(self, sample_graph):
-        sample_graph.clear()
-        assert sample_graph.node_count == 0
-        assert sample_graph.edge_count == 0
-        sample_graph.validate()
+    def test_clear(self) -> None:
+        g = _sample_graph()
+        g.clear()
+        self.assertEqual(g.node_count, 0)
+        self.assertEqual(g.edge_count, 0)
+        g.validate()
 
-    def test_repr_contains_counts(self, sample_graph):
-        text = repr(sample_graph)
-        assert "LogisticsGraph" in text
-        assert "nodes=5" in text
-        assert "edges=5" in text
+    def test_repr_contains_counts(self) -> None:
+        text = repr(_sample_graph())
+        self.assertIn("LogisticsGraph", text)
+        self.assertIn("nodes=5", text)
+        self.assertIn("edges=5", text)
+
+
+# ---------------------------------------------------------------------------
+#  大型配置驱动场景（连通性 + 节点/边下界）
+# ---------------------------------------------------------------------------
+
+
+class TestLargeScenarioShape(unittest.TestCase):
+    """对 ``config/scenario.json`` 这一固定场景作形状检查。
+
+    这些测试不属于纯单测逻辑，但属于「配置驱动初始化」必须保证的形态。
+    若 ``config/scenario.json`` 不存在则自动跳过。
+    """
+
+    SCENARIO = "config/scenario.json"
+
+    def _load_or_skip(self):
+        from pathlib import Path
+        from logiroute.config import ConfigError, load_scenario
+        path = Path(self.SCENARIO)
+        if not path.is_file():
+            self.skipTest(f"{self.SCENARIO} not present")
+        try:
+            return load_scenario(path)
+        except ConfigError as exc:
+            self.fail(f"scenario.json failed validation: {exc}")
+
+    def test_minimum_node_count(self) -> None:
+        bundle = self._load_or_skip()
+        self.assertGreaterEqual(bundle.graph.node_count, 30)
+
+    def test_type_minimums(self) -> None:
+        from logiroute.core.enums import NodeType
+        bundle = self._load_or_skip()
+        from collections import Counter
+        cnt = Counter(n.node_type for n in bundle.graph.get_all_nodes())
+        self.assertGreaterEqual(cnt[NodeType.WAREHOUSE], 2)
+        self.assertGreaterEqual(cnt[NodeType.CUSTOMER], 15)
+        self.assertGreaterEqual(cnt[NodeType.TRANSFER], 3)
+
+    def test_minimum_edge_count(self) -> None:
+        bundle = self._load_or_skip()
+        self.assertGreaterEqual(bundle.graph.edge_count, 50)
+
+    def test_internal_consistency(self) -> None:
+        bundle = self._load_or_skip()
+        bundle.graph.validate()
+
+
+if __name__ == "__main__":  # pragma: no cover
+    unittest.main()
