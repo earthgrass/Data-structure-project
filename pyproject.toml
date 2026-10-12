@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "logiroute"
+version = "0.1.0"
+description = "LogiRoute — 电商物流配送路径规划系统（数据结构课程设计）"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+    { name = "earthgrass73" },
+]
+keywords = ["data-structures", "graph", "logistics", "shortest-path", "course-project"]
+
+# 仅声明开发期测试与代码质量工具，避免提前引入运行期重型依赖。
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=4.1",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+logiroute = ["py.typed"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = "-ra -q --strict-markers"
+pythonpath = ["src"]
+filterwarnings = [
+    "error",
+]
+markers = [
+    "phase1: Phase 1 - 工程初始化与核心数据结构",
+    "phase2: Phase 2+ - 后续开发阶段",
+]

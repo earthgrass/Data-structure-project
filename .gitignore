@@ -1,0 +1,98 @@
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+*.egg
+MANIFEST
+
+# ===== Virtual environments =====
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# ===== Testing / Coverage =====
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
+
+# ===== Type checkers / Linters =====
+.mypy_cache/
+.ruff_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+
+# ===== IDEs =====
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ===== Logs and runtime =====
+*.log
+logs/
+*.pid
+*.pid.lock
+.pnp.*
+.yarn/
+
+# ===== Node / Frontend (reserved for later phases) =====
+node_modules/
+.next/
+out/
+.parcel-cache/
+.cache/
+.eslintcache
+
+# ===== Build / dist =====
+*.tsbuildinfo
+
+# ===== OS / Office lock files =====
+~$*.docx
+~$*.pptx
+~$*.xlsx
+~$*.doc
+
+# ===== 课程材料文件（仅供阅读，不纳入版本控制）=====
+第*题*.docx
+*课程设计报告要求*.doc
+数据结构_课设说明_*.doc
+数据结构课程设计-*.pptx
+
+# ===== Project-local secrets =====
+.env
+.env.local
+*.pem
+*.key
+secrets/
+
+# ===== Test data (large/dynamic) =====
+data/runtime/
+*.tmp
