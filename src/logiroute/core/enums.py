@@ -1,6 +1,8 @@
 """业务枚举类型集中定义。
 
 将所有 Enum 集中放置以避免循环引用，并便于序列化（JSON 友好字符串值）。
+
+注：本项目**仅使用 Python 标准库** ``enum``，未依赖任何第三方库。
 """
 
 from __future__ import annotations
@@ -28,6 +30,16 @@ class TrafficStatus(str, Enum):
     MODERATE = "moderate"    # 一般拥堵
     CONGESTED = "congested"  # 严重拥堵
     BLOCKED = "blocked"      # 阻断（暂不可通行）
+
+
+class VehicleStatus(str, Enum):
+    """配送车辆的工作状态。"""
+
+    IDLE = "idle"            # 停在仓库，待派单
+    LOADING = "loading"      # 装货中
+    DELIVERING = "delivering"  # 正在执行配送任务
+    RETURNING = "returning"  # 完成配送、回程途中
+    MAINTENANCE = "maintenance"  # 维护中 / 不可用
 
 
 class CourierStatus(str, Enum):
