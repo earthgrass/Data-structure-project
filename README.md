@@ -1,126 +1,153 @@
 # LogiRoute — 电商物流配送路径规划系统
 
-> 数据结构课程设计 —— 一个以有向带权图为核心的电商物流配送仿真与优化项目。
-
-LogiRoute 模拟城市电商物流配送网络：节点表示仓库、客户与中转站，边表示实际道路，
-并通过自定义图结构与（后续阶段的）路径规划算法，提供最短距离、最短时间、最低成本
-与多目标优化等能力，最终面向可交互的 Web Dashboard 开放。
+> 数据结构课程设计 —— 一个以手写有向带权图为核心的电商物流配送仿真与优化项目。
+>
+> **本项目仅使用 Python 标准库；所有核心数据结构与算法均手工实现，不引入
+> NetworkX / NumPy / SciPy / OR-Tools 等第三方图算法库。后续 Phase 实现
+> Dijkstra 时也不得使用 ``heapq`` 替代自己实现的优先队列。**
 
 ## 当前开发阶段
 
-**Phase 1 — 工程初始化与核心数据结构 ✅ 已完成**
+**Phase 1 — 工程初始化、配置驱动与核心数据结构 ✅ 已完成**
 
-* 项目骨架、配置（pyproject.toml）、`.gitignore`、包目录结构
-* 业务数据模型：`Node`、`Edge`、`Vehicle`、`Courier`、`Order`，含字段级校验
-* `LogisticsGraph`：邻接表存储 + 邻接矩阵导出，节点 / 边增删与一致性维护
-* 单元测试：pytest，**115 个用例全部通过**
-* 项目文档与协作约束（`README.md`、`docs/*`、`AGENTS.md`）
-
-后续 Phase 仅在收到明确指令后实施。
+| 类别 | 内容 |
+| --- | --- |
+| 工程骨架 | `pyproject.toml`、`.gitignore`、包目录结构 |
+| 数据模型 | `Node` / `Edge` / `Vehicle` / `Courier` / `Order` |
+| 图容器 | `LogisticsGraph`（邻接表主存 + 邻接矩阵按需导出） |
+| 配置层 | `config/scenario.json` + `logiroute.config.loader` |
+| 固定场景 | 35 节点 / 192 有向边 / 强连通 / 4 车辆 / 4 配送员 / 20 订单 |
+| 测试 | 全部用 `unittest`，共 **121 用例**，通过 |
+| 文档 | `AGENTS.md` + `docs/architecture.md` + `docs/development-plan.md` |
 
 ## 项目结构
 
 ```
 数据结构课设/
-├── README.md                 项目说明（必读）
-├── AGENTS.md                 协作约束（面向 AI 编程助手）
-├── pyproject.toml            构建 / 测试配置
-├── .gitignore                忽略规则
+├── README.md                 项目入口
+├── AGENTS.md                 AI 协作约束（强约束：禁止现成算法包）
+├── pyproject.toml            构建配置（无运行期三方依赖）
+├── .gitignore
 │
-├── src/logiroute/            主包（src 布局）
+├── scripts/
+│   └── generate_scenario.py  固定场景 JSON 生成器（确定性）
+│
+├── config/
+│   └── scenario.json         固定场景（35 节点 / 192 边 / 强连通）
+│
+├── src/logiroute/            主包（src 布局，零三方依赖）
 │   ├── core/                 业务数据模型
-│   ├── graph/                LogisticsGraph 实现
-│   ├── algorithms/           路径规划（Phase 2+，仅占位）
-│   ├── dispatch/             配送调度（Phase 2+，仅占位）
-│   ├── config/               配置加载（Phase 2+，仅占位）
-│   ├── api/                  FastAPI 后端（Phase 2+，仅占位）
-│   └── web/                  前端占位
+│   │   ├── enums.py          NodeType / TrafficStatus / VehicleStatus /
+│   │   │                     CourierStatus / OrderPriority / OrderStatus
+│   │   ├── nodes.py          Node (frozen)
+│   │   ├── edges.py          Edge (拒绝自环 / 负权 / NaN)
+│   │   ├── vehicles.py       Vehicle (含 status)
+│   │   ├── couriers.py       Courier
+│   │   └── orders.py         Order (含 time_window)
+│   ├── graph/
+│   │   └── logistics_graph.py
+│   │                         LogisticsGraph（邻接表 + 反向索引 + 矩阵导出）
+│   ├── config/
+│   │   └── loader.py         强校验的 JSON 加载器，含连通性自检
+│   ├── algorithms/           占位（Phase 2+ 手工实现 Dijkstra）
+│   ├── scheduling/           占位（Phase 4+ 配送顺序规划）
+│   ├── simulation/           占位（Phase 5+，含随机生成器设计）
+│   ├── api/                  占位（Phase 6+ FastAPI）
+│   └── web/                  占位（前端独立工程）
 │
-├── tests/                    pytest 单元测试
+├── tests/                    unittest 单元测试（121 用例）
 │
-└── docs/                     架构、阶段计划等文档
+└── docs/
+    ├── architecture.md       分层架构 + 随机生成器设计
+    └── development-plan.md   Phase 2-7 路线图
 ```
+
+## 引用清单（依赖项）
+
+* **运行期**：仅依赖 Python 标准库（`dataclasses`、`enum`、`json`、`collections.deque`、`math`、`pathlib`、`typing`）
+* **开发期**：无第三方依赖
+* **测试**：`unittest`（标准库）
+* **明确未引入**：NetworkX、NumPy、SciPy、OR-Tools、heapq（算法路径）、pandas、matplotlib、pytest、pydantic、fastapi
 
 ## 环境要求
 
 | 项目  | 版本 |
 | ----- | ---- |
 | Python | ≥ 3.11 |
-| pytest | ≥ 8.0 |
 
-> Python 3.10 及以下将导致 dataclass `slots=True`、`match` 等语法可用性下降。推荐 3.11+。
+## 运行测试
 
-## 安装与运行测试
-
-仓库当前仅包含开发依赖，**不需要**额外依赖安装 —— 直接使用系统 Python 与 pip 中的 pytest
-即可：
+仓库无第三方依赖，**无需安装** 任何包即可运行：
 
 ```bash
 # 在项目根目录
-python -m pytest
+PYTHONPATH=src python -m unittest discover -s tests -t .
 ```
 
-如需在本地构建隔离环境：
+或者在 Linux/macOS 下可忽略盘符：
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate    # Windows: .venv\Scripts\activate
-pip install -e ".[dev]"
-pytest
+PYTHONPATH=src python -m unittest discover -s tests
 ```
 
-### 运行指定文件 / 用例
+### 跑指定的测试类 / 用例
 
 ```bash
-pytest tests/test_graph.py                       # 仅跑图测试
-pytest -k "TestEdgeValidation"                   # 按类名筛选
-pytest -m phase1                                # 仅跑 Phase 1 标记的测试
-pytest --maxfail=1 -v                            # 失败即停，详尽输出
+PYTHONPATH=src python -m unittest tests.test_graph
+PYTHONPATH=src python -m unittest tests.test_config.TestValidationErrors.test_edge_to_unknown_node
 ```
 
-### 测试覆盖范围（Phase 1）
+### 当前测试用例分布
 
-| 模块                 | 用例数 |
-| -------------------- | ------ |
-| Node 模型与校验       | 19 |
-| Edge 模型与方向性     | 30 |
-| Vehicle 模型与装卸    | 11 |
-| Courier 模型与状态    | 9 |
-| Order 模型与时间窗口  | 9 |
-| **LogisticsGraph**   | **37** |
-| **合计**             | **115** |
+| 模块                    | 用例数 |
+| ----------------------- | ------ |
+| tests.test_nodes        | 13 |
+| tests.test_edges        | 16 |
+| tests.test_vehicles     | 15 |
+| tests.test_couriers     | 9 |
+| tests.test_orders       | 10 |
+| **tests.test_graph**    | 35 |
+| **tests.test_config**   | 21 |
+| **合计**                | **121** |
+
+## 重新生成固定场景
+
+```bash
+python scripts/generate_scenario.py --force
+```
+
+该脚本使用 `seed=42` 确定性生成，**不**实现「随机路网生成器」（后者推迟到 Phase 5+）。
 
 ## 快速示例
 
 ```python
-from logiroute.core import Node, Edge, NodeType
-from logiroute.graph import LogisticsGraph
+from logiroute.config import load_scenario
 
-g = LogisticsGraph()
-g.add_node(Node("W1", "主仓", NodeType.WAREHOUSE, 0.0, 0.0))
-g.add_node(Node("C1", "客户1", NodeType.CUSTOMER, 1.0, 1.0))
-g.add_node(Node("C2", "客户2", NodeType.CUSTOMER, 2.0, 0.0))
-g.add_edge(Edge("W1", "C1", distance=1.5, travel_time=2.0, cost=1.0))
-g.add_edge(Edge("C1", "C2", distance=1.0, travel_time=1.5, cost=0.8))
-g.add_edge(Edge("W1", "C2", distance=2.0, travel_time=2.5, cost=1.5))
+bundle = load_scenario("config/scenario.json")
+print(bundle.graph)              # LogisticsGraph(nodes=35, edges=192)
 
-print(g)                                  # LogisticsGraph(nodes=3, edges=3)
-adj = g.to_adjacency_list()
-ids, matrix = g.to_adjacency_matrix(metric="distance")
+# 邻接表（按 target_id 排序，可复现）
+adj = bundle.graph.get_adjacency_list()
+
+# 邻接矩阵（按需生成，不重复维护）
+node_ids, m_distance = bundle.graph.get_adjacency_matrix(metric="distance")
+node_ids, m_cost     = bundle.graph.get_adjacency_matrix(metric="cost")
+node_ids, m_time     = bundle.graph.get_adjacency_matrix(metric="travel_time")
 ```
 
 ## 文档导航
 
-* [`docs/architecture.md`](docs/architecture.md)：系统分层架构、模块依赖、数据流
-* [`docs/development-plan.md`](docs/development-plan.md)：后续 Phase 路线图与边界
-* [`AGENTS.md`](AGENTS.md)：供 Claude Code / Codex 等 AI 编程助手遵循的协作约束
+* [`AGENTS.md`](AGENTS.md) — Claude Code / Codex 协作约束（**强约束：核心算法必须手搓**）
+* [`docs/architecture.md`](docs/architecture.md) — 分层结构、模块依赖、图实现原理、随机生成器设计
+* [`docs/development-plan.md`](docs/development-plan.md) — Phase 2-7 路线图
 
-## 开发守则
+## 范围红线
 
-* **测试先行 / 测试通过才能提交**：所有新增功能必须经 pytest 验证。
-* **不要把后续阶段的工作提前引入**：当前处于 Phase 1。
-* **数据模型与算法 / Web 框架解耦**：`core/` 不引用任何 FastAPI、NetworkX 等。
-* **保持简洁**：避免无意义的设计模式与抽象层。
+* **禁止**使用 NetworkX / NumPy / SciPy / OR-Tools 等现成求解库；
+* **禁止**使用 `heapq` 替代自己实现的优先队列（Phase 2 起 Dijkstra 必须自实现堆）；
+* **禁止**使用 `sorted()` / 其它库函数替代课程需展示的排序；
+* **禁止**将业务参数硬编码到 Python 源码 —— 一律走 JSON 配置；
+* 后续阶段未经许可**禁止**提前启动。
 
 ## 许可证
 
