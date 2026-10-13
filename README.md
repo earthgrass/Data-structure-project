@@ -17,8 +17,8 @@
 | 图容器 | `LogisticsGraph`（邻接表主存 + 邻接矩阵按需导出） |
 | 配置层 | `config/scenario.json` + `logiroute.config.loader` |
 | 固定场景 | 35 节点 / 192 有向边 / 强连通 / 4 车辆 / 4 配送员 / 20 订单 |
-| 测试 | 全部用 `unittest`，共 **121 用例**，通过 |
-| 文档 | `AGENTS.md` + `docs/architecture.md` + `docs/development-plan.md` |
+| 测试 | 全部用 `unittest`，共 **161 用例**，全部通过 |
+| 文档 | `AGENTS.md` + `docs/architecture.md` + `docs/development-plan.md` + `docs/data-structures-and-algorithms.md` + `docs/phase1-teacher-defense.md` |
 
 ## 项目结构
 
@@ -55,7 +55,7 @@
 │   ├── api/                  占位（Phase 6+ FastAPI）
 │   └── web/                  占位（前端独立工程）
 │
-├── tests/                    unittest 单元测试（121 用例）
+├── tests/                    unittest 单元测试（161 用例，含队列 + 回归测试）
 │
 └── docs/
     ├── architecture.md       分层架构 + 随机生成器设计
@@ -99,16 +99,18 @@ PYTHONPATH=src python -m unittest tests.test_config.TestValidationErrors.test_ed
 
 ### 当前测试用例分布
 
-| 模块                    | 用例数 |
-| ----------------------- | ------ |
-| tests.test_nodes        | 13 |
-| tests.test_edges        | 16 |
-| tests.test_vehicles     | 15 |
-| tests.test_couriers     | 9 |
-| tests.test_orders       | 10 |
-| **tests.test_graph**    | 35 |
-| **tests.test_config**   | 21 |
-| **合计**                | **121** |
+| 模块                          | 用例数 |
+| ----------------------------- | ------ |
+| tests.test_nodes              | 13 |
+| tests.test_edges              | 16 |
+| tests.test_vehicles           | 14 |
+| tests.test_couriers           |  9 |
+| tests.test_orders             |  9 |
+| **tests.test_graph**          | 40 |
+| **tests.test_config**         | 20 |
+| **tests.test_queue** (新增)   | 16 |
+| **tests.test_phase1_regression** (新增) | 24 |
+| **合计**                      | **161** |
 
 ## 重新生成固定场景
 
@@ -140,6 +142,8 @@ node_ids, m_time     = bundle.graph.get_adjacency_matrix(metric="travel_time")
 * [`AGENTS.md`](AGENTS.md) — Claude Code / Codex 协作约束（**强约束：核心算法必须手搓**）
 * [`docs/architecture.md`](docs/architecture.md) — 分层结构、模块依赖、图实现原理、随机生成器设计
 * [`docs/development-plan.md`](docs/development-plan.md) — Phase 2-7 路线图
+* [`docs/data-structures-and-algorithms.md`](docs/data-structures-and-algorithms.md) — 数据结构与算法专项设计（教师检查核心讲解材料）
+* [`docs/phase1-teacher-defense.md`](docs/phase1-teacher-defense.md) — 第一次课程检查教师答辩材料（5 分钟讲解稿 + 17 Q&A）
 
 ## 范围红线
 

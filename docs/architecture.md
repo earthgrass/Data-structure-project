@@ -85,15 +85,15 @@ _in_edges     : Dict[target_id, Dict[source_id, Edge]]     -- 反向邻接表（
 | `get_neighbors(id)` | O(deg_out) | O(deg_out) | 出边列表 |
 | `get_in_edges(id)` | O(deg_in) | O(deg_in) | 入边列表 |
 | `get_all_nodes()` / `get_all_edges()` | O(V) / O(E) | O(V) / O(E) | 全量快照 |
-| `get_adjacency_list()` | O(V + E) | O(V + E) | 序列化字典，按 target_id 升序 |
-| `get_adjacency_matrix(metric)` | O(V + E) | O(V²) | 按需构造矩阵；无直接边 = `inf` |
+| `get_adjacency_list()` | O(V + E) 主干 + O(Σdeg·log·deg) 排序 | O(V + E) | 序列化字典，按 target_id 升序（**仅**为确定性导出） |
+| `get_adjacency_matrix(metric)` | **O(V² + E)** | O(V²) | 按需构造矩阵；V² 来自初始化，E 来自邻接表填充；无直接边 = `inf` |
 | `validate()` | O(V + E) | O(V) | 内部一致性自检 |
 
 ### 2.3 `logiroute.config` — 配置加载
 
 **单一职责**：将 `config/scenario.json` 解析为强类型的 `ScenarioBundle`。
 
-* 仅使用 Python 标准库 `json` / `pathlib` / `collections`；
+* 仅使用 Python 标准库 `json` / `pathlib`；**BFS 队列采用自实现的 `ArrayQueue`**（`graph/queue.py`），不依赖 `collections.deque`；
 * 校验项：
   - 节点 / 边下界（≥30 / ≥2 仓库 / ≥15 客户 / ≥3 中转 / ≥50 边）；
   - ID 唯一性；
@@ -102,7 +102,7 @@ _in_edges     : Dict[target_id, Dict[source_id, Edge]]     -- 反向邻接表（
   - 边不自环（与 `Edge` 模型双重保险）；
   - `Vehicles.current_node_id`、`Courier.vehicle_id`、`Order.destination_id` 引用的存在性；
   - 时间窗口合法性（`start < end`、有限）；
-  - **连通性自检**：弱连通 + 强连通（手写 Kosaraju 双 DFS，**不**依赖任何算法库）；
+  - **连通性自检**：弱连通（BFS）+ 强连通（**基于正反图的双向 DFS 强连通性判定**——注意：这是 Kosaraju 定理的判定情形，不是完整 SCC 分解；DFS 自身用**显式栈迭代**实现，**不**依赖任何算法库）；
   - 优化目标取值集合（仅允许 `distance / travel_time / cost`）。
 * 失败时抛 `ConfigError`，附带字段路径（如 `network.edges[3].distance`），便于定位；
 * 不修改 `LogisticsGraph` 类 —— 配置加载是「消费者」而不是「注入器」。
@@ -169,7 +169,7 @@ class RandomScenarioSpec:
 1. **节点布局**：在二维矩形上以 `seed` 为种子的随机 RNG 撒点，确保多数节点彼此可达。
 2. **节点类型分配**：先固定 warehouse / transfer 数量，剩余随机均匀分配为 customer。
 3. **强连通骨干生成**：以「最近邻 + K 边补全」构造「Hamiltonian-like 环」，
-   每个节点至少 1 入 1 出。Phase 1 已通过手写 Kosaraju 验证该思路可行。
+   每个节点至少 1 入 1 出。Phase 1 已通过"基于正反图的双向 DFS 强连通性判定"验证该思路可行。
 4. **稀疏 / 稠密补全**：在骨干图上按 `edge_density` 随机连接，得到目标边数。
 5. **权重解耦**：对每条边 `e = (u,v)`，按三种度量范围分别独立采样。
 6. **类型分配**：生成 `vehicles`、`couriers`、`orders`（订单按客户子集派生）。
@@ -237,7 +237,7 @@ config/scenario.json
 logiroute.config.loader
    ├── 字段解析 -> Node / Edge / Vehicle / Courier / Order
    ├── 引用完整性校验（基于 dict 与 set）
-   ├── 手写 Kosaraju 强连通性校验
+   ├── 手写双向 DFS 强连通性判定（Kosaraju 判定情形）
    ▼
 ScenarioBundle { graph, vehicles, couriers, orders, ... }
         │

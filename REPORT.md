@@ -293,8 +293,8 @@ _in_edges  : Dict[target_id, Dict[source_id, Edge]]               反向邻接�
 | `get_neighbors(id)` | O(deg_out) | O(deg_out) | 出边列表 |
 | `get_in_edges(id)` | O(deg_in) | O(deg_in) | 入边列表 |
 | `get_all_nodes()` / `get_all_edges()` | O(V) / O(E) | O(V) / O(E) | 全量快照 |
-| `get_adjacency_list()` | O(V + E) | O(V + E) | 序列化字典，按 target_id 升序 |
-| `get_adjacency_matrix(metric)` | O(V + E) | O(V²) | 矩阵按需生成；无直接边 = `inf` |
+| `get_adjacency_list()` | O(V + E) 主干 + O(Σdeg·log·deg) 排序 | O(V + E) | 序列化字典，按 target_id 升序（**仅**为确定性导出） |
+| `get_adjacency_matrix(metric)` | **O(V² + E)** | O(V²) | 矩阵按需生成；V² 来自初始化，E 来自邻接表填充；无直接边 = `inf` |
 | `validate()` | O(V + E) | O(V) | 内部一致性自检 |
 
 ### 4.4 自环与多边策略
@@ -378,7 +378,7 @@ node_ids, matrix = graph.get_adjacency_matrix(metric="distance")
 | 客户数 | 29（≥15 ✓） |
 | 中转站数 | 4（≥3 ✓） |
 | 边数 | 192（≥50 ✓） |
-| 强连通 | 是（手写 Kosaraju 验证） |
+| 强连通 | 是（手写双向 DFS 强连通判定验证） |
 | 车辆 | 4 辆（容量 100 / 150 / 120 / 200） |
 | 配送员 | 4 人 |
 | 订单 | 20 个（覆盖 20 个客户） |
@@ -395,7 +395,7 @@ node_ids, matrix = graph.get_adjacency_matrix(metric="distance")
 5. 跨段引用完整性（`current_node_id` / `vehicle_id` / `destination_id`）；
 6. 边权非负、有限；自环、重复边、未知端点拒绝；
 7. 时间窗口合法性；
-8. **连通性自检（手写 Kosaraju 双 DFS）**：弱连通 + 强连通；
+8. **连通性自检（手写双向 DFS 强连通判定）**：弱连通 + 强连通；
 9. `default_objective ∈ {distance, travel_time, cost}`；
 10. 状态枚举 / 优先级枚举取值集合合法。
 
@@ -582,7 +582,8 @@ from enum import Enum                                    # 标准库
 from typing import Any                                   # 标准库
 
 # src/logiroute/config/loader.py 中可见的额外 import：
-from collections import Counter, deque                   # 标准库
+from collections import Counter                         # 标准库（仅类型计数）
+from logiroute.graph.queue import ArrayQueue             # 自实现 FIFO 队列
 from pathlib import Path                                 # 标准库
 
 # scripts/generate_scenario.py 中可见的额外 import：
@@ -628,8 +629,8 @@ import unittest                                          # 标准库（替代 py
 | 节点 / 边下界 | O(1) | 与下限值比较 |
 | ID 唯一性 | O(V · k) | `set` 插入均摊 O(1) |
 | 跨段引用完整性 | O(V · n) | dict 查找 |
-| **强连通性自检** | **O(V + E)** | **手写 Kosaraju 双 DFS** |
-| 邻接矩阵导出 | O(V + E) | 单次填充 |
+| **强连通性自检** | **O(V + E)** | **手写双向 DFS 强连通判定（Kosaraju 判定情形）** |
+| 邻接矩阵导出 | **O(V² + E)** | V² 初始化 + 邻接表填充 |
 
 ### 9.3 测试
 
