@@ -3,22 +3,25 @@
 > 数据结构课程设计 —— 一个以手写有向带权图为核心的电商物流配送仿真与优化项目。
 >
 > **本项目仅使用 Python 标准库；所有核心数据结构与算法均手工实现，不引入
-> NetworkX / NumPy / SciPy / OR-Tools 等第三方图算法库。后续 Phase 实现
-> Dijkstra 时也不得使用 ``heapq`` 替代自己实现的优先队列。**
+> NetworkX / NumPy / SciPy / OR-Tools 等第三方图算法库。Dijkstra 与最小堆
+> 完全手写，不使用 ``heapq``。**
 
 ## 当前开发阶段
 
-**Phase 1 — 工程初始化、配置驱动与核心数据结构 ✅ 已完成**
+**Phase 1 — 工程初始化、配置驱动与核心数据结构 ✅ 已完成**  
+**Phase 2 — 手写最小堆 + Dijkstra 最短路径（distance / travel_time / cost） ✅ 已完成**
 
 | 类别 | 内容 |
 | --- | --- |
 | 工程骨架 | `pyproject.toml`、`.gitignore`、包目录结构 |
 | 数据模型 | `Node` / `Edge` / `Vehicle` / `Courier` / `Order` |
 | 图容器 | `LogisticsGraph`（邻接表主存 + 邻接矩阵按需导出） |
+| 自实现数据结构 | `ArrayQueue`（FIFO 队列） / `MinHeap`（索引式二叉最小堆） |
+| 算法 | BFS 弱连通 / 双向 DFS 强连通 / **Dijkstra 三种 metric** |
 | 配置层 | `config/scenario.json` + `logiroute.config.loader` |
 | 固定场景 | 35 节点 / 192 有向边 / 强连通 / 4 车辆 / 4 配送员 / 20 订单 |
-| 测试 | 全部用 `unittest`，共 **161 用例**，全部通过 |
-| 文档 | `AGENTS.md` + `docs/architecture.md` + `docs/development-plan.md` + `docs/data-structures-and-algorithms.md` + `docs/phase1-teacher-defense.md` |
+| 测试 | 全部用 `unittest`，共 **224 用例**，全部通过 |
+| 文档 | `AGENTS.md` + `docs/architecture.md` + `docs/development-plan.md` + `docs/data-structures-and-algorithms.md` + `docs/algorithms-{minheap,dijkstra}.md` + 2 份教师答辩材料 |
 
 ## 项目结构
 
@@ -49,7 +52,7 @@
 │   │                         LogisticsGraph（邻接表 + 反向索引 + 矩阵导出）
 │   ├── config/
 │   │   └── loader.py         强校验的 JSON 加载器，含连通性自检
-│   ├── algorithms/           占位（Phase 2+ 手工实现 Dijkstra）
+│   ├── algorithms/           MinHeap + Dijkstra（手写）
 │   ├── scheduling/           占位（Phase 4+ 配送顺序规划）
 │   ├── simulation/           占位（Phase 5+，含随机生成器设计）
 │   ├── api/                  占位（Phase 6+ FastAPI）
@@ -108,9 +111,11 @@ PYTHONPATH=src python -m unittest tests.test_config.TestValidationErrors.test_ed
 | tests.test_orders             |  9 |
 | **tests.test_graph**          | 40 |
 | **tests.test_config**         | 20 |
-| **tests.test_queue** (新增)   | 16 |
-| **tests.test_phase1_regression** (新增) | 24 |
-| **合计**                      | **161** |
+| **tests.test_queue** (Phase 1) | 16 |
+| **tests.test_phase1_regression** (Phase 1) | 24 |
+| **tests.test_heap** (Phase 2 新增) | 32 |
+| **tests.test_dijkstra** (Phase 2 新增) | 31 |
+| **合计**                      | **224** |
 
 ## 重新生成固定场景
 
