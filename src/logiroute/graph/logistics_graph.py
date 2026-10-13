@@ -295,9 +295,13 @@ class LogisticsGraph:
               ...
             }
 
-        节点的邻接列表按 target_id 升序，保证输出可复现。
+        节点的邻接列表按 ``target_id`` **字典序升序**输出，以保证序列化结果
+        可复现（与插入顺序解耦，方便测试与 diff）。**该排序仅用于导出
+        视图**，不参与任何路径算法；``sorted()`` 替代的代价是
+        ``Σ deg(v) log deg(v)`` 的局部开销。
 
-        Time   : O(V + E) —— 写入所有节点与它们的出边。
+        Time   : O(V + E) 主干写入 + O(Σ deg(v) log deg(v)) 排序；最坏
+                 O(V + E log V)（密集图退化情形）。
         Space  : O(V + E) 新建字典 / 列表。
         """
         result: dict[str, list[dict[str, Any]]] = {}
@@ -324,7 +328,7 @@ class LogisticsGraph:
         *,
         node_order: Iterable[str] | None = None,
     ) -> tuple[list[str], list[list[float]]]:
-        """导出邻接矩阵。
+        """导出邻接矩阵（**直接邻接**，不是任意两点最短路距离）。
 
         Args:
             metric: 权重指标，必须为 ``"distance"`` / ``"travel_time"`` / ``"cost"``。
@@ -333,9 +337,10 @@ class LogisticsGraph:
 
         Returns:
             ``(node_ids, matrix)``。``matrix[i][j]`` 为从 ``node_ids[i]`` 到
-            ``node_ids[j]`` 的边权重；无对应边时为 ``float('inf')``。
+            ``node_ids[j]`` 的**直接边**权重；无对应边时为 ``float('inf')``。
+            主对角线（``i == j``）无自环时为 ``inf``。
 
-        Time   : O(V + E) —— 遍历邻接表填充矩阵。
+        Time   : O(V² + E) —— V×V 矩阵初始化 O(V²)，加上遍历邻接表填充 O(E)。
         Space  : O(V²) 新矩阵。
 
         Raises:
@@ -353,6 +358,14 @@ class LogisticsGraph:
             unknown = [nid for nid in ordered_ids if nid not in self._nodes]
             if unknown:
                 raise ValueError(f"unknown node ids in node_order: {unknown}")
+            if len(set(ordered_ids)) != len(ordered_ids):
+                seen: set[str] = set()
+                dups: list[str] = []
+                for nid in ordered_ids:
+                    if nid in seen and nid not in dups:
+                        dups.append(nid)
+                    seen.add(nid)
+                raise ValueError(f"duplicate node ids in node_order: {dups}")
 
         index = {nid: i for i, nid in enumerate(ordered_ids)}
         n = len(ordered_ids)
