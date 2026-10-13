@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import json
 import math
-from collections import Counter, deque
+from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -32,6 +32,7 @@ from logiroute.core.nodes import Node
 from logiroute.core.orders import Order
 from logiroute.core.vehicles import Vehicle
 from logiroute.graph.logistics_graph import LogisticsGraph
+from logiroute.graph.queue import ArrayQueue
 
 
 # ---------------------------------------------------------------------------
@@ -475,6 +476,9 @@ def _parse_order(raw: Any) -> Order:
 def _is_weakly_connected(graph: LogisticsGraph, nodes: list[Node]) -> bool:
     """弱连通性：在忽略方向的项目化图上，从任意节点都能到达任意节点。
 
+    使用自实现的 :class:`ArrayQueue` 作为 BFS 队列，避免 ``list.pop(0)`` 的
+    O(n) 头部删除，同时不引入 ``collections.deque`` 这样的标准库数据结构。
+
     Time   : O(V + E) —— BFS 一次。
     Space  : O(V) 队列与 visited 集合。
     """
@@ -486,39 +490,50 @@ def _is_weakly_connected(graph: LogisticsGraph, nodes: list[Node]) -> bool:
             adjacency[src_id].append(edge.target_id)
             adjacency[edge.target_id].append(src_id)
     start = nodes[0].id
-    visited = {start}
-    queue: deque[str] = deque([start])
-    while queue:
-        u = queue.popleft()
+    visited: set[str] = {start}
+    queue: ArrayQueue[str] = ArrayQueue()
+    queue.enqueue(start)
+    while not queue.is_empty():
+        u = queue.dequeue()
         for v in adjacency[u]:
             if v not in visited:
                 visited.add(v)
-                queue.append(v)
+                queue.enqueue(v)
     return visited == {n.id for n in nodes}
 
 
 def _is_strongly_connected(graph: LogisticsGraph, nodes: list[Node]) -> bool:
-    """强连通性：在有向项目化图上，任意节点间互达。
+    """强连通性：在有向图上，任意节点对互达。
 
-    使用 Kosaraju 双遍 DFS（手写递归版以避免 ``set`` 与 ``reversed`` 的依赖）：
-    若正图与反图都能从同一起点访问全部节点，则原图强连通。
+    **算法说明（基于正反图的双向 DFS 强连通性判定）**：
 
-    Time   : O(V + E)
-    Space  : O(V) 栈与 visited。
+    严格意义上这不是完整 Kosaraju 强连通分量分解算法（完整 Kosaraju 需要
+    Pass 1 记录 DFS 完成时间序、Pass 2 按倒序在反图 DFS 求出每个 SCC）。
+    本函数仅做"是否整体强连通"的判定，等价于"任取起点 s，在正图上从 s
+    能到达所有节点 **且** 在反图上从 s 也能到达所有节点"——这是 Kosaraju
+    定理的判定情形，比完整 SCC 分解简单，但仍保持 O(V + E) 复杂度与
+    强连通性判定的完备正确性。
+
+    DFS 自身采用**显式栈迭代**实现（``_dfs_reaches_all``），不调用任何
+    第三方图遍历 API。
+
+    Time   : O(V + E) —— 两次 DFS。
+    Space  : O(V) 临时邻接表、栈与 visited。
     """
     if not nodes:
         return True
     node_ids = [n.id for n in nodes]
-    adjacency_fwd: dict[str, list[str]] = {n.id: [] for n in nodes}
-    adjacency_rev: dict[str, list[str]] = {n.id: [] for n in nodes}
+    all_ids: set[str] = set(node_ids)
+    adjacency_fwd: dict[str, list[str]] = {nid: [] for nid in node_ids}
+    adjacency_rev: dict[str, list[str]] = {nid: [] for nid in node_ids}
     for src_id in node_ids:
         for edge in graph.get_neighbors(src_id):
             adjacency_fwd[src_id].append(edge.target_id)
             adjacency_rev[edge.target_id].append(src_id)
     start = node_ids[0]
-    if not _dfs_reaches_all(start, adjacency_fwd, set(node_ids)):
+    if not _dfs_reaches_all(start, adjacency_fwd, all_ids):
         return False
-    if not _dfs_reaches_all(start, adjacency_rev, set(node_ids)):
+    if not _dfs_reaches_all(start, adjacency_rev, all_ids):
         return False
     return True
 
@@ -528,7 +543,7 @@ def _dfs_reaches_all(
     adjacency: dict[str, list[str]],
     all_ids: set[str],
 ) -> bool:
-    """手写 DFS；不使用任何第三方库。
+    """手写 DFS（**显式栈迭代**，非递归）；不使用任何第三方库。
 
     Time   : O(V + E)
     Space  : O(V) 显式栈与 visited。
