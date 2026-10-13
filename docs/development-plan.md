@@ -8,7 +8,7 @@
 | Phase | 名称                                          | 状态       |
 | ----- | --------------------------------------------- | ---------- |
 | 1     | 工程初始化、配置驱动与核心数据结构             | ✅ 已完成  |
-| 2     | 最短距离路径规划（手写 Dijkstra + 手写堆）      | ⏳ 待启动  |
+| 2     | 最短距离路径规划（手写 Dijkstra + 手写堆）      | ✅ 已完成  |
 | 3     | 多目标综合优化与最低成本路径                    | ⏳ 待启动  |
 | 4     | 配送顺序规划、时间窗口硬约束                    | ⏳ 待启动  |
 | 5     | 随机场景生成与动态调度                          | ⏳ 待启动  |
@@ -21,6 +21,8 @@
 
 **目标**：基于 `LogisticsGraph` 实现单源最短路径算法。**关键：堆必须手写，
 不得使用 `heapq`；排序需要时也使用手写排序实现。**
+
+**状态：✅ 已完成（2026-10-13）**
 
 ### 主要工作项
 
@@ -37,10 +39,14 @@
 
 ### 交付物
 
-* `src/logiroute/algorithms/heap.py`（手写堆）
-* `src/logiroute/algorithms/dijkstra.py`
-* `tests/test_dijkstra.py`（至少 30 用例）
-* `docs/algorithms-dijkstra.md`：伪代码 + 复杂度 + 度量切换说明
+* `src/logiroute/algorithms/heap.py`（手写堆）—— **✅ 已交付**
+* `src/logiroute/algorithms/dijkstra.py` —— **✅ 已交付**
+* `tests/test_heap.py`（32 用例）—— **✅ 已交付**
+* `tests/test_dijkstra.py`（31 用例）—— **✅ 已交付**
+* `docs/algorithms-minheap.md` —— **✅ 已交付**
+* `docs/algorithms-dijkstra.md` —— **✅ 已交付**
+* `docs/phase2-teacher-defense.md` —— **✅ 已交付**
+* `scripts/demo_dijkstra.py` —— **✅ 已交付**
 
 ## Phase 3 — 多目标综合优化
 
