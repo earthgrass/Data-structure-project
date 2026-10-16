@@ -54,9 +54,10 @@ class GeneratorConfig:
     capacity: float = 250.0
     service_time: float = 5.0
     initial_time: float = 540.0
-    # window slack（围绕 backbone 到达时刻）
-    time_window_early_slack: float = 30.0
-    time_window_late_slack: float = 60.0
+    # 窗口：所有订单共享一个扁平宽窗口，
+    # tw_start = initial_time - 30 ; tw_end = initial_time + N * (svc + 60) + extra
+    # 默认 extra = 120 minutes —— 保证 NN / CFI / 2-opt 在不同访问顺序下都不漏
+    window_total_extra: float = 120.0
     # 需求
     min_demand: float = 5.0
     max_demand: float = 15.0
@@ -88,12 +89,11 @@ class GeneratorConfig:
             raise ValueError("orders_count must be >= 1")
         if self.capacity <= 0:
             raise ValueError("capacity must be positive")
-        if self.time_window_early_slack < 0 or self.time_window_late_slack < 0:
-            raise ValueError("time window slacks must be non-negative")
+        if self.window_total_extra < 0:
+            raise ValueError("window_total_extra must be non-negative")
         if not 0.0 <= self.urgent_fraction <= 1.0:
             raise ValueError("urgent_fraction must be in [0, 1]")
         if self.max_demand > self.capacity:
-            # 单订单需求极端时可能超过车辆上限 = 单车不可承载 → 拒绝
             raise ValueError(
                 f"max_demand ({self.max_demand}) must be <= vehicle capacity "
                 f"({self.capacity}) to keep every order individually serviceable"
