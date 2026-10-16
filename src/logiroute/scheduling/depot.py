@@ -54,21 +54,38 @@ def _pick_courier(scenario: ScenarioBundle, vehicle_id: str) -> Courier | None:
 def select_depot(
     scenario: ScenarioBundle,
     depot_id: str | None = None,
+    min_total_demand: float | None = None,
 ) -> DepotChoice:
     """挑选本次调度的**唯一**车辆与对应仓库。
 
     Args:
         scenario: 加载完毕的 :class:`ScenarioBundle`。
         depot_id: 显式指定的仓库 ID；为 ``None`` 时自动挑选。
+        min_total_demand: 本次调度的最小装载需求；为 ``None`` 时按"lex-min
+            IDLE vehicle"策略；当给出时，**额外**过滤掉容量严格小于
+            ``min_total_demand`` 的车辆。这避免了"车选上了但装不下"的
+            灾难 —— 满足 AGENTS §3.6 单车辆 + 全订单服务的硬约束。
 
     Returns:
         :class:`DepotChoice` —— 选定车辆 + 仓库节点 ID + 委派配送员。
 
     Raises:
-        NoAvailableVehicleError: 无 IDLE 车辆 / 无仓库匹配。
+        NoAvailableVehicleError: 无 IDLE 车辆 / 无仓库匹配 / 容量不足。
         DepotNotFoundError: 显式指定 ``depot_id`` 但不是仓库或无对应 IDLE 车辆。
     """
     warehouses = _warehouse_ids(scenario)
+
+    def _eligible(v) -> bool:
+        if v.status is not VehicleStatus.IDLE:
+            return False
+        if v.current_node_id not in warehouses:
+            return False
+        if (
+            min_total_demand is not None
+            and v.capacity + 1e-9 < min_total_demand
+        ):
+            return False
+        return True
 
     if depot_id is not None:
         if depot_id not in warehouses:
@@ -77,10 +94,15 @@ def select_depot(
                 f"(known warehouses: {sorted(warehouses)})"
             )
         for v in sorted(scenario.vehicles, key=lambda x: x.id):
-            if (
-                v.status is VehicleStatus.IDLE
-                and v.current_node_id == depot_id
-            ):
+            if v.current_node_id == depot_id and v.status is VehicleStatus.IDLE:
+                if (
+                    min_total_demand is not None
+                    and v.capacity + 1e-9 < min_total_demand
+                ):
+                    raise DepotNotFoundError(
+                        f"vehicle {v.id!r} at depot {depot_id!r} has capacity "
+                        f"{v.capacity} < required {min_total_demand}"
+                    )
                 return DepotChoice(
                     vehicle=v,
                     depot_id=depot_id,
@@ -90,21 +112,23 @@ def select_depot(
             f"no IDLE vehicle currently at depot {depot_id!r}"
         )
 
-    # 自动选：lex-min IDLE vehicle at any warehouse
+    # 自动选：lex-min 满足所有约束的 IDLE vehicle
     candidates = sorted(
-        (
-            v
-            for v in scenario.vehicles
-            if v.status is VehicleStatus.IDLE
-            and v.current_node_id in warehouses
-        ),
+        (v for v in scenario.vehicles if _eligible(v)),
         key=lambda v: v.id,
     )
     if not candidates:
+        reasons = []
+        if min_total_demand is not None:
+            reasons.append(
+                f"min_total_demand={min_total_demand}"
+            )
         raise NoAvailableVehicleError(
-            "no IDLE vehicle currently parked at any warehouse node; "
+            "no IDLE vehicle currently parked at any warehouse node "
+            f"with {'required capacity' if min_total_demand is not None else 'available status'}; "
             f"vehicles={[v.id for v in scenario.vehicles]}, "
-            f"warehouses={sorted(warehouses)}"
+            f"warehouses={sorted(warehouses)}, "
+            + (" ".join(reasons))
         )
     chosen = candidates[0]
     return DepotChoice(

@@ -32,6 +32,7 @@ from logiroute.scheduling.path_provider import PathProvider
 from logiroute.scheduling.types import (
     EmptyOrdersError,
     InvalidObjectiveError,
+    NoAvailableVehicleError,
     PlanningContext,
     PlanningError,
     PlanningStats,
@@ -282,6 +283,26 @@ def plan_deliveries(
             iterations=0,
             runtime_seconds=0.0,
         )
+
+    # --- 4b. capacity-guard: 若已选车辆容量 < 总需求则重选 / 抛错 ---
+    total_demand = sum(o.demand for o in eligible_orders)
+    if total_demand > choice.vehicle.capacity + 1e-9:
+        # 自动重选一次，看是否有更大容量的 IDLE 车辆可用
+        try:
+            choice = select_depot(
+                scenario,
+                depot_id=None,
+                min_total_demand=total_demand,
+            )
+            depot_node = choice.depot_id
+        except NoAvailableVehicleError:
+            raise NoAvailableVehicleError(
+                f"auto-selected vehicle {choice.vehicle.id!r} has capacity "
+                f"{choice.vehicle.capacity} but total eligible order demand "
+                f"is {total_demand} (>= capacity); no larger IDLE vehicle "
+                f"at any warehouse; AGENTS §3.6 single-vehicle is infeasible "
+                f"for this scenario"
+            )
 
     # --- 5. 构造 PathProvider + PlanningContext ---
     path_provider = PathProvider(scenario.graph)
