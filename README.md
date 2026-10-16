@@ -9,7 +9,13 @@
 ## 当前开发阶段
 
 **Phase 1 — 工程初始化、配置驱动与核心数据结构 ✅ 已完成**  
-**Phase 2 — 手写最小堆 + Dijkstra 最短路径（distance / travel_time / cost） ✅ 已完成**
+**Phase 2 — 手写最小堆 + Dijkstra 最短路径（distance / travel_time / cost） ✅ 已完成**  
+**Phase 3 — 单车辆配送路径规划（最近邻 / 可行插入 / 2-opt）⏳ 待启动**
+
+> 教师原始题目要求**单车辆**配送：从仓库出发，遍历所有待配送点
+> 后返回仓库。历史多车辆方案作废；后续阶段（含 Phase 4 随机场景、
+> Phase 5 Dashboard、Phase 6 动态重规划）均必须遵守单车辆约束。
+> 详见 [`AGENTS.md`](AGENTS.md) §3.6 与 `docs/development-plan.md`。
 
 | 类别 | 内容 |
 | --- | --- |
@@ -19,7 +25,7 @@
 | 自实现数据结构 | `ArrayQueue`（FIFO 队列） / `MinHeap`（索引式二叉最小堆） |
 | 算法 | BFS 弱连通 / 双向 DFS 强连通 / **Dijkstra 三种 metric** |
 | 配置层 | `config/scenario.json` + `logiroute.config.loader` |
-| 固定场景 | 35 节点 / 192 有向边 / 强连通 / 4 车辆 / 4 配送员 / 20 订单 |
+| 固定场景 | 35 节点 / 192 有向边 / 强连通 / 4 车辆（**实际调度仅启用 1 辆**）/ 4 配送员 / 20 订单 |
 | 测试 | 全部用 `unittest`，共 **224 用例**，全部通过 |
 | 文档 | `AGENTS.md` + `docs/architecture.md` + `docs/development-plan.md` + `docs/data-structures-and-algorithms.md` + `docs/algorithms-{minheap,dijkstra}.md` + 2 份教师答辩材料 |
 
