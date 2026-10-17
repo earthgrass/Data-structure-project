@@ -1,4 +1,4 @@
-/* Phase 5 —— 全局 reset + 基础排版 */
+/* Phase 5.1 —— 全局 reset + 基础排版 */
 
 * { box-sizing: border-box; }
 
@@ -27,7 +27,7 @@ select, input, button {
   font-family: inherit;
 }
 
-/* dataviz：值/标签/图例一律用 primary/secondary/muted ink；不用系列色 */
+/* dataviz：值 / 标签 / 图例一律用 primary/secondary/muted ink；不用系列色 */
 .value,
 .label,
 .legend-text,
@@ -42,4 +42,47 @@ select, input, button {
 
 .muted {
   color: var(--text-muted);
+}
+
+/* —— 共享工具类 —— */
+.numeric {
+  font-variant-numeric: tabular-nums;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.scroll-y {
+  overflow-y: auto;
+}
+
+.row-flex {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* —— 可访问性：focus 可见 —— */
+button:focus-visible,
+select:focus-visible,
+input:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+  border-color: var(--border-focus);
+}
+
+/* —— 滚动条（仅 Webkit，Chromium） —— */
+.scroll-y::-webkit-scrollbar {
+  width: 8px;
+}
+.scroll-y::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scroll-y::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+}
+.scroll-y::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }
