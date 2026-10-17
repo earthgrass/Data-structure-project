@@ -55,15 +55,12 @@ export function HeaderBar({
           <input
             id="seed-input"
             type="number"
-            defaultValue={seed}
-            onBlur={(e) => {
+            // 受控：每次 onChange 立即同步到 React state
+            // 避免「输入新 seed 但未失焦就点击生成」导致的 seed 不一致
+            value={seed}
+            onChange={(e) => {
               const n = parseInt(e.target.value, 10);
-              if (Number.isFinite(n) && n !== seed) onSeedChange(n);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                (e.target as HTMLInputElement).blur();
-              }
+              if (Number.isFinite(n)) onSeedChange(n);
             }}
             aria-label="随机场景种子"
           />
