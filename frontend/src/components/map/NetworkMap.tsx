@@ -1,15 +1,17 @@
-// Phase 5.1 —— NetworkMap：地图主视觉容器。
-// 内含：顶部工具栏（场景 / seed / 车辆 / 目标 / 边开关）+ BeijingMap + 图例 + 免责声明。
+// Phase 5.3 —— NetworkMap：路线网络示意图容器。
+// 内含：顶部工具栏（场景名 + 站点段数 + 边开关）+ RouteSchematic + 图例。
+// 校验器状态（PASS/FAIL）已迁移到 SideNav 数据区（Phase 5.3+）。
 
 import { useEffect, useState } from 'react';
-import type { GraphData, RoutePlanData, ScheduleResult, ValidationReport } from '../../types';
+import type { GraphData, RoutePlanData, ScheduleResult } from '../../types';
 import { RouteSchematic } from './RouteSchematic';
 import { MapLegend } from './MapLegend';
 
 interface NetworkMapProps {
   graph: GraphData | null;
   route: RoutePlanData | null;
-  validation: ValidationReport | null;
+  /** 已废弃：校验状态由 SideNav 展示；保留字段以兼容调用方 */
+  validation?: unknown;
   scenarioName: string | null;
   /** 当前展示结果的目标 / 计划摘要（用于工具栏右上角状态徽章） */
   resultSummary: ScheduleResult | null;
@@ -21,7 +23,6 @@ interface NetworkMapProps {
 export function NetworkMap({
   graph,
   route,
-  validation,
   scenarioName,
   resultSummary,
   activeTimelineNodeId,
@@ -33,13 +34,12 @@ export function NetworkMap({
     setShowEdges(true);
   }, [scenarioName]);
 
-  const feasibility = validation?.feasible ?? null;
   const stopsCount = route?.stop_sequence.length ?? 0;
 
   return (
-    <div className="map-panel" role="region" aria-label="物流网络地图">
+    <div className="map-panel" role="region" aria-label="配送网络示意图">
       <div className="map-toolbar">
-        <div className="map-title">路网地图 · 示意场景</div>
+        <div className="map-title">配送网络</div>
         <div className="map-toolbar-meta">
           {scenarioName && (
             <span>
@@ -47,15 +47,6 @@ export function NetworkMap({
                 场景：
               </strong>
               {scenarioName}
-            </span>
-          )}
-          {feasibility != null && (
-            <span
-              className={`badge ${feasibility ? 'badge-feasible' : 'badge-infeasible'}`}
-              style={{ padding: '2px 8px', fontSize: 10 }}
-            >
-              <span className="dot" />
-              {feasibility ? 'validator PASS' : 'validator FAIL'}
             </span>
           )}
           {stopsCount > 0 && (
@@ -83,11 +74,6 @@ export function NetworkMap({
         {resultSummary && (
           <MapLegend showNetworkEdges={showEdges} />
         )}
-      </div>
-
-      <div className="map-disclaimer">
-        地图区域基于北京 16 区示意 GeoJSON 投影，节点坐标由 Phase 4 随机场景生成器产出，
-        边权为系统生成的课程设计数据；不代表真实行政区划或真实道路导航结果。
       </div>
     </div>
   );
