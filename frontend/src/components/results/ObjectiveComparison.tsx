@@ -1,4 +1,4 @@
-// Phase 5 —— 双目标比较面板（distance vs cost，不再比较三种调度算法）。
+// Phase 5 验收整改 —— ObjectiveComparison：并排双卡片。
 
 import type { CompareResponse } from '../../types';
 
@@ -15,89 +15,70 @@ export function ObjectiveComparison({ data }: ObjectiveComparisonProps) {
   if (!data) {
     return (
       <div className="comparison">
-        <h3>双目标比较 <span className="meta">点击「双目标比较」生成</span></h3>
+        <div className="comparison-head">
+          <h3>双目标比较</h3>
+          <span className="meta">点击「双目标比较」生成</span>
+        </div>
       </div>
     );
   }
+
+  // 两张并排卡片，每张一个目标
+  const cards = data.objectives.map((obj) => {
+    const r = data.results[obj];
+    const isFull = r.unserved_orders.length === 0;
+    return (
+      <div
+        key={obj}
+        className={`comparison-card ${obj === 'cost' ? 'cost-card' : ''}`}
+      >
+        <h4>
+          {OBJECTIVE_LABELS[obj] ?? obj}
+          <span className="objective-tag">{obj}</span>
+        </h4>
+        <div className={`row ${isFull ? 'is-good' : 'is-bad'}`}>
+          <span className="k">已配送 / 总订单</span>
+          <span className="v">
+            {r.served_order_ids.length} / {r.served_order_ids.length + r.unserved_orders.length}
+          </span>
+        </div>
+        <div className="row">
+          <span className="k">总距离</span>
+          <span className="v">{r.total_distance.toFixed(2)}</span>
+        </div>
+        <div className="row">
+          <span className="k">总时间</span>
+          <span className="v">{r.total_travel_time.toFixed(2)}</span>
+        </div>
+        <div className="row">
+          <span className="k">总成本</span>
+          <span className="v">{r.total_cost.toFixed(2)}</span>
+        </div>
+        <div className="row">
+          <span className="k">主目标值</span>
+          <span className="v">{r.main_objective_total.toFixed(2)}</span>
+        </div>
+        <div className="row">
+          <span className="k">规划耗时 (s)</span>
+          <span className="v">{r.planning_stats.runtime_seconds.toFixed(3)}</span>
+        </div>
+        <div className={`row ${r.is_feasible ? 'is-good' : 'is-bad'}`}>
+          <span className="k">可行性</span>
+          <span className="v">{r.is_feasible ? '✓ feasible' : '✗ infeasible'}</span>
+        </div>
+      </div>
+    );
+  });
+
   return (
     <div className="comparison">
-      <h3>
-        双目标比较
+      <div className="comparison-head">
+        <h3>双目标比较</h3>
         <span className="meta">
-          同场景快照 · 主目标 {data.objectives.join(' + ')}
+          同场景快照 · 两种主目标统一规划器（CFI + 2-opt）
         </span>
-      </h3>
-      <table className="comparison-table">
-        <thead>
-          <tr>
-            <th>指标</th>
-            {data.objectives.map((o) => (
-              <th key={o}>{OBJECTIVE_LABELS[o] ?? o}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>已配送 / 总订单</td>
-            {data.objectives.map((o) => {
-              const r = data.results[o];
-              const total = r.served_order_ids.length + r.unserved_orders.length;
-              return (
-                <td key={o}>
-                  <span className={r.is_feasible ? 'good' : 'bad'}>
-                    {r.served_order_ids.length}/{total}
-                  </span>
-                </td>
-              );
-            })}
-          </tr>
-          <tr>
-            <td>总距离</td>
-            {data.objectives.map((o) => (
-              <td key={o}>{data.results[o].total_distance.toFixed(2)}</td>
-            ))}
-          </tr>
-          <tr>
-            <td>总时间</td>
-            {data.objectives.map((o) => (
-              <td key={o}>{data.results[o].total_travel_time.toFixed(2)}</td>
-            ))}
-          </tr>
-          <tr>
-            <td>总成本</td>
-            {data.objectives.map((o) => (
-              <td key={o}>{data.results[o].total_cost.toFixed(2)}</td>
-            ))}
-          </tr>
-          <tr>
-            <td>主目标</td>
-            {data.objectives.map((o) => (
-              <td key={o}>{data.results[o].main_objective_total.toFixed(2)}</td>
-            ))}
-          </tr>
-          <tr>
-            <td>规划耗时(s)</td>
-            {data.objectives.map((o) => (
-              <td key={o}>
-                {data.results[o].planning_stats.runtime_seconds.toFixed(3)}
-              </td>
-            ))}
-          </tr>
-          <tr>
-            <td>可行性</td>
-            {data.objectives.map((o) => {
-              const r = data.results[o];
-              return (
-                <td key={o}>
-                  <span className={r.is_feasible ? 'good' : 'bad'}>
-                    {r.is_feasible ? 'feasible ✓' : 'infeasible ✗'}
-                  </span>
-                </td>
-              );
-            })}
-          </tr>
-        </tbody>
-      </table>
+      </div>
+      <div className="comparison-cards">{cards}</div>
     </div>
   );
 }

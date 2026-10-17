@@ -1,4 +1,4 @@
-// Phase 5 —— 顶部场景信息条：seed 输入 + 随机生成 + 当前场景摘要。
+// Phase 5 验收整改 —— HeaderBar（更专业的 badge 风格）。
 
 import type { ValidationReport } from '../../types';
 
@@ -30,10 +30,10 @@ export function HeaderBar({
   return (
     <div className="topbar">
       <h1>LogiRoute</h1>
-      <span className="subtitle">北京区域物流配送规划 · Phase 5</span>
+      <span className="subtitle">北京区域物流配送规划系统 · Phase 5</span>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <label style={{ fontSize: 12, color: 'var(--text-secondary)' }}>seed</label>
+      <div className="seed-input">
+        <label>seed</label>
         <input
           type="number"
           defaultValue={seed}
@@ -41,32 +41,35 @@ export function HeaderBar({
             const n = parseInt(e.target.value, 10);
             if (Number.isFinite(n) && n !== seed) onSeedChange(n);
           }}
-          style={{
-            width: 80, padding: '4px 6px',
-            border: '1px solid var(--border-default)',
-            borderRadius: 4, fontSize: 13,
-          }}
         />
-        <button
-          className="btn btn-primary"
-          onClick={onGenerate}
-          disabled={isGenerating}
-        >
-          {isGenerating ? '生成中…' : '随机生成场景'}
-        </button>
       </div>
 
+      <button
+        className="btn btn-primary"
+        onClick={onGenerate}
+        disabled={isGenerating}
+      >
+        {isGenerating ? '生成中…' : '随机生成场景'}
+      </button>
+
       <div className="summary">
-        <span className="pill">{scenarioName ?? '—'}</span>
-        <span className="pill">节点 {nodeCount}</span>
-        <span className="pill">边 {edgeCount}</span>
-        <span className="pill">订单 {orderCount}</span>
-        <span className="pill vehicle">
-          车辆 {vehicleCount}（严格单车辆）
+        <span className="badge badge-neutral">{scenarioName ?? '—'}</span>
+        <span className="badge badge-neutral">
+          <span className="dot" /> 节点 {nodeCount}
+        </span>
+        <span className="badge badge-neutral">
+          <span className="dot" /> 边 {edgeCount}
+        </span>
+        <span className="badge badge-neutral">
+          <span className="dot" /> 订单 {orderCount}
+        </span>
+        <span className="badge badge-vehicle">
+          <span className="dot" /> 车辆 {vehicleCount}（严格单车辆）
         </span>
         {validation && (
-          <span className={`pill ${validation.feasible ? 'feasible' : 'infeasible'}`}>
-            validator：{validation.feasible ? 'feasible' : 'infeasible'}
+          <span className={`badge ${validation.feasible ? 'badge-feasible' : 'badge-infeasible'}`}>
+            <span className="dot" />
+            validator：{validation.feasible ? 'PASS' : 'FAIL'}
           </span>
         )}
       </div>
