@@ -26,6 +26,7 @@ from logiroute.scheduling.algorithms.insertion import (
 )
 from logiroute.scheduling.algorithms.nearest_neighbor import nearest_neighbor
 from logiroute.scheduling.algorithms.two_opt import constrained_two_opt
+from logiroute.scheduling.algorithms.unified import unified_planner
 from logiroute.scheduling.depot import select_depot
 from logiroute.scheduling.feasibility import check_feasibility
 from logiroute.scheduling.path_provider import PathProvider
@@ -177,16 +178,20 @@ class _FeasibilityCounter:
 
 def plan_deliveries(
     scenario: ScenarioBundle,
-    algorithm: str = "nearest_neighbor",
+    algorithm: str = "unified",
     objective: str = "distance",
     depot_id: str | None = None,
     initial_time: float | None = None,
 ) -> ScheduleResult:
     """单车辆闭合回路规划统一入口。
 
+    Phase 5 默认接口：``plan_deliveries(scenario, objective)``。
+
     Args:
         scenario: 加载完毕的 :class:`ScenarioBundle`。
-        algorithm: ``"nearest_neighbor"`` / ``"insertion"`` / ``"two_opt"`` 之一。
+        algorithm: 默认 ``"unified"``（CFI + 受约束 2-opt 组合）；
+            其它保留值 ``"nearest_neighbor"`` / ``"insertion"`` / ``"two_opt"``
+            用于回归测试与实验比较，**不**作为产品公开 API。
         objective: 主目标 ``"distance"`` 或 ``"cost"``；``travel_time`` 拒绝。
         depot_id: 显式仓库；``None`` 时自动选 lex-min IDLE 车辆所在仓库。
         initial_time: 出发时刻；``None`` 时取 ``scenario.simulation["initial_time"]``。
@@ -322,7 +327,13 @@ def plan_deliveries(
 
     # --- 6. 调度（带计时） ---
     t0 = time.monotonic()
-    if algorithm == "nearest_neighbor":
+    if algorithm == "unified":
+        # Phase 5 默认路径：CFI 构造初始可行路线 + 受约束 2-opt 局部优化
+        plan = unified_planner(ctx, eligible_orders)
+        extra_unserved = _lift_unserved_from_notes(plan)
+        # 2-opt 在 notes 中可能含有 iterations；CFI 不写
+        iterations = int(plan.notes.get("iterations", 0))
+    elif algorithm == "nearest_neighbor":
         plan = nearest_neighbor(ctx, eligible_orders)
         extra_unserved = _unserved_for_nn(plan, eligible_orders)
         iterations = 0

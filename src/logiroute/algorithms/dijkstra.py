@@ -373,11 +373,12 @@ def shortest_path(
         cur = prev[cur]
     path.reverse()
 
-    # 同一路径在另外两个 metric 下的总权重
+    # 同一路径在三种 metric 下的总权重（含主指标）。
+    # Phase 5 规格 §3.3：``distance`` / ``travel_time`` / ``cost`` 必须
+    # 都来自同一条实际选定的路径，并汇总为整条配送路线的三个指标；
+    # 因此 ``cross_metrics`` 现包含主指标本身（不再跳过）。
     cross: dict[str, float] = {}
     for m in SUPPORTED_METRICS:
-        if m == metric:
-            continue
         total = 0.0
         for i in range(len(path) - 1):
             edge = graph.get_edge(path[i], path[i + 1])
