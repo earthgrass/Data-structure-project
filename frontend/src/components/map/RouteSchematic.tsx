@@ -28,6 +28,10 @@ export interface RouteSchematicProps {
   activeTimelineNodeId?: string | null;
   /** 节点 hover 时通知父组件（用于时间轴联动） */
   onNodeHover?: (nodeId: string | null) => void;
+  /** 实时回放：车辆位置（from → to，0≤t≤1） */
+  vehiclePosition?: { fromId: string; toId: string; t: number } | null;
+  /** 实时回放：已完成的站点集合 */
+  completedStops?: ReadonlySet<string>;
 }
 
 interface HoverInfo {
@@ -45,6 +49,8 @@ export function RouteSchematic({
   showNetworkEdges = true,
   activeTimelineNodeId = null,
   onNodeHover,
+  vehiclePosition = null,
+  completedStops,
 }: RouteSchematicProps) {
   const [hoverNodeId, setHoverNodeId] = useState<string | null>(null);
   const positionsRef = useRef<Map<string, { id: string; x: number; y: number }>>(
@@ -196,7 +202,46 @@ export function RouteSchematic({
         onHover={handleHover}
       />
 
-      {/* 3. 节点悬停 tooltip（HTML overlay） */}
+      {/* 3. 完成标记（绿色小勾） */}
+      {completedStops && completedStops.size > 0 && (
+        <g className="completed-marks" aria-hidden>
+          {Array.from(completedStops).map((id) => {
+            const pos = positions.get(id);
+            if (!pos) return null;
+            return (
+              <g key={`completed-${id}`} transform={`translate(${pos.x + 10}, ${pos.y - 10})`}>
+                <circle r={9} fill="var(--status-real)" stroke="var(--surface-panel)" strokeWidth={1.5} />
+                <path
+                  d="M -3.5 0 L -1 2.5 L 3.5 -2.5"
+                  fill="none"
+                  stroke="var(--text-on-accent)"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </g>
+            );
+          })}
+        </g>
+      )}
+
+      {/* 4. 实时回放：车辆标记（橙色填充圆） */}
+      {vehiclePosition && (() => {
+        const from = positions.get(vehiclePosition.fromId);
+        const to = positions.get(vehiclePosition.toId);
+        if (!from || !to) return null;
+        const t = vehiclePosition.t;
+        const x = from.x + (to.x - from.x) * t;
+        const y = from.y + (to.y - from.y) * t;
+        return (
+          <g className="vehicle-marker" aria-label="当前车辆位置">
+            <circle cx={x} cy={y} r={10} fill="var(--accent-primary)" fillOpacity={0.18} />
+            <circle cx={x} cy={y} r={5} fill="var(--accent-primary)" stroke="var(--surface-panel)" strokeWidth={2} />
+          </g>
+        );
+      })()}
+
+      {/* 5. 节点悬停 tooltip（HTML overlay） */}
       {hoverInfo && hoverPos && (
         <foreignObject
           x={Math.min(hoverPos.x + 10, VIEW_W - 230)}

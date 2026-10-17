@@ -11,6 +11,7 @@
 // 严格单车辆约束：在「数据」组底部固定显示「已锁定」徽章（AGENTS §3.6）。
 
 import type { Objective, ValidationReport } from '../../types';
+import type { PlaybackView } from '../../state/usePlayback';
 
 interface SideNavProps {
   // —— 规划组 ——
@@ -24,6 +25,10 @@ interface SideNavProps {
   onCompare: () => void;
   isRunning: boolean;
   hasScenario: boolean;
+  hasPlan: boolean;
+  playback: PlaybackView;
+  onPlay: () => void;
+  onReset: () => void;
 
   // —— 数据组 ——
   scenarioName: string | null;
@@ -69,6 +74,10 @@ export function SideNav({
   onCompare,
   isRunning,
   hasScenario,
+  hasPlan,
+  playback,
+  onPlay,
+  onReset,
   scenarioName,
   nodeCount,
   edgeCount,
@@ -153,6 +162,28 @@ export function SideNav({
           >
             双目标比较
           </button>
+
+          <div className="sidenav-divider" aria-hidden />
+
+          <button
+            className="btn btn-accent sidenav-row sidenav-row-primary"
+            onClick={onPlay}
+            disabled={!hasPlan || playback.isPlaying}
+          >
+            {playback.isPlaying
+              ? '播放中…'
+              : playback.isDone
+                ? '重播配送过程'
+                : '▶ 播放配送过程'}
+          </button>
+          {(playback.isPlaying || playback.isDone) && (
+            <button
+              className="btn btn-ghost sidenav-row sidenav-row-secondary"
+              onClick={onReset}
+            >
+              重置
+            </button>
+          )}
 
           {isRunning && (
             <div className="status-line running sidenav-status">调度计算中…</div>

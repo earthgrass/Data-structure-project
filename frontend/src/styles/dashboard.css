@@ -495,6 +495,17 @@
   padding: 0;
 }
 
+.sidenav-divider {
+  height: 1px;
+  background: var(--border-default);
+  margin: var(--space-2) 0;
+}
+
+.sidenav-row-secondary {
+  font-size: var(--font-xs);
+  font-weight: 500;
+}
+
 .sidenav-status {
   margin: 0;
 }
@@ -1273,6 +1284,84 @@
   font-size: var(--font-sm);
   font-style: italic;
   padding: var(--space-5);
+}
+
+/* ===== Playback (Phase 5.3) ===== */
+.playback-strip {
+  margin-bottom: var(--space-3);
+  padding: var(--space-3);
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.playback-strip-stats {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr 1fr 1fr 1fr;
+  gap: var(--space-2);
+}
+
+.playback-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.playback-cell-label {
+  font-size: var(--font-xs);
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.playback-cell-val {
+  font-size: var(--font-base);
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  line-height: 1.2;
+}
+
+.playback-cell-stop {
+  color: var(--identity-customer);
+  font-family: var(--font-mono);
+}
+
+.playback-cell-unit {
+  font-size: var(--font-xs);
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.playback-progress {
+  width: 100%;
+  height: 6px;
+  background: var(--border-default);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.playback-progress-fill {
+  height: 100%;
+  background: var(--accent-primary);
+  transition: width 60ms linear;
+}
+
+/* ===== SVG playback markers (RouteSchematic) ===== */
+.vehicle-marker circle {
+  transition: cx 60ms linear, cy 60ms linear;
+}
+
+.completed-marks circle {
+  filter: drop-shadow(0 1px 1px rgba(15, 23, 42, 0.2));
 }
 
 /* ===== States ===== */

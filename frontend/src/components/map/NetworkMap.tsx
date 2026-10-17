@@ -18,6 +18,10 @@ interface NetworkMapProps {
   /** 时间轴联动高亮 */
   activeTimelineNodeId?: string | null;
   onNodeHover?: (nodeId: string | null) => void;
+  /** 实时回放：车辆位置 */
+  vehiclePosition?: { fromId: string; toId: string; t: number } | null;
+  /** 实时回放：已完成的站点集合 */
+  completedStops?: ReadonlySet<string>;
 }
 
 export function NetworkMap({
@@ -27,6 +31,8 @@ export function NetworkMap({
   resultSummary,
   activeTimelineNodeId,
   onNodeHover,
+  vehiclePosition = null,
+  completedStops,
 }: NetworkMapProps) {
   const [showEdges, setShowEdges] = useState(true);
   // 场景变化时默认重新开启边显示
@@ -70,6 +76,8 @@ export function NetworkMap({
           showNetworkEdges={showEdges}
           activeTimelineNodeId={activeTimelineNodeId ?? null}
           onNodeHover={onNodeHover}
+          vehiclePosition={vehiclePosition}
+          completedStops={completedStops}
         />
         {resultSummary && (
           <MapLegend showNetworkEdges={showEdges} />

@@ -8,9 +8,11 @@
 //     空状态由 EmptyState 接管
 
 import type { Objective, ScheduleResult } from '../../types';
+import type { PlaybackView } from '../../state/usePlayback';
 import { EmptyState } from '../shared/EmptyState';
 import { RouteTimeline } from './RouteTimeline';
 import { RouteLegDetails } from './RouteLegDetails';
+import { PlaybackStrip } from './PlaybackStrip';
 
 interface ResultPanelProps {
   result: ScheduleResult | null;
@@ -21,6 +23,8 @@ interface ResultPanelProps {
   onSelectTimelineNode?: (nodeId: string | null) => void;
   errorMessage?: string | null;
   onRetry?: () => void;
+  /** 实时回放视图；null / undefined 时不渲染 PlaybackStrip */
+  playback?: PlaybackView | null;
 }
 
 function fmtNum(n: number, digits = 2): string {
@@ -40,6 +44,7 @@ export function ResultPanel({
   onSelectTimelineNode,
   errorMessage,
   onRetry,
+  playback,
 }: ResultPanelProps) {
   // 错误状态（最高优先）
   if (errorMessage) {
@@ -125,6 +130,11 @@ export function ResultPanel({
           </span>
         )}
       </h2>
+
+      {/* 实时回放累计指标（仅在 playback 处于 playing/done 时显示） */}
+      {playback && (playback.isPlaying || playback.isDone) && (
+        <PlaybackStrip playback={playback} />
+      )}
 
       {/* KPI 卡片 2×3 */}
       <div className="kpi-grid">

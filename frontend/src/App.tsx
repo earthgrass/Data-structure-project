@@ -40,6 +40,7 @@ import { NetworkMap } from './components/map/NetworkMap';
 import { ResultPanel } from './components/results/ResultPanel';
 import { ObjectiveComparison } from './components/results/ObjectiveComparison';
 import { useAsyncResource, displayData } from './state/useAsyncState';
+import { usePlayback } from './state/usePlayback';
 import type {
   CompareResponse,
   Objective,
@@ -60,6 +61,9 @@ export function App() {
   const compare = useAsyncResource<CompareResponse>();
 
   const [activeTimelineNodeId, setActiveTimelineNodeId] = useState<string | null>(null);
+
+  // 客户端配送回放：与 AsyncState 解耦，仅 UI 表现
+  const playbackControl = usePlayback(plan.fresh?.result.route_plan ?? null);
 
   // race-condition 跟踪：每个 handler 自带 request id，迟到的响应被丢弃
   const inFlightRef = useRef<{ generate?: number; plan?: number; compare?: number }>({});
@@ -196,6 +200,10 @@ export function App() {
           onCompare={handleCompare}
           isRunning={plan.loading || compare.loading}
           hasScenario={!!scenarioData}
+          hasPlan={!!planResult}
+          playback={playbackControl.view}
+          onPlay={playbackControl.play}
+          onReset={playbackControl.reset}
           scenarioName={scenarioData?.scenario.name ?? null}
           nodeCount={scenarioData?.scenario.graph.node_count ?? 0}
           edgeCount={scenarioData?.scenario.graph.edge_count ?? 0}
@@ -214,6 +222,8 @@ export function App() {
             resultSummary={planResult}
             activeTimelineNodeId={activeTimelineNodeId}
             onNodeHover={setActiveTimelineNodeId}
+            vehiclePosition={playbackControl.view.vehiclePosition}
+            completedStops={playbackControl.view.completedStops}
           />
         </div>
 
@@ -230,6 +240,7 @@ export function App() {
           errorMessage={
             plan.state.kind === 'error' ? errorMessageOf(plan.state.error) : null
           }
+          playback={playbackControl.view}
           onRetry={plan.state.kind === 'error' ? handlePlan : undefined}
         />
 
