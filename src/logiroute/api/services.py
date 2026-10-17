@@ -44,10 +44,14 @@ from logiroute.scheduling.types import ScheduleResult
 
 
 ALLOWED_ALGORITHMS: tuple[str, ...] = (
+    "unified",
     "nearest_neighbor",
     "insertion",
     "two_opt",
 )
+
+# Phase 5 默认算法 —— 用户公开 API 走统一规划器；显式 NN/CFI/2-opt 保留作回归测试。
+DEFAULT_ALGORITHM: str = "unified"
 
 
 @dataclass(frozen=True)
@@ -179,11 +183,18 @@ class ScenarioService:
             ) from exc
         return result
 
-    def compare(self, objective: str) -> dict[str, ScheduleResult]:
-        """同一场景上同时跑三种算法，结果聚合为字典。"""
+    def compare_objectives(
+        self,
+        objectives: tuple[str, ...] = ("distance", "cost"),
+    ) -> dict[str, ScheduleResult]:
+        """同一场景快照上跑多种主目标（默认 distance + cost）。
+
+        Phase 5 规格 §五 — 不再比较三种调度算法；改为比较两种主目标。
+        两次规划必须基于**同一份场景**，顺序不影响结果。
+        """
         results: dict[str, ScheduleResult] = {}
-        for algo in ALLOWED_ALGORITHMS:
-            results[algo] = self.plan(algo, objective)
+        for obj in objectives:
+            results[obj] = self.plan(DEFAULT_ALGORITHM, obj)
         return results
 
     # ------------------------------------------------------------------ #
@@ -203,5 +214,6 @@ __all__ = [
     "ALLOWED_ALGORITHMS",
     "ALLOWED_OBJECTIVES",
     "CurrentScenario",
+    "DEFAULT_ALGORITHM",
     "ScenarioService",
 ]

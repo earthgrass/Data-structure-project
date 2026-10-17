@@ -54,10 +54,11 @@ class TestPhase5API(TestCase):
         body = resp.json()
         self.assertEqual(body["status"], "ok")
         self.assertIn("version", body)
-        self.assertIn("test_count", body)
-        # 必为正整数
-        self.assertIsInstance(body["test_count"], int)
-        self.assertGreater(body["test_count"], 0)
+        # Phase 5 不再硬编码 test_count；改返回 objectives 列表
+        self.assertIn("objectives", body)
+        self.assertIsInstance(body["objectives"], list)
+        self.assertIn("distance", body["objectives"])
+        self.assertIn("cost", body["objectives"])
 
     # ------------------------------------------------------------------ #
     # 场景生成 / 获取
@@ -181,14 +182,29 @@ class TestPhase5API(TestCase):
         self.assertEqual(len(result["served_order_ids"]), 20)
         self.assertTrue(result["is_feasible"])
 
-    def test_plan_invalid_algorithm(self) -> None:
+    def test_plan_invalid_objective(self) -> None:
+        """Phase 5 规格 §3.1 — algorithm 字段已废弃；只校验 objective。"""
         self._ensure_scenario()
         resp = self.client.post(
             "/api/plan",
-            json={"algorithm": "bogus_algo", "objective": "distance"},
+            json={"objective": "bogus_objective"},
         )
         self.assertEqual(resp.status_code, 400)
         self.assertEqual(resp.json()["error"]["kind"], "bad_request")
+
+    def test_plan_with_deprecated_algorithm_is_ignored(self) -> None:
+        """algorithm 字段即使传入也被忽略，生产流程仍走 unified。"""
+        self._ensure_scenario()
+        # 传 algorithm=two_opt 应被忽略，结果与不传 algorithm 一致（默认 unified）
+        resp = self.client.post(
+            "/api/plan",
+            json={"objective": "distance", "algorithm": "two_opt"},
+        )
+        self.assertEqual(resp.status_code, 200)
+        # unified 路径：leg 主 metric = distance
+        result = resp.json()["result"]
+        for leg in result["route_plan"]["legs"]:
+            self.assertEqual(leg["metric"], "distance")
 
     def test_plan_invalid_objective(self) -> None:
         self._ensure_scenario()
@@ -204,38 +220,40 @@ class TestPhase5API(TestCase):
     # ------------------------------------------------------------------ #
 
     def test_compare_default(self) -> None:
+        """Phase 5 规格 §五 — /api/compare 比较 distance + cost 两种主目标。"""
+        self._ensure_scenario()
+        resp = self.client.post("/api/compare", json={})
+        self.assertEqual(resp.status_code, 200)
+        body = resp.json()
+        self.assertEqual(set(body["objectives"]), {"distance", "cost"})
+        results = body["results"]
+        self.assertIn("distance", results)
+        self.assertIn("cost", results)
+        for obj, result in results.items():
+            self.assertEqual(
+                len(result["served_order_ids"]), 20,
+                f"{obj} served {len(result['served_order_ids'])}",
+            )
+            self.assertTrue(result["is_feasible"], f"{obj} not feasible")
+            self.assertEqual(result["objective"], obj)
+
+    def test_compare_distance_only(self) -> None:
         self._ensure_scenario()
         resp = self.client.post(
-            "/api/compare", json={"objective": "distance"}
+            "/api/compare", json={"distance": True, "cost": False},
         )
         self.assertEqual(resp.status_code, 200)
         body = resp.json()
-        self.assertEqual(body["objective"], "distance")
-        results = body["results"]
-        self.assertIn("nearest_neighbor", results)
-        self.assertIn("insertion", results)
-        self.assertIn("two_opt", results)
-        for algo, result in results.items():
-            self.assertEqual(
-                len(result["served_order_ids"]), 20,
-                f"{algo} served {len(result['served_order_ids'])}",
-            )
-            self.assertTrue(result["is_feasible"], f"{algo} not feasible")
+        self.assertEqual(body["objectives"], ["distance"])
+        self.assertIn("distance", body["results"])
+        self.assertNotIn("cost", body["results"])
 
-    def test_compare_custom_algorithms(self) -> None:
+    def test_compare_neither_rejected(self) -> None:
         self._ensure_scenario()
         resp = self.client.post(
-            "/api/compare",
-            json={
-                "objective": "distance",
-                "algorithms": ["nearest_neighbor", "two_opt"],
-            },
+            "/api/compare", json={"distance": False, "cost": False},
         )
-        self.assertEqual(resp.status_code, 200)
-        results = resp.json()["results"]
-        self.assertIn("nearest_neighbor", results)
-        self.assertIn("two_opt", results)
-        self.assertNotIn("insertion", results)
+        self.assertEqual(resp.status_code, 400)
 
     # ------------------------------------------------------------------ #
     # JSON 序列化

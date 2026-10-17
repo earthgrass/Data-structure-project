@@ -4,13 +4,17 @@
 
 * ``status`` — 固定 ``"ok"``；
 * ``version`` — 字符串标签（前端展示用）；
-* ``test_count`` — 已通过的单元测试数（写死在模块顶部，**需随 Phase
-  演进而手动更新**；这是为避免给后端引入 unittest 自调用运行时成本）。
+* ``objectives`` — 支持的主目标列表。
+
+Phase 5 规格 §六 — 不再返回硬编码 test_count（避免与实际测试数量漂移）；
+健康检查只证明服务可达，不证明业务正确性。
 """
 from __future__ import annotations
 
 from fastapi import APIRouter
 from pydantic import BaseModel
+
+from logiroute.api.services import ALLOWED_OBJECTIVES
 
 
 router = APIRouter(prefix="/api", tags=["health"])
@@ -19,13 +23,15 @@ router = APIRouter(prefix="/api", tags=["health"])
 class HealthResponse(BaseModel):
     status: str
     version: str
-    test_count: int
+    objectives: list[str]
 
 
 @router.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
     """健康检查端点；前端在加载时调用以确认后端可达。"""
-    return HealthResponse(status="ok", version="phase5", test_count=442)
+    return HealthResponse(
+        status="ok", version="phase5", objectives=list(ALLOWED_OBJECTIVES),
+    )
 
 
 __all__ = ["router"]
