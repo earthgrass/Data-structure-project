@@ -64,6 +64,53 @@ _PRIORITY_RANK: dict[OrderPriority, int] = {
 _TOL: float = 1e-9
 
 
+def _stable_sort_by_priority_id(orders: list[Order]) -> list[Order]:
+    """手写确定性稳定排序：(URGENT 先, 然后按 id 字典序)。
+
+    AGENTS.md §2.1：``sorted()`` 仅在「用现成排序代替课程要求排序实现」
+    时被禁。此处实现一个等价的稳定排序：
+
+    1. URGENT（rank=0）排在 NORMAL（rank=1）之前；
+    2. 同优先级内按 ``order.id`` 字典序升序；
+    3. 稳定 —— 相对顺序保持。
+
+    算法选择：插入排序（稳定）。输入规模为单次调度的订单数（典型 ≤ 30），
+    O(n²) = O(K²) 对该规模无实际开销；同时**完全避免** ``sorted()`` / ``min()``
+    调用，符合课程"算法核心手写"要求。
+
+    Args:
+        orders: 待排序的订单列表。
+
+    Returns:
+        新列表（原列表**不**被修改）。
+    """
+    out: list[Order] = list(orders)
+    n = len(out)
+    for i in range(1, n):
+        key = out[i]
+        key_rank = _PRIORITY_RANK[key.priority]
+        key_id = key.id
+        j = i - 1
+        # 找到 key 应插入的位置：
+        # 1) 前一个元素优先级更高 → 跳过；
+        # 2) 同优先级但 id 字典序更小 → 跳过；
+        # 3) 稳定：相等时不前移。
+        while j >= 0:
+            cur = out[j]
+            cur_rank = _PRIORITY_RANK[cur.priority]
+            if cur_rank < key_rank:
+                break  # cur 优先级更高，key 应在其后
+            if cur_rank == key_rank:
+                if cur.id < key_id:
+                    break  # 同优先级 + cur.id < key.id，cur 排前
+                if cur.id == key_id:
+                    break  # 稳定
+            out[j + 1] = out[j]
+            j -= 1
+        out[j + 1] = key
+    return out
+
+
 def nearest_neighbor(
     ctx: PlanningContext,
     eligible_orders: list[Order],
@@ -109,10 +156,12 @@ def nearest_neighbor(
 
     # 稳定排序：(URGENT 先, 然后按 id 字典序) —— 仅决定扫描顺序，
     # 不构成「优先级绕过硬约束」的语义。
-    remaining: list[Order] = sorted(
-        eligible_orders,
-        key=lambda o: (_PRIORITY_RANK[o.priority], o.id),
-    )
+    #
+    # AGENTS.md §2.1：``sorted()`` 仅在「用现成排序代替课程要求排序实现」
+    # 时被禁。NN 是内部回归基线（**不**进入产品统一规划流程），
+    # 但为完全合规，此处使用 :func:`_stable_sort_by_priority_id`
+    # 手写确定性排序（不调 sorted）。
+    remaining: list[Order] = _stable_sort_by_priority_id(eligible_orders)
 
     plan_stops: list[DeliveryStop] = [
         DeliveryStop(
