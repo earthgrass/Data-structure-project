@@ -101,13 +101,13 @@
 # 1. 终端 A —— 启动 FastAPI 后端（默认 :8000）
 PYTHONPATH=src python -m uvicorn logiroute.api:app --host 127.0.0.1 --port 8000
 
-# 2. 终端 B —— 启动 Vite 前端开发服务器（默认 :5173）
+# 2. 终端 B —— 启动 Vite 前端开发服务器（默认 :5172，详见 frontend/vite.config.ts）
 cd frontend
 npm install   # 首次需要
 npm run dev
 ```
 
-打开浏览器访问 `http://localhost:5173`。
+打开浏览器访问 `http://localhost:5172`。
 
 * Vite proxy 已把 `/api/*` 转发到 `http://127.0.0.1:8000`（见 `frontend/vite.config.ts`）。
 * 后端单独 ``GET /docs`` 可访问 Swagger UI。

@@ -50,7 +50,7 @@ def create_app() -> FastAPI:
 
     已配置：
 
-    * CORS：允许 ``http://localhost:5173``（Vite 默认端口）；
+    * CORS：允许 ``http://localhost:5172``（Vite 默认端口，5173 已被占用故改 5172）；
     * 路由：``/api/health``、``/api/scenario/*``、``/api/plan``、``/api/compare``；
     * 异常处理：``APIError`` 子类统一返回 JSON ``{"error": {...}}``；
     * ``app.state.scenario_service``：单实例 ``ScenarioService``。
@@ -66,12 +66,12 @@ def create_app() -> FastAPI:
         lifespan=_lifespan,
     )
 
-    # CORS —— Vite 默认 5173；本地开发允许。
+    # CORS —— Vite 开发服务器（5172 / 4173 preview）；本地开发允许。
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[
-            "http://localhost:5173",
-            "http://127.0.0.1:5173",
+            "http://localhost:5172",
+            "http://127.0.0.1:5172",
             "http://localhost:4173",
             "http://127.0.0.1:4173",
         ],
