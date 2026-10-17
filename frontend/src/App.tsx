@@ -1,6 +1,16 @@
-// Phase 5.1 —— Dashboard 顶层组件（统一规划器 / 双目标 / 时间轴联动）。
+// Phase 5.2 —— Dashboard 顶层组件（修复布局：全局错误横幅移到 grid 之外）。
 // 状态机：场景生成 → 调度计算 → 比较；防 race condition 用 requestRef。
 // 跨组件联动：时间轴 ↔ 地图节点高亮。
+//
+// 布局层级：
+//   .dashboard-shell
+//     .global-error-banner          ← 仅在 globalError 时显示
+//     .app                          ← 5 层 grid（topbar / sidebar+center+result / comparison）
+//       HeaderBar
+//       Sidebar
+//       .center > NetworkMap
+//       ResultPanel
+//       ObjectiveComparison
 
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -40,6 +50,7 @@ export function App() {
   const [planError, setPlanError] = useState<string | null>(null);
   const [compareError, setCompareError] = useState<string | null>(null);
   const [globalError, setGlobalError] = useState<string | null>(null);
+  const [globalErrorRecovery, setGlobalErrorRecovery] = useState<string | null>(null);
 
   // 时间轴 ↔ 地图联动
   const [activeTimelineNodeId, setActiveTimelineNodeId] = useState<string | null>(null);
@@ -52,6 +63,16 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  function setGlobalErrorFromApi(e: unknown, fallback: string) {
+    if (e instanceof ApiClientError) {
+      setGlobalError(`[${e.kind}] ${e.message || fallback}`);
+      setGlobalErrorRecovery(e.recovery ?? null);
+    } else {
+      setGlobalError(fallback);
+      setGlobalErrorRecovery(null);
+    }
+  }
+
   async function handleGenerate() {
     const id = ++REQUEST_ID;
     requestRef.current = id;
@@ -59,6 +80,7 @@ export function App() {
     setPlanError(null);
     setCompareError(null);
     setGlobalError(null);
+    setGlobalErrorRecovery(null);
     setPlanResp(null);
     setCompareResp(null);
     setActiveTimelineNodeId(null);
@@ -69,9 +91,7 @@ export function App() {
     } catch (e) {
       if (requestRef.current !== id) return;
       setScenarioResp(null);
-      setGlobalError(
-        e instanceof ApiClientError ? `[${e.kind}] ${e.message}` : String(e),
-      );
+      setGlobalErrorFromApi(e, '场景生成失败');
     } finally {
       if (requestRef.current === id) setIsGenerating(false);
     }
@@ -110,7 +130,6 @@ export function App() {
     try {
       const resp = await compareObjectives(true, true);
       if (requestRef.current !== id) return;
-      // 后端可能只返回一个目标（接口宽容）；不完整时显示错误
       const objectives = resp.objectives ?? [];
       if (objectives.length < 2 || !resp.results['distance'] || !resp.results['cost']) {
         setCompareResp(null);
@@ -137,75 +156,101 @@ export function App() {
   const hasScenario = !!scenario;
 
   return (
-    <div className="app">
-      <HeaderBar
-        seed={seed}
-        onSeedChange={setSeed}
-        onGenerate={handleGenerate}
-        isGenerating={isGenerating}
-        validation={validation}
-        scenarioName={scenario?.name ?? null}
-        nodeCount={scenario?.graph.node_count ?? 0}
-        edgeCount={scenario?.graph.edge_count ?? 0}
-        orderCount={scenario?.orders.length ?? 0}
-        vehicleCount={scenario?.vehicles.length ?? 0}
-      />
-
+    <div className="dashboard-shell">
       {globalError && (
-        <div className="error-banner" role="alert" style={{ gridColumn: '1 / -1' }}>
-          <span>⚠ 场景生成失败：{globalError}</span>
-          <button onClick={() => setGlobalError(null)}>关闭</button>
+        <div className="global-error-banner" role="alert">
+          <div className="geb-text">
+            <div className="geb-title">⚠ 场景生成失败</div>
+            <div className="geb-message">{globalError}</div>
+            {globalErrorRecovery && (
+              <div className="geb-recovery">{globalErrorRecovery}</div>
+            )}
+          </div>
+          <div className="geb-actions">
+            <button
+              className="btn btn-secondary"
+              onClick={() => void handleGenerate()}
+              disabled={isGenerating}
+            >
+              {isGenerating ? '重试中…' : '重试'}
+            </button>
+            <button
+              className="btn btn-ghost"
+              onClick={() => {
+                setGlobalError(null);
+                setGlobalErrorRecovery(null);
+              }}
+              aria-label="关闭错误横幅"
+            >
+              ✕
+            </button>
+          </div>
         </div>
       )}
 
-      <Sidebar
-        scenarioName={scenario?.name ?? null}
-        nodeCount={scenario?.graph.node_count ?? 0}
-        edgeCount={scenario?.graph.edge_count ?? 0}
-        orderCount={scenario?.orders.length ?? 0}
-        vehicleCount={scenario?.vehicles.length ?? 0}
-        seed={seed}
-        isGenerating={isGenerating}
-        onGenerate={handleGenerate}
-        objective={objective}
-        onObjectiveChange={setObjective}
-        onPlan={handlePlan}
-        onCompare={handleCompare}
-        isRunning={isRunning}
-        hasScenario={hasScenario}
-      />
-
-      <div className="center">
-        <NetworkMap
-          graph={scenario?.graph ?? null}
-          route={displayedResult?.route_plan ?? null}
+      <div className="app">
+        <HeaderBar
+          seed={seed}
+          onSeedChange={setSeed}
+          onGenerate={handleGenerate}
+          isGenerating={isGenerating}
           validation={validation}
           scenarioName={scenario?.name ?? null}
-          resultSummary={displayedResult}
+          nodeCount={scenario?.graph.node_count ?? 0}
+          edgeCount={scenario?.graph.edge_count ?? 0}
+          orderCount={scenario?.orders.length ?? 0}
+          vehicleCount={scenario?.vehicles.length ?? 0}
+        />
+
+        <Sidebar
+          scenarioName={scenario?.name ?? null}
+          nodeCount={scenario?.graph.node_count ?? 0}
+          edgeCount={scenario?.graph.edge_count ?? 0}
+          orderCount={scenario?.orders.length ?? 0}
+          vehicleCount={scenario?.vehicles.length ?? 0}
+          seed={seed}
+          isGenerating={isGenerating}
+          onGenerate={handleGenerate}
+          objective={objective}
+          onObjectiveChange={setObjective}
+          onPlan={handlePlan}
+          onCompare={handleCompare}
+          isRunning={isRunning}
+          hasScenario={hasScenario}
+        />
+
+        <div className="center">
+          <NetworkMap
+            graph={scenario?.graph ?? null}
+            route={displayedResult?.route_plan ?? null}
+            validation={validation}
+            scenarioName={scenario?.name ?? null}
+            resultSummary={displayedResult}
+            activeTimelineNodeId={activeTimelineNodeId}
+            onNodeHover={setActiveTimelineNodeId}
+          />
+        </div>
+
+        <ResultPanel
+          result={displayedResult}
+          objective={
+            planResp?.objective === 'distance' || planResp?.objective === 'cost'
+              ? planResp.objective
+              : null
+          }
+          hasScenario={hasScenario}
           activeTimelineNodeId={activeTimelineNodeId}
-          onNodeHover={setActiveTimelineNodeId}
+          onSelectTimelineNode={setActiveTimelineNodeId}
+          errorMessage={planError}
+          onRetry={planError ? handlePlan : undefined}
+        />
+
+        <ObjectiveComparison
+          data={compareResp}
+          scenarioName={scenario?.name ?? null}
+          errorMessage={compareError}
         />
       </div>
-
-      <ResultPanel
-        result={displayedResult}
-        objective={
-          planResp?.objective === 'distance' || planResp?.objective === 'cost'
-            ? planResp.objective
-            : null
-        }
-        hasScenario={hasScenario}
-        activeTimelineNodeId={activeTimelineNodeId}
-        onSelectTimelineNode={setActiveTimelineNodeId}
-        errorMessage={planError}
-        onRetry={planError ? handlePlan : undefined}
-      />
-
-      <ObjectiveComparison
-        data={compareResp}
-        scenarioName={scenario?.name ?? null}
-        errorMessage={compareError}
-      />
     </div>
   );
 }
