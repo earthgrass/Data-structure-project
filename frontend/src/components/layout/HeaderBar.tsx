@@ -1,5 +1,11 @@
-// Phase 5.1 —— HeaderBar：紧凑型全局顶栏。
+// Phase 5.2 —— HeaderBar：紧凑型全局顶栏。
 // 4 段结构：品牌区 / 控制区（seed + 生成） / 自适应占位 / 状态徽章区。
+//
+// 数据归属（受 FinAgent-X V2 工程实践启发）：
+//   - OWN：seed 输入 / 「随机生成场景」按钮 / 场景摘要徽章
+//   - NOT OWN：场景生成请求（由 App.tsx 统一发起；本组件不调用任何 API）
+//   - DISPLAY：仅展示由父组件传入的场景数据；不持有任何本地副本
+//   - 严禁 mock / 硬编码 KPI 或伪造成功状态
 
 import type { ValidationReport } from '../../types';
 
@@ -14,6 +20,8 @@ interface HeaderBarProps {
   edgeCount: number;
   orderCount: number;
   vehicleCount: number;
+  /** 当前显示的场景是否是 stale（旧场景因新生成失败而保留） */
+  scenarioIsStale?: boolean;
 }
 
 export function HeaderBar({
@@ -27,6 +35,7 @@ export function HeaderBar({
   edgeCount,
   orderCount,
   vehicleCount,
+  scenarioIsStale = false,
 }: HeaderBarProps) {
   return (
     <div className="topbar" role="banner">
@@ -76,6 +85,15 @@ export function HeaderBar({
         <span className="badge badge-neutral" title="场景名称">
           {scenarioName ?? '—'}
         </span>
+        {scenarioIsStale && (
+          <span
+            className="badge badge-warn"
+            title="当前显示的是旧场景（因新场景生成失败而保留）"
+          >
+            <span className="dot" />
+            旧场景（stale）
+          </span>
+        )}
         <span className="badge badge-neutral" title="节点数">
           <span className="dot" />
           节点 {nodeCount}

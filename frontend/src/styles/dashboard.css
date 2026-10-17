@@ -34,6 +34,18 @@
   font-size: var(--font-sm);
 }
 
+.global-error-banner.severity-stale {
+  background: var(--status-warn-soft);
+  border-bottom-color: var(--status-warn);
+  color: var(--status-warn);
+}
+
+.global-error-banner.severity-stale .geb-recovery {
+  background: rgba(180, 83, 9, 0.08);
+  border-left-color: var(--status-warn);
+  color: var(--status-warn);
+}
+
 .global-error-banner .geb-text {
   display: flex;
   flex-direction: column;

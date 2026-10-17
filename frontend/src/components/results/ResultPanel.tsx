@@ -1,6 +1,11 @@
-// Phase 5.1 —— ResultPanel：右侧调度结果面板。
-// 结构：KPI 网格（2×3）→ 方案概览 → 配送时间轴 → 路段详情。
-// 仅在 result 非空时展示完整内容；空状态由父组件 App 切换。
+// Phase 5.2 —— ResultPanel：右侧调度结果面板。
+//
+// 数据归属（受 FinAgent-X V2 工程实践启发）：
+//   - OWN：KPI 卡片（2×3）、方案概览、配送时间轴、路段详情
+//   - NOT OWN：不调用任何 API；所有 result 数据来自 props
+//   - DISPLAY：完全受控；result / errorMessage 均由父组件传入
+//   - 严禁显示 stale 数据冒充 fresh：只在 result 非空时展示完整内容
+//     空状态由 EmptyState 接管
 
 import type { Objective, ScheduleResult } from '../../types';
 import { EmptyState } from '../shared/EmptyState';

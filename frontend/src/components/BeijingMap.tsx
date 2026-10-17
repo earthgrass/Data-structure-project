@@ -1,6 +1,18 @@
-// Phase 5.1 —— 北京区域 + 物流网络 + 配送路线渲染器。
-// 渲染顺序：底色 → 行政区划 → 物流边 → 路线 → 节点 → 标签 → 交互覆盖层。
-// 支持：网络普通边开关、节点 hover tooltip、时间轴选中节点联动。
+// Phase 5.2 —— NetworkMap 主视觉的 SVG 内核。
+//
+// 数据归属（受 FinAgent-X V2 工程实践启发）：
+//   - OWN：渲染路网、节点、当前路线、图例位置
+//   - NOT OWN：不调用任何 API；节点坐标 / 路线顺序全部来自 props
+//   - DISPLAY：完全受控组件；props 变化即重渲染
+//   - 严禁在本组件内 mock 数据；严禁凭空生成 POI 属性
+//
+// 渲染顺序（z-order）：
+//   1. 行政区划底板（DistrictLayer）
+//   2. 物流边（NetworkEdgeLayer，受 showNetworkEdges 控制）
+//   3. 路线（当前 route 高亮，NetworkEdgeLayer 同层）
+//   4. 节点（NetworkNodeLayer）
+//   5. 节点标签
+//   6. Tooltip / 交互覆盖层
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { EdgeData, GraphData, NodeData, RoutePlanData } from '../types';

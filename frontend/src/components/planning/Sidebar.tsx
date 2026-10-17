@@ -1,5 +1,17 @@
-// Phase 5.1 —— Sidebar：3 卡片布局。
-// A. 场景控制（操作所需） / B. 目标函数控制（运行规划） / C. 算法说明。
+// Phase 5.2 —— PlanningSidebar：3 卡片布局。
+//
+// 数据归属（受 FinAgent-X V2 工程实践启发）：
+//   - OWN：场景控制卡（当前 seed / 场景元数据 / 重新生成按钮）；
+//          目标函数卡（主目标选择 / 运行规划 / 双目标比较）；
+//          算法说明卡（5 步流程展示）
+//   - NOT OWN：不直接发起 API 请求；所有交互通过 props 回调到 App.tsx
+//               由顶层 useAsyncResource 统一管理状态机。
+//   - DISPLAY：仅展示 props 传入的数据。
+//   - 严禁在此组件内重复调用 generateRandomScenario / planDeliveries /
+//     compareObjectives —— 防止多份冲突的状态副本。
+//
+// 不在用户侧暴露 NN / CFI / 2-opt 作为「可选业务算法」；它们属于内部
+// 规划器实现，统一规划器 = CFI + 2-opt（AGENTS §3.7）。
 
 import type { Objective } from '../../types';
 

@@ -1,5 +1,11 @@
-// Phase 5.1 —— ObjectiveComparison：双目标对比。
-// 完整对比表 + 摘要卡片；强调"两种方案互不宣称更优"。
+// Phase 5.2 —— ObjectiveComparison：distance / cost 双目标对比。
+//
+// 数据归属（受 FinAgent-X V2 工程实践启发）：
+//   - OWN：双目标对比表 + 差异列（cost vs distance）
+//   - NOT OWN：不调用任何 API；compare 数据完全来自 props
+//   - DISPLAY：受控；data 为 null 时显示空状态，errorMessage 非空时显示错误
+//   - 完整性：仅当 results.distance 与 results.cost 都成功时展示完整对比
+//   - 严禁「上一次成功对比被冒充为当前」——失败 / 不完整时仅显示错误
 
 import type { CompareResponse, ScheduleResult } from '../../types';
 
