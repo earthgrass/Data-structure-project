@@ -163,25 +163,20 @@ def _has_edge(edges: list[dict], src: str, dst: str) -> bool:
 
 
 def _build_vehicles() -> list[dict]:
-    """2 个中仓各放 2 辆车，共 4 辆，覆盖 50~200 kg 容量。"""
+    """严格单车辆：仅一辆 ``VH1`` 容量 250 kg @ ``W1``（主仓）。
+
+    AGENTS.md §3.6 + 教师原题：场景中只能有一辆实际参与配送的车辆。
+    """
     return [
-        {"id": "VH1", "capacity": 100.0, "current_load": 0.0, "current_node_id": "W1",
-         "status": "idle"},
-        {"id": "VH2", "capacity": 150.0, "current_load": 0.0, "current_node_id": "W1",
-         "status": "idle"},
-        {"id": "VH3", "capacity": 120.0, "current_load": 0.0, "current_node_id": "W2",
-         "status": "idle"},
-        {"id": "VH4", "capacity": 200.0, "current_load": 0.0, "current_node_id": "W2",
+        {"id": "VH1", "capacity": 250.0, "current_load": 0.0, "current_node_id": "W1",
          "status": "idle"},
     ]
 
 
 def _build_couriers() -> list[dict]:
+    """单配送员，跟随唯一车辆 ``VH1``。"""
     return [
         {"id": "CO1", "name": "配送员01", "vehicle_id": "VH1", "status": "idle"},
-        {"id": "CO2", "name": "配送员02", "vehicle_id": "VH2", "status": "idle"},
-        {"id": "CO3", "name": "配送员03", "vehicle_id": "VH3", "status": "idle"},
-        {"id": "CO4", "name": "配送员04", "vehicle_id": "VH4", "status": "idle"},
     ]
 
 

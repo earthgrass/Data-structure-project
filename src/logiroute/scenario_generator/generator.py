@@ -47,25 +47,17 @@ from logiroute.scenario_generator.validator import (
 def _vehicles_and_couriers_for(
     depot_id: str,
     capacity: float,
-    rng: RandomSource,
 ) -> tuple[list[Vehicle], list[Courier]]:
-    """生成 vehicle + courier 列表。
+    """生成严格单车辆 + 单配送员配置。
 
-    第 1 辆为唯一执行配送（IDLE @ depot, capacity = config.capacity）；
-    其余 3 辆为模型保留（也 IDLE 但放在第二仓库）。
+    AGENTS.md §3.6 + 教师原题：只能有一辆车参与实际配送。
+    这里只造一辆 ``VH1``（IDLE @ depot，capacity = ``config.capacity``）
+    + 一名跟车配送员 ``CO1``；不再保留任何"模型保留"车辆。
     """
-    rng.shuffle  # no-op call placeholder to suppress lint unused warnings
     vehicles = [
         Vehicle(
             id="VH1",
             capacity=capacity,
-            current_load=0.0,
-            current_node_id=depot_id,
-            status=VehicleStatus.IDLE,
-        ),
-        Vehicle(
-            id="VH2",
-            capacity=capacity * 1.1,
             current_load=0.0,
             current_node_id=depot_id,
             status=VehicleStatus.IDLE,
@@ -78,12 +70,6 @@ def _vehicles_and_couriers_for(
             vehicle_id="VH1",
             status=CourierStatus.IDLE,
         ),
-        Courier(
-            id="CO2",
-            name="CO2",
-            vehicle_id="VH2",
-            status=CourierStatus.IDLE,
-        ),
     ]
     return vehicles, couriers
 
@@ -92,15 +78,13 @@ def _attach_vehicles_to_depots(
     graph,
     vehicles: list[Vehicle],
     couriers: list[Courier],
-    rng: RandomSource,
 ) -> None:
-    """把 vehicles 2/3 移到第二个仓库（如果存在）。"""
-    warehouses = sorted(
-        n.id for n in graph.get_all_nodes()
-        if n.node_type is NodeType.WAREHOUSE
-    )
-    if len(warehouses) >= 2 and len(vehicles) >= 3:
-        vehicles[2].current_node_id = warehouses[1]
+    """严格单车辆约束下，此函数为 no-op。
+
+    保留此函数仅为保持接口稳定（未来若放开约束可扩展使用）。
+    当前 ``vehicles`` 长度为 1，不存在跨仓库车辆分配场景。
+    """
+    del graph, vehicles, couriers  # explicitly unused under strict 1-vehicle
 
 
 def generate_scenario(
@@ -147,11 +131,11 @@ def generate_scenario(
             continue
         depot_id = warehouses[0]
 
-        # 4. 车辆 + 配送员
+        # 4. 车辆 + 配送员（严格单车辆）
         vehicles, couriers = _vehicles_and_couriers_for(
-            depot_id, config.capacity, rng
+            depot_id, config.capacity
         )
-        _attach_vehicles_to_depots(graph, vehicles, couriers, rng)
+        _attach_vehicles_to_depots(graph, vehicles, couriers)
 
         # 5. 组装 ScenarioBundle
         bundle = ScenarioBundle(

@@ -40,8 +40,9 @@ class TestLoadHappyPath(unittest.TestCase):
         self.assertEqual(bundle.mode, "fixed")
         self.assertEqual(bundle.random_seed, 42)
         self.assertEqual(bundle.graph.node_count, 35)
-        self.assertEqual(len(bundle.vehicles), 4)
-        self.assertEqual(len(bundle.couriers), 4)
+        # AGENTS §3.6 严格单车辆约束 —— 场景中只能有 1 辆车 + 1 名配送员。
+        self.assertEqual(len(bundle.vehicles), 1)
+        self.assertEqual(len(bundle.couriers), 1)
         self.assertEqual(len(bundle.orders), 20)
         self.assertEqual(bundle.optimization["default_objective"], "distance")
         bundle.graph.validate()
@@ -158,6 +159,31 @@ class TestValidationErrors(unittest.TestCase):
     def test_courier_to_unknown_vehicle(self) -> None:
         data = self._base()
         data["couriers"][0]["vehicle_id"] = "NOPE"
+        with self.assertRaises(ConfigError):
+            load_scenario_from_dict(data)
+
+    def test_multi_vehicle_rejected(self) -> None:
+        # AGENTS §3.6 严格单车辆约束：场景中不得出现 2 辆车。
+        data = self._base()
+        data["vehicles"].append({
+            "id": "VH2",
+            "capacity": 100.0,
+            "current_load": 0.0,
+            "current_node_id": "W1",
+            "status": "idle",
+        })
+        with self.assertRaises(ConfigError):
+            load_scenario_from_dict(data)
+
+    def test_multi_courier_rejected(self) -> None:
+        # AGENTS §3.6 单车辆 ⇒ 单配送员；多余 courier 必须被拒绝。
+        data = self._base()
+        data["couriers"].append({
+            "id": "CO2",
+            "name": "CO2",
+            "vehicle_id": "VH1",
+            "status": "idle",
+        })
         with self.assertRaises(ConfigError):
             load_scenario_from_dict(data)
 

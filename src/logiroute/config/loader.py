@@ -258,6 +258,14 @@ def load_scenario_from_dict(data: dict[str, Any]) -> ScenarioBundle:
         seen_v_ids.add(v.id)
         vehicles.append(v)
 
+    # AGENTS.md §3.6 严格单车辆约束 —— 场景中只能有一辆实际配送车。
+    if len(vehicles) != 1:
+        raise ConfigError(
+            f"AGENTS §3.6 single-vehicle constraint: scenario must contain "
+            f"exactly 1 vehicle, got {len(vehicles)}",
+            path="vehicles",
+        )
+
     # ---- couriers ----
     couriers: list[Courier] = []
     raw_couriers = data.get("couriers", [])
@@ -282,6 +290,14 @@ def load_scenario_from_dict(data: dict[str, Any]) -> ScenarioBundle:
             )
         seen_co_ids.add(c.id)
         couriers.append(c)
+
+    # 单车辆 + 单配送员 —— 与 §3.6 严格单车辆约束一致。
+    if len(couriers) != 1:
+        raise ConfigError(
+            f"AGENTS §3.6 single-vehicle constraint: scenario must contain "
+            f"exactly 1 courier (one per vehicle), got {len(couriers)}",
+            path="couriers",
+        )
 
     # ---- orders ----
     orders: list[Order] = []
