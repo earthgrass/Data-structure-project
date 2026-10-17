@@ -12,245 +12,420 @@
         "name": "主仓（北）",
         "type": "warehouse",
         "x": 0.0,
-        "y": 9.0
+        "y": 9.0,
+        "metadata": {
+          "lng": 116.485,
+          "lat": 39.92,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "W2",
         "name": "次仓（南）",
         "type": "warehouse",
         "x": 9.0,
-        "y": 0.0
+        "y": 0.0,
+        "metadata": {
+          "lng": 116.3,
+          "lat": 39.96,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "T1",
         "name": "中转站1",
         "type": "transfer",
         "x": 2.0,
-        "y": 7.0
+        "y": 7.0,
+        "metadata": {
+          "lng": 116.42,
+          "lat": 39.88,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "T2",
         "name": "中转站2",
         "type": "transfer",
         "x": 7.0,
-        "y": 7.0
+        "y": 7.0,
+        "metadata": {
+          "lng": 116.55,
+          "lat": 39.86,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "T3",
         "name": "中转站3",
         "type": "transfer",
         "x": 2.0,
-        "y": 2.0
+        "y": 2.0,
+        "metadata": {
+          "lng": 116.2,
+          "lat": 39.78,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "T4",
         "name": "中转站4",
         "type": "transfer",
         "x": 7.0,
-        "y": 2.0
+        "y": 2.0,
+        "metadata": {
+          "lng": 116.66,
+          "lat": 39.78,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "C1",
         "name": "客户01",
         "type": "customer",
         "x": 5.48,
-        "y": 1.18
+        "y": 1.18,
+        "metadata": {
+          "lng": 116.42558,
+          "lat": 39.901,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "C2",
         "name": "客户02",
         "type": "customer",
         "x": 2.93,
-        "y": 2.56
+        "y": 2.56,
+        "metadata": {
+          "lng": 116.361,
+          "lat": 39.89893,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "C3",
         "name": "客户03",
         "type": "customer",
         "x": 6.16,
-        "y": 5.74
+        "y": 5.74,
+        "metadata": {
+          "lng": 116.49946,
+          "lat": 39.93707,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "C4",
         "name": "客户04",
         "type": "customer",
         "x": 7.25,
-        "y": 1.61
+        "y": 1.61,
+        "metadata": {
+          "lng": 116.31569,
+          "lat": 39.95348,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "C5",
         "name": "客户05",
         "type": "customer",
         "x": 3.95,
-        "y": 1.21
+        "y": 1.21,
+        "metadata": {
+          "lng": 116.28688,
+          "lat": 39.84119,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "C6",
         "name": "客户06",
         "type": "customer",
         "x": 2.53,
-        "y": 4.54
+        "y": 4.54,
+        "metadata": {
+          "lng": 116.20875,
+          "lat": 39.91021,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "C7",
         "name": "客户07",
         "type": "customer",
         "x": 1.19,
-        "y": 2.39
+        "y": 2.39,
+        "metadata": {
+          "lng": 116.64106,
+          "lat": 39.89795,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "C8",
         "name": "客户08",
         "type": "customer",
         "x": 5.55,
-        "y": 4.81
+        "y": 4.81,
+        "metadata": {
+          "lng": 116.656,
+          "lat": 40.1318,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "C9",
         "name": "客户09",
         "type": "customer",
         "x": 2.54,
-        "y": 5.12
+        "y": 5.12,
+        "metadata": {
+          "lng": 116.21882,
+          "lat": 40.22357,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "C10",
         "name": "客户10",
         "type": "customer",
         "x": 6.67,
-        "y": 1.05
+        "y": 1.05,
+        "metadata": {
+          "lng": 116.34238,
+          "lat": 39.71026,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "C11",
         "name": "客户11",
         "type": "customer",
         "x": 6.64,
-        "y": 5.89
+        "y": 5.89,
+        "metadata": {
+          "lng": 115.98223,
+          "lat": 39.72793,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "C12",
         "name": "客户12",
         "type": "customer",
         "x": 3.38,
-        "y": 2.09
+        "y": 2.09,
+        "metadata": {
+          "lng": 116.09361,
+          "lat": 39.92622,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "C13",
         "name": "客户13",
         "type": "customer",
         "x": 7.7,
-        "y": 3.36
+        "y": 3.36,
+        "metadata": {
+          "lng": 116.43829,
+          "lat": 39.91346,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "C14",
         "name": "客户14",
         "type": "customer",
         "x": 1.65,
-        "y": 1.68
+        "y": 1.68,
+        "metadata": {
+          "lng": 116.35371,
+          "lat": 39.89387,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "C15",
         "name": "客户15",
         "type": "customer",
         "x": 6.93,
-        "y": 5.23
+        "y": 5.23,
+        "metadata": {
+          "lng": 116.5039,
+          "lat": 39.93415,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "C16",
         "name": "客户16",
         "type": "customer",
         "x": 6.65,
-        "y": 6.11
+        "y": 6.11,
+        "metadata": {
+          "lng": 116.31229,
+          "lat": 39.97919,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "C17",
         "name": "客户17",
         "type": "customer",
         "x": 4.75,
-        "y": 7.81
+        "y": 7.81,
+        "metadata": {
+          "lng": 116.29145,
+          "lat": 39.87892,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "C18",
         "name": "客户18",
         "type": "customer",
         "x": 3.65,
-        "y": 4.86
+        "y": 4.86,
+        "metadata": {
+          "lng": 116.21514,
+          "lat": 39.91208,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "C19",
         "name": "客户19",
         "type": "customer",
         "x": 6.81,
-        "y": 5.33
+        "y": 5.33,
+        "metadata": {
+          "lng": 116.67318,
+          "lat": 39.91474,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "C20",
         "name": "客户20",
         "type": "customer",
         "x": 7.03,
-        "y": 5.04
+        "y": 5.04,
+        "metadata": {
+          "lng": 116.66447,
+          "lat": 40.13309,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "C21",
         "name": "客户21",
         "type": "customer",
         "x": 5.93,
-        "y": 1.32
+        "y": 1.32,
+        "metadata": {
+          "lng": 116.23818,
+          "lat": 40.20183,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "C22",
         "name": "客户22",
         "type": "customer",
         "x": 2.6,
-        "y": 3.03
+        "y": 3.03,
+        "metadata": {
+          "lng": 116.31912,
+          "lat": 39.72158,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "C23",
         "name": "客户23",
         "type": "customer",
         "x": 1.56,
-        "y": 2.63
+        "y": 2.63,
+        "metadata": {
+          "lng": 115.95319,
+          "lat": 39.70931,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "C24",
         "name": "客户24",
         "type": "customer",
         "x": 1.71,
-        "y": 2.95
+        "y": 2.95,
+        "metadata": {
+          "lng": 116.08404,
+          "lat": 39.93112,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "C25",
         "name": "客户25",
         "type": "customer",
         "x": 5.45,
-        "y": 3.55
+        "y": 3.55,
+        "metadata": {
+          "lng": 116.42543,
+          "lat": 39.91459,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "C26",
         "name": "客户26",
         "type": "customer",
         "x": 3.59,
-        "y": 2.47
+        "y": 2.47,
+        "metadata": {
+          "lng": 116.36481,
+          "lat": 39.89838,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "C27",
         "name": "客户27",
         "type": "customer",
         "x": 2.87,
-        "y": 7.56
+        "y": 7.56,
+        "metadata": {
+          "lng": 116.48068,
+          "lat": 39.94747,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "C28",
         "name": "客户28",
         "type": "customer",
         "x": 5.54,
-        "y": 5.26
+        "y": 5.26,
+        "metadata": {
+          "lng": 116.30592,
+          "lat": 39.97437,
+          "viz_source": "beijing_schematic"
+        }
       },
       {
         "id": "C29",
         "name": "客户29",
         "type": "customer",
         "x": 2.2,
-        "y": 6.1
+        "y": 6.1,
+        "metadata": {
+          "lng": 116.27685,
+          "lat": 39.86917,
+          "viz_source": "beijing_schematic"
+        }
       }
     ],
     "edges": [

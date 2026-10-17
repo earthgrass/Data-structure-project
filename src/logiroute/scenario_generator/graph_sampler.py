@@ -43,13 +43,22 @@ class _NodeSpec:
     node_type: NodeType
     x: float
     y: float
+    lng: float
+    lat: float
 
 
 def _make_node_specs(
     config: GeneratorConfig,
     rng: RandomSource,
 ) -> list[_NodeSpec]:
-    """按配额（仓库/客户/中转）构造节点 ID 与随机坐标。"""
+    """按配额（仓库/客户/中转）构造节点 ID 与随机坐标。
+
+    坐标系统：
+        * ``x`` / ``y`` —— 内部算法用抽象坐标（[0, 100]），与 Phase 1 一致；
+        * ``lng`` / ``lat`` —— Phase 5 Dashboard 用的可视化坐标，落在北京 16 区
+          边界框 [115.7°E, 39.5°N, 117.2°E, 40.7°N] 内，由 ``RandomSource``
+          确定性采样，**不**前端重新随机。
+    """
     # 在 [min, max] 区间中均匀挑一个整数
     n_total = rng.randint(config.min_nodes, config.max_nodes)
 
@@ -69,12 +78,18 @@ def _make_node_specs(
     # 坐标范围：[0, 100]，与 Phase 1 场景规模相当（米 → km）
     specs: list[_NodeSpec] = []
 
+    # 北京 16 区边界框（WGS84）
+    BJ_LNG_MIN, BJ_LNG_MAX = 115.7, 117.2
+    BJ_LAT_MIN, BJ_LAT_MAX = 39.5, 40.7
+
     def add(prefix: str, kind: NodeType, count: int):
         for i in range(count):
             nid = f"{prefix}{i + 1}"
             x = round(rng.uniform(0.0, 100.0), 2)
             y = round(rng.uniform(0.0, 100.0), 2)
-            specs.append(_NodeSpec(nid, kind, x, y))
+            lng = round(rng.uniform(BJ_LNG_MIN, BJ_LNG_MAX), 5)
+            lat = round(rng.uniform(BJ_LAT_MIN, BJ_LAT_MAX), 5)
+            specs.append(_NodeSpec(nid, kind, x, y, lng, lat))
 
     add(_PREFIX[NodeType.WAREHOUSE], NodeType.WAREHOUSE, n_wh)
     add(_PREFIX[NodeType.TRANSFER], NodeType.TRANSFER, n_tr)
@@ -226,6 +241,11 @@ def sample_logistics_graph(
                 node_type=s.node_type,
                 x=s.x,
                 y=s.y,
+                metadata={
+                    "lng": float(s.lng),
+                    "lat": float(s.lat),
+                    "viz_source": "beijing_schematic",
+                },
             )
         )
 

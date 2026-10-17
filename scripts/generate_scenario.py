@@ -39,32 +39,70 @@ OUTPUT_PATH = Path(__file__).resolve().parent.parent / "config" / "scenario.json
 def _build_nodes() -> list[dict]:
     """2 仓库 + 4 中转 + 29 客户 = 35 节点。
 
-    节点坐标为示意性二维城市网格，不对应真实地理。
+    节点坐标：
+
+    * ``x`` / ``y`` —— 内部算法用抽象坐标（[0, 9]），**保留** Phase 1 数值以
+      维持既有时间窗/订单可行性；
+    * ``metadata.lng`` / ``metadata.lat`` —— Phase 5 Dashboard 北京可视化坐标
+      （WGS84），落在 16 区边界框内。**不**对应真实行政边界。
     """
     nodes: list[dict] = []
-    # 2 仓库：分布于城市对角
-    nodes.append({"id": "W1", "name": "主仓（北）", "type": "warehouse", "x": 0.0, "y": 9.0})
-    nodes.append({"id": "W2", "name": "次仓（南）", "type": "warehouse", "x": 9.0, "y": 0.0})
+    # 2 仓库：分布于城市对角（保持原 x/y 不变以保证订单时间窗仍然有效）
+    nodes.append({
+        "id": "W1", "name": "主仓（北）", "type": "warehouse",
+        "x": 0.0, "y": 9.0,
+        "metadata": {"lng": 116.485, "lat": 39.92},  # 朝阳示意
+    })
+    nodes.append({
+        "id": "W2", "name": "次仓（南）", "type": "warehouse",
+        "x": 9.0, "y": 0.0,
+        "metadata": {"lng": 116.30, "lat": 39.96},  # 海淀示意
+    })
 
-    # 4 中转：城市四角各 1
-    for i, (x, y) in enumerate([(2.0, 7.0), (7.0, 7.0), (2.0, 2.0), (7.0, 2.0)], start=1):
+    # 4 中转：城市四角各 1（保持原 x/y）
+    for i, (x, y, lng, lat) in enumerate([
+        (2.0, 7.0, 116.42, 39.88),  # T1
+        (7.0, 7.0, 116.55, 39.86),  # T2
+        (2.0, 2.0, 116.20, 39.78),  # T3
+        (7.0, 2.0, 116.66, 39.78),  # T4
+    ], start=1):
         nodes.append({
             "id": f"T{i}",
             "name": f"中转站{i}",
             "type": "transfer",
-            "x": float(x),
-            "y": float(y),
+            "x": float(x), "y": float(y),
+            "metadata": {"lng": lng, "lat": lat},
         })
 
-    # 29 客户：撒在中部
+    # 29 客户：撒在中部（保持原 x/y 抖动；新增 lng/lat 走 16 区循环 + 微抖动）
+    districts_lng_lat = [
+        (116.42, 39.92),  # 东城
+        (116.37, 39.91),  # 西城
+        (116.49, 39.93),  # 朝阳
+        (116.30, 39.97),  # 海淀
+        (116.29, 39.86),  # 丰台
+        (116.22, 39.91),  # 石景山
+        (116.66, 39.91),  # 通州
+        (116.65, 40.13),  # 顺义
+        (116.23, 40.22),  # 昌平
+        (116.33, 39.73),  # 大兴
+        (115.97, 39.72),  # 房山
+        (116.10, 39.94),  # 门头沟
+    ]
     customer_rng = random.Random(SEED)
+    pos_rng = random.Random(SEED)  # 复用原 SEED 保留 x/y 数值
     for i in range(1, 30):
+        c_x = round(pos_rng.uniform(1.0, 8.0), 2)
+        c_y = round(pos_rng.uniform(1.0, 8.0), 2)
+        base_lng, base_lat = districts_lng_lat[(i - 1) % len(districts_lng_lat)]
+        c_lng = round(base_lng + customer_rng.uniform(-0.02, 0.02), 5)
+        c_lat = round(base_lat + customer_rng.uniform(-0.02, 0.02), 5)
         nodes.append({
             "id": f"C{i}",
             "name": f"客户{i:02d}",
             "type": "customer",
-            "x": round(customer_rng.uniform(1.0, 8.0), 2),
-            "y": round(customer_rng.uniform(1.0, 8.0), 2),
+            "x": c_x, "y": c_y,
+            "metadata": {"lng": c_lng, "lat": c_lat},
         })
     return nodes
 

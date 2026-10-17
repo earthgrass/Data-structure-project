@@ -32,12 +32,25 @@ from logiroute.graph.logistics_graph import LogisticsGraph
 
 
 def _node_to_dict(node: Node) -> dict[str, Any]:
+    """节点 → JSON 字典。
+
+    优先从 ``node.metadata`` 读取 Phase 5 可视化坐标 ``lng`` / ``lat``；
+    若缺失则回退为 ``None``（前端用 x/y 投影兜底）。
+    """
+    meta = node.metadata or {}
+    lng_raw = meta.get("lng")
+    lat_raw = meta.get("lat")
+    lng = float(lng_raw) if isinstance(lng_raw, (int, float)) else None
+    lat = float(lat_raw) if isinstance(lat_raw, (int, float)) else None
     return {
         "id": node.id,
         "name": node.name,
         "type": node.node_type.value,
         "x": float(node.x),
         "y": float(node.y),
+        "lng": lng,
+        "lat": lat,
+        "metadata": dict(meta),
     }
 
 
