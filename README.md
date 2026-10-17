@@ -154,6 +154,17 @@
 
 ## Phase 5 Dashboard 启动（端到端）
 
+**一键启动（推荐）**：
+
+| 系统 | 命令 |
+| --- | --- |
+| Windows (cmd / PowerShell) | `scripts\dev.bat` |
+| Unix / Git Bash / WSL | `bash scripts/dev.sh` |
+
+脚本会自动开两个窗口分别跑后端 (`:8000`) 与前端 (`:5172`)，并按需执行 `npm install`。
+
+**手动分终端启动**：
+
 ```bash
 # 1. 终端 A —— 启动 FastAPI 后端（默认 :8000）
 PYTHONPATH=src python -m uvicorn logiroute.api:app --host 127.0.0.1 --port 8000
@@ -165,6 +176,11 @@ npm run dev
 ```
 
 打开浏览器访问 `http://localhost:5172`。
+
+> **重要**：浏览器打开前**必须**先确保两个服务都在运行。后端未启动时，
+> Vite 代理会返回空 body 的 HTTP 500；前端会以红色横幅提示
+> `⚠ 场景生成失败 [proxy_error] Vite 代理未能连接后端服务` 并附带
+> 启动命令。
 
 * Vite proxy 已把 `/api/*` 转发到 `http://127.0.0.1:8000`（见 `frontend/vite.config.ts`）。
 * 后端单独 ``GET /docs`` 可访问 Swagger UI。
