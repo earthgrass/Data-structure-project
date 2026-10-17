@@ -225,8 +225,10 @@ def sample_logistics_graph(
                     break
 
     if len(edge_candidates) > config.max_edges:
-        # 随机裁剪
-        elist = list(edge_candidates)
+        # 随机裁剪。先按 (source, target) 排序：Python 字符串哈希在每个进程
+        # 随机化，直接 list(set) 会让洗牌前的初始顺序跨进程漂移，同 seed 也
+        # 可能裁剪出不同边集。
+        elist = sorted(edge_candidates)
         rng.shuffle(elist)
         edge_candidates = set(elist[: config.max_edges])
 
@@ -249,7 +251,9 @@ def sample_logistics_graph(
             )
         )
 
-    for (sid, tid) in edge_candidates:
+    # 按固定顺序构造边：边权采样按此顺序消耗 RNG。若直接迭代 set，
+    # 字符串哈希随机化会导致同 seed 在不同进程中生成不同边权。
+    for (sid, tid) in sorted(edge_candidates):
         if sid == tid:
             continue
         d, t, c = _sample_edge_weights(spec_by_id[sid], spec_by_id[tid], rng)
