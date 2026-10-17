@@ -23,7 +23,12 @@ import { ApiClientError } from '../api';
  */
 export type AsyncState<T> =
   | { readonly kind: 'idle' }
-  | { readonly kind: 'loading'; readonly startedAt: number }
+  | {
+      readonly kind: 'loading';
+      readonly startedAt: number;
+      /** 进入 loading 之前已成功的旧数据；失败时作为 previousData 兜底 */
+      readonly previousData?: T;
+    }
   | {
       readonly kind: 'success';
       readonly data: T;
@@ -38,9 +43,13 @@ export type AsyncState<T> =
 
 /** 便捷构造函数 */
 export const idle = <T,>(): AsyncState<T> => ({ kind: 'idle' });
-export const loading = <T,>(startedAt = Date.now()): AsyncState<T> => ({
+export const loading = <T,>(
+  startedAt = Date.now(),
+  previousData?: T,
+): AsyncState<T> => ({
   kind: 'loading',
   startedAt,
+  previousData,
 });
 export const success = <T,>(data: T, loadedAt = Date.now()): AsyncState<T> => ({
   kind: 'success',
@@ -106,8 +115,19 @@ export function useAsyncResource<T>(): AsyncResource<T> {
 
   const start = useCallback((): number => {
     const id = ++inFlightRef.current;
-    // 进入 loading；previousData 由 fail() 在必要时补回
-    setState(loading<T>(Date.now()));
+    // 进入 loading；若当前态是 success，则把其 data 透传至 loading.previousData，
+    // 失败时 fail() 会沿用，避免「保留旧场景」语义丢失。
+    setState((prev) => {
+      const previousData =
+        prev.kind === 'success'
+          ? prev.data
+          : prev.kind === 'loading'
+          ? prev.previousData
+          : prev.kind === 'error'
+          ? prev.previousData
+          : undefined;
+      return loading<T>(Date.now(), previousData);
+    });
     return id;
   }, []);
 
@@ -124,6 +144,8 @@ export function useAsyncResource<T>(): AsyncResource<T> {
           : prev.kind === 'success'
           ? prev.data
           : prev.kind === 'error'
+          ? prev.previousData
+          : prev.kind === 'loading'
           ? prev.previousData
           : undefined;
       return failure<T>(err, Date.now(), previousData);
