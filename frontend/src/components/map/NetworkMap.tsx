@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import type { GraphData, RoutePlanData, ScheduleResult, ValidationReport } from '../../types';
-import { BeijingMap } from '../BeijingMap';
+import { RouteSchematic } from './RouteSchematic';
 import { MapLegend } from './MapLegend';
 
 interface NetworkMapProps {
@@ -73,7 +73,7 @@ export function NetworkMap({
       </div>
 
       <div className="map-canvas">
-        <BeijingMap
+        <RouteSchematic
           graph={graph}
           route={route}
           showNetworkEdges={showEdges}
