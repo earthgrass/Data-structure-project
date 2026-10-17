@@ -113,7 +113,7 @@
   --status-na-soft: #f1f5f9;
 
   /* —— 布局尺寸 —— */
-  --layout-sidenav-w: 260px;            /* 原 --layout-sidebar-w: 280px */
+  --layout-sidenav-w: 260px;
   --layout-result-w: 380px;
   --layout-topbar-h: 64px;
   --layout-gap: 14px;
