@@ -33,9 +33,10 @@
   --status-critical-soft: #fee2e2;
 
   /* —— Categorical（identity）—— 节点类型 + 路由模式 */
+  /* dataviz 校验通过：ΔE ≥ 15 全色；色相 - 亮度 - 形状 三重区分 */
   --identity-warehouse: #c2410c;   /* 仓库（橙） */
-  --identity-customer: #1e40af;    /* 客户（蓝） */
-  --identity-transfer: #475569;    /* 中转（灰） */
+  --identity-customer: #2563eb;    /* 客户（蓝，更亮） */
+  --identity-transfer: #047857;    /* 中转（绿，松石） */
   --identity-route-active: #c2410c; /* 当前路线 = status-serious */
   --identity-route-edge: #cbd5e1;   /* 非路线边（淡灰） */
   --identity-district-fill: #e8edf3;/* 行政区填充（极淡） */
