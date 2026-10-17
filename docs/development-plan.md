@@ -143,7 +143,7 @@
 * 多 seed 对比实验脚本；
 * 生成器不得依赖第三方图算法库。
 
-## Phase 5 — 交互式 Dashboard（**单车可视化**）
+## Phase 5 — 交互式 Dashboard（**单车可视化**）✅ 已完成（2026-10-17 冻结）
 
 * 独立前端工程（React 18 + TypeScript + Vite）；
 * 可视化一辆车的配送过程：节点坐标 / 完整路径 / 每站时刻表 /
@@ -151,14 +151,21 @@
 * **可**展示多个仓库与全部网络节点；
 * 不得在前端重新计算调度算法 —— 只负责输入参数、调用后端规划、
   显示结果；
-* 数据通过 FastAPI（Phase 6）后端服务传输。
+* 数据通过 FastAPI 后端服务传输；
+* FastAPI 已在 Phase 5 实现：`/api/health`、`/api/scenario/*`、
+  `/api/plan`、`/api/compare`（见 `src/logiroute/api/`）。
 
-## Phase 6 — FastAPI 后端 + 动态事件
+## Phase 6（设计存档，未实施）— BJUT 周边真实道路网络
 
-* `logiroute.api` 下搭建 FastAPI 应用；
-* 路由：`/graphs`, `/nodes`, `/edges`, `/orders`, `/vehicles`, `/paths`；
-* Pydantic 与 `core` 模型解耦：通过 `serializers` 模块转换；
-* 暴露 `app: ASGIApp`；
+* 详细方案见 [`phase6-bjut-road-network-design.md`](phase6-bjut-road-network-design.md)；
+* 拟用 OSM（Overpass / BBBike / Geofabrik）构建 BJUT 周边真实道路图；
+* 明确坐标处理（WGS84 / haversine / 示意投影）、ODbL 许可与署名要求；
+* 交通数据先静态速度模型，实时交通需正式授权与配额；
+* **本轮（2026-10-17 课程检查冻结）不下载、不接入任何真实数据，不启动 Phase 6**；
+* 继续遵守单车辆、手写算法、复用 Dijkstra 等全部约束。
+
+## Phase 7（后续）— 动态事件与重规划
+
 * 动态事件：拥堵 / 阻断 / 修复 / 紧急订单；
 * 增量式事件回调接口，便于 Dijkstra 重规划订阅；
 * 重规划仍保持**单车**约束 —— 仅修改这一辆车的路线。
