@@ -35,7 +35,7 @@ import {
   planDeliveries,
 } from './api';
 import { HeaderBar } from './components/layout/HeaderBar';
-import { Sidebar } from './components/planning/Sidebar';
+import { SideNav } from './components/layout/SideNav';
 import { NetworkMap } from './components/map/NetworkMap';
 import { ResultPanel } from './components/results/ResultPanel';
 import { ObjectiveComparison } from './components/results/ObjectiveComparison';
@@ -176,10 +176,6 @@ export function App() {
 
       <div className="app">
         <HeaderBar
-          seed={seed}
-          onSeedChange={setSeed}
-          onGenerate={handleGenerate}
-          isGenerating={scenario.loading}
           validation={scenarioData?.validation ?? null}
           scenarioName={scenarioData?.scenario.name ?? null}
           nodeCount={scenarioData?.scenario.graph.node_count ?? 0}
@@ -189,21 +185,24 @@ export function App() {
           scenarioIsStale={scenarioIsStale}
         />
 
-        <Sidebar
-          scenarioName={scenarioData?.scenario.name ?? null}
-          nodeCount={scenarioData?.scenario.graph.node_count ?? 0}
-          edgeCount={scenarioData?.scenario.graph.edge_count ?? 0}
-          orderCount={scenarioData?.scenario.orders.length ?? 0}
-          vehicleCount={scenarioData?.scenario.vehicles.length ?? 0}
+        <SideNav
           seed={seed}
-          isGenerating={scenario.loading}
+          onSeedChange={setSeed}
           onGenerate={handleGenerate}
+          isGenerating={scenario.loading}
           objective={objective}
           onObjectiveChange={setObjective}
           onPlan={handlePlan}
           onCompare={handleCompare}
           isRunning={plan.loading || compare.loading}
           hasScenario={!!scenarioData}
+          scenarioName={scenarioData?.scenario.name ?? null}
+          nodeCount={scenarioData?.scenario.graph.node_count ?? 0}
+          edgeCount={scenarioData?.scenario.graph.edge_count ?? 0}
+          orderCount={scenarioData?.scenario.orders.length ?? 0}
+          vehicleCount={scenarioData?.scenario.vehicles.length ?? 0}
+          validation={scenarioData?.validation ?? null}
+          scenarioIsStale={scenarioIsStale}
         />
 
         <div className="center">

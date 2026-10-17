@@ -1,21 +1,22 @@
-// Phase 5.2 —— HeaderBar：紧凑型全局顶栏。
-// 4 段结构：品牌区 / 控制区（seed + 生成） / 自适应占位 / 状态徽章区。
+// Phase 5.3 —— HeaderBar：精简型全局顶栏。
+// 3 段结构：品牌区 / 自适应占位 / 状态徽章区（场景摘要 + 数据时间 + 数据源状态）。
 //
-// 数据归属（受 FinAgent-X V2 工程实践启发）：
-//   - OWN：seed 输入 / 「随机生成场景」按钮 / 场景摘要徽章
-//   - NOT OWN：场景生成请求（由 App.tsx 统一发起；本组件不调用任何 API）
-//   - DISPLAY：仅展示由父组件传入的场景数据；不持有任何本地副本
-//   - 严禁 mock / 硬编码 KPI 或伪造成功状态
+// 重构说明：
+//   * seed 输入与「随机生成场景」按钮已迁移到 SideNav「规划」组；
+//   * 数据源状态（REAL/NA）由 scenarioName 派生，1s 刷新本地时钟；
+//   * validator 状态已迁移到 SideNav「数据」组，避免重复。
+//
+// 数据归属：
+//   - OWN：实时时钟（无外部依赖）
+//   - NOT OWN：不调用任何 API；所有数据由父组件 props 注入
+//   - DISPLAY：受控展示
 
+import { useEffect, useState } from 'react';
 import type { ValidationReport } from '../../types';
 
 interface HeaderBarProps {
-  seed: number;
-  onSeedChange: (s: number) => void;
-  onGenerate: () => void;
-  isGenerating: boolean;
-  validation: ValidationReport | null;
   scenarioName: string | null;
+  validation: ValidationReport | null;
   nodeCount: number;
   edgeCount: number;
   orderCount: number;
@@ -24,19 +25,30 @@ interface HeaderBarProps {
   scenarioIsStale?: boolean;
 }
 
+function formatClock(d: Date): string {
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
 export function HeaderBar({
-  seed,
-  onSeedChange,
-  onGenerate,
-  isGenerating,
-  validation,
   scenarioName,
+  validation,
   nodeCount,
   edgeCount,
   orderCount,
   vehicleCount,
   scenarioIsStale = false,
 }: HeaderBarProps) {
+  const [now, setNow] = useState<Date>(() => new Date());
+
+  // 1 秒一次本地时钟刷新（仅用于显示，不参与任何业务计算）
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const hasData = !!scenarioName;
+
   return (
     <div className="topbar" role="banner">
       {/* 品牌区 */}
@@ -44,34 +56,8 @@ export function HeaderBar({
         <span className="brand-mark" aria-hidden />
         <div>
           <h1>LogiRoute</h1>
-          <span className="subtitle">单车辆物流配送调度工作台 · Phase 5.1</span>
+          <span className="subtitle">单车辆物流配送调度工作台 · Phase 5.3</span>
         </div>
-      </div>
-
-      {/* 控制区：seed + 生成 */}
-      <div className="control-cluster">
-        <div className="seed-input">
-          <label htmlFor="seed-input">SEED</label>
-          <input
-            id="seed-input"
-            type="number"
-            // 受控：每次 onChange 立即同步到 React state
-            // 避免「输入新 seed 但未失焦就点击生成」导致的 seed 不一致
-            value={seed}
-            onChange={(e) => {
-              const n = parseInt(e.target.value, 10);
-              if (Number.isFinite(n)) onSeedChange(n);
-            }}
-            aria-label="随机场景种子"
-          />
-        </div>
-        <button
-          className="btn btn-primary"
-          onClick={onGenerate}
-          disabled={isGenerating}
-        >
-          {isGenerating ? '生成中…' : '随机生成场景'}
-        </button>
       </div>
 
       {/* 占位列 */}
@@ -119,6 +105,17 @@ export function HeaderBar({
             validator：{validation.feasible ? 'PASS' : 'FAIL'}
           </span>
         )}
+        <span
+          className={`badge ${hasData ? 'badge-real' : 'badge-na'}`}
+          title="数据源加载状态"
+        >
+          <span className="dot" />
+          数据源：{hasData ? 'REAL' : 'NA'}
+        </span>
+        <span className="badge badge-neutral" title="本地时钟">
+          <span className="dot" />
+          数据时间 {formatClock(now)}
+        </span>
       </div>
     </div>
   );
