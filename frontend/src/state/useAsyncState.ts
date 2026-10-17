@@ -185,3 +185,25 @@ export function isStaleByAge<T>(
   if (s.kind !== 'success') return false;
   return now - s.loadedAt > maxAgeMs;
 }
+
+/**
+ * displayData —— 在 loading / error 状态下都能拿到「最近一次成功的数据」，
+ * 供 UI 在过渡期间不闪烁（避免「点击生成 → 顶部统计短暂变 0」的视觉异常）。
+ *
+ * 返回值是只读的视图；不允许修改。
+ *
+ * 注意：与 state machine 的语义不同 —— displayData 只是渲染辅助，
+ * 真正的「成功」判定仍依赖 state.kind === 'success'。
+ */
+export function displayData<T>(
+  s: AsyncState<T>,
+): { data: T | null; isStale: boolean } {
+  if (s.kind === 'success') return { data: s.data, isStale: false };
+  if (s.kind === 'loading' && s.previousData !== undefined) {
+    return { data: s.previousData, isStale: true };
+  }
+  if (s.kind === 'error' && s.previousData !== undefined) {
+    return { data: s.previousData, isStale: true };
+  }
+  return { data: null, isStale: false };
+}

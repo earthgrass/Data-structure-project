@@ -39,7 +39,7 @@ import { Sidebar } from './components/planning/Sidebar';
 import { NetworkMap } from './components/map/NetworkMap';
 import { ResultPanel } from './components/results/ResultPanel';
 import { ObjectiveComparison } from './components/results/ObjectiveComparison';
-import { useAsyncResource } from './state/useAsyncState';
+import { useAsyncResource, displayData } from './state/useAsyncState';
 import type {
   CompareResponse,
   Objective,
@@ -131,9 +131,12 @@ export function App() {
     }
   }
 
-  // 派生数据：成功态用 success.data；error 态可用 previousData 兜底，但必须标记 stale
-  const scenarioData = scenario.data; // success.data || error.previousData
-  const scenarioIsStale = scenario.state.kind === 'error' && scenario.data !== null;
+  // 派生数据：使用 displayData 让 loading / error 期间也能显示最近一次
+  // 成功的数据，避免「点击生成 → 顶部统计短暂变 0 → 重新填入」的视觉闪烁。
+  // success 态 isStale=false；loading/error 携带 previousData 时 isStale=true。
+  const scenarioView = displayData(scenario.state);
+  const scenarioData = scenarioView.data;
+  const scenarioIsStale = scenarioView.isStale || (scenario.state.kind === 'error' && scenario.data !== null);
 
   const planResult = plan.fresh?.result ?? null;
   const compareData = compare.fresh ?? null;
