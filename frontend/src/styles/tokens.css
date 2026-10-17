@@ -102,8 +102,18 @@
     'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
   --font-mono: 'SF Mono', Menlo, Consolas, 'Courier New', monospace;
 
+  /* —— 强调色 —— 主 CTA / 主菜单激活态 —— */
+  --accent-primary: #dc2626;            /* 强调红：运行规划 / 随机生成场景 */
+  --accent-primary-hover: #b91c1c;
+
+  /* —— 数据源状态 (REAL / N/A) —— */
+  --status-real: #15803d;
+  --status-real-soft: #d1fae5;
+  --status-na: #94a3b8;
+  --status-na-soft: #f1f5f9;
+
   /* —— 布局尺寸 —— */
-  --layout-sidebar-w: 280px;
+  --layout-sidenav-w: 260px;            /* 原 --layout-sidebar-w: 280px */
   --layout-result-w: 380px;
   --layout-topbar-h: 64px;
   --layout-gap: 14px;
