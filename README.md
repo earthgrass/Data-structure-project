@@ -84,13 +84,48 @@
 * **运行期**：仅依赖 Python 标准库（`dataclasses`、`enum`、`json`、`collections.deque`、`math`、`pathlib`、`typing`）
 * **开发期**：无第三方依赖
 * **测试**：`unittest`（标准库）
-* **明确未引入**：NetworkX、NumPy、SciPy、OR-Tools、heapq（算法路径）、pandas、matplotlib、pytest、pydantic、fastapi
+* **明确未引入**：NetworkX、NumPy、SciPy、OR-Tools、heapq（算法路径）、pandas、matplotlib、pytest
+* **Phase 5 后端新增运行期依赖**（**仅** Web 层，非算法核心）：`fastapi`、`uvicorn`、`pydantic`
+* **Phase 5 前端新增运行期依赖**（**仅** UI 层，非算法核心）：`react`、`react-dom`（dev: `vite`、`typescript`）
 
 ## 环境要求
 
 | 项目  | 版本 |
 | ----- | ---- |
 | Python | ≥ 3.11 |
+| Node.js（仅 Phase 5 Dashboard 需要） | ≥ 18 |
+
+## Phase 5 Dashboard 启动（端到端）
+
+```bash
+# 1. 终端 A —— 启动 FastAPI 后端（默认 :8000）
+PYTHONPATH=src python -m uvicorn logiroute.api:app --host 127.0.0.1 --port 8000
+
+# 2. 终端 B —— 启动 Vite 前端开发服务器（默认 :5173）
+cd frontend
+npm install   # 首次需要
+npm run dev
+```
+
+打开浏览器访问 `http://localhost:5173`。
+
+* Vite proxy 已把 `/api/*` 转发到 `http://127.0.0.1:8000`（见 `frontend/vite.config.ts`）。
+* 后端单独 ``GET /docs`` 可访问 Swagger UI。
+* **算法核心全部复用 Phase 1-4 已交付模块**，前端**不**重新实现
+  Dijkstra / NN / CFI / 2-opt / 随机生成器（AGENTS §3.7）。
+
+### Phase 5 前端构建产物
+
+```bash
+cd frontend
+npm run build   # 输出到 frontend/dist/
+```
+
+### Phase 5 后端独立测试
+
+```bash
+PYTHONPATH=src python -m unittest tests.test_api -v
+```
 
 ## 运行测试
 

@@ -10,7 +10,7 @@
 * **Python 版本**：≥ 3.11
 * **测试框架**：`unittest`（标准库，**禁止**改回 pytest）
 * **包管理**：`src/` 布局，配置走 `pyproject.toml`
-* **当前阶段**：Phase 1 ✅ **已完成**
+* **当前阶段**：Phase 1 ✅ / Phase 2 ✅ / Phase 3 ✅ / Phase 4 ✅ / Phase 5 ✅ **已完成**
 
 ## 2. 强约束 —— 教师要求
 
@@ -26,7 +26,7 @@
 | 优化求解 | scipy.optimize、cvxpy、pulp |
 | 排序 / 堆（算法核心） | `heapq`、`sorted()`、`functools.cmp_to_key` 等用现成排序代替课程要求排序实现的情形 |
 | 测试框架 | pytest、nose2 等第三方框架（统一用 `unittest`） |
-| 数据可视化 / Web | matplotlib、plotly、dash、fastapi、flask、uvicorn（**直到** 对应阶段授权） |
+| 数据可视化 / Web | matplotlib、plotly、dash（始终禁）；fastapi / flask / uvicorn / React / Vite（**仅** Phase 5 Dashboard 已授权）；Phase 6+ 动态重规划后续按需授权 |
 
 ### 2.2 完全允许的库（仅作为非算法核心工具）
 
