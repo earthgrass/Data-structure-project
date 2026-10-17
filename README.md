@@ -30,7 +30,7 @@
 | 配置层 | `config/scenario.json` + `logiroute.config.loader` |
 | 固定场景 | 35 节点 / 192 有向边 / 强连通 / **严格单车辆 VH1**（容量 250 kg @ W1） / 单配送员 CO1 / 20 订单 |
 | 随机场景 | `logiroute.scenario_generator` —— `generate_scenario(config, seed)` 生成完整场景（**严格单车辆**：生成器只造 VH1，loader 拒绝 `len(vehicles) != 1`）；独立 validator 七项校验 |
-| 测试 | 全部用 `unittest`，共 **442 用例**，全部通过（含 Phase 4 收尾新增 2 个单车辆负向用例） |
+| 测试 | 全部用 `unittest`，共 **494 用例**，全部通过 |
 | 文档 | `AGENTS.md` + `docs/architecture.md` + `docs/development-plan.md` + `docs/data-structures-and-algorithms.md` + `docs/algorithms-{minheap,dijkstra,nearest-neighbor,insertion,two-opt}.md` + 各阶段教师答辩 / 终评审材料 + `docs/PHASE3_SUMMARY.md` / `docs/PHASE4_SUMMARY.md`（单文件总览） |
 
 ## 项目结构
@@ -179,7 +179,11 @@ PYTHONPATH=src python -m unittest tests.test_config.TestValidationErrors.test_ed
 | **tests.test_scenario_generator_backbone_builder** |  6 |
 | **tests.test_scenario_generator_validator** |  6 |
 | **tests.test_phase4_regression**        | 10 |
-| **合计**                                | **442** |
+| **tests.test_scheduling_unified** (Phase 5) | 17 |
+| **tests.test_phase5_stress** (Phase 5, 20 seed × 2 obj) |  6 |
+| **tests.test_phase5_objective_tradeoff** (Phase 5, distance vs cost) | 10 |
+| **tests.test_api** (Phase 5 FastAPI) | 19 |
+| **合计**                                | **494** |
 
 ## 重新生成固定场景
 
