@@ -135,15 +135,38 @@ def build_backbone_and_orders(
 
     # 沿 backbone 计算每段 drive_time + service，累积得到最后返回时间
     cur_t = initial_time
+    leg_durations: list[float] = []
     for s, t in zip(backbone[:-1], backbone[1:]):
-        cur_t = cur_t + _per_leg_drive_time(graph, s, t)
+        leg_t = _per_leg_drive_time(graph, s, t)
+        leg_durations.append(leg_t)
+        cur_t = cur_t + leg_t
         cur_t = cur_t + service_time
     last_return_time = cur_t
 
+    # Phase 5 规格 §四 —— 计算保守时间上界 H，所有订单共享 [tw_start, H]
+    # 必须满足：H ≥ last_return_time（确保路线在窗内返回）
+    #          H ≥ initial_time + (K+1)(V-1)*tau_max + S（保守界，覆盖任意合法访问）
+    tau_max = max(leg_durations) if leg_durations else 0.0
+    n_vertices = len(list(graph.get_all_nodes()))
+    n_orders = len(backbone_inner)
+    h_bound = config.conservative_h_upper_bound(
+        tau_max=tau_max, n_vertices=n_vertices, n_orders=n_orders,
+    )
+
     tw_start = max(0.0, initial_time - 30.0)
-    tw_end = last_return_time + config.window_total_extra
+    # 兜底：tw_end 必须 ≥ max(last_return_time + extra, H)
+    tw_end_from_backbone = last_return_time + config.window_total_extra
+    tw_end_raw = max(tw_end_from_backbone, h_bound)
     tw_start = round(tw_start, 1)
-    tw_end = round(tw_end, 1)
+    tw_end = round(tw_end_raw, 1)
+    h_bound_rounded = round(h_bound, 1)
+
+    # 验证：tw_end 真的覆盖保守 H 上界（用 rounded 值比较，避开浮点尾差）
+    if tw_end < h_bound_rounded - 1e-6:
+        raise RuntimeError(
+            f"flat time window end {tw_end} < conservative H {h_bound_rounded}; "
+            "config is infeasible — refusing to generate scenario"
+        )
 
     # 生成 orders
     orders: list[Order] = []

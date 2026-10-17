@@ -55,7 +55,7 @@ class GeneratorConfig:
     service_time: float = 5.0
     initial_time: float = 540.0
     # 窗口：所有订单共享一个扁平宽窗口，
-    # tw_start = initial_time - 30 ; tw_end = initial_time + N * (svc + 60) + extra
+    # tw_start = initial_time - 30 ; tw_end = last_return_time + extra
     # 默认 extra = 120 minutes —— 保证 NN / CFI / 2-opt 在不同访问顺序下都不漏
     window_total_extra: float = 120.0
     # 需求
@@ -65,6 +65,27 @@ class GeneratorConfig:
     urgent_fraction: float = 0.10
     # 拒绝重试上限（为安全保险，可行性主源是 backbone-first）
     max_rejection_attempts: int = 16
+
+    def conservative_h_upper_bound(
+        self, tau_max: float, n_vertices: int, n_orders: int,
+    ) -> float:
+        """Phase 5 规格 §四 — 完整配送时间保守上界：
+
+            H = t0 + (K + 1) * (V - 1) * tau_max + S
+
+        其中 ``K = n_orders``，``V = n_vertices``，``S = K * service_time``。
+
+        任意合法路径长度 ≤ ``(V - 1) * tau_max``（最坏每条边都取最大权重）。
+        闭合路线含 ``K + 1`` 段，故总行程时间上界为 ``(K + 1) * (V - 1) * tau_max``。
+        服务时间总和 ``S`` 加在末尾。
+
+        Returns:
+            保守时间上界 H（分钟），与 ``initial_time`` 同量纲。
+        """
+        if n_vertices < 1 or n_orders < 1:
+            return self.initial_time
+        return self.initial_time + (n_orders + 1) * max(n_vertices - 1, 0) * tau_max \
+            + n_orders * self.service_time
 
     def __post_init__(self) -> None:
         if self.min_nodes < self.min_warehouses + self.min_customers + self.min_transfers:

@@ -98,14 +98,25 @@ class TestBackboneBuilderTimeWindows(TestCase):
 
         # 自己跑 backbone 算最后返回时间（独立验证，不调 build_backbone_and_orders 内部）
         cur_t = cfg.initial_time
+        leg_durations: list[float] = []
         for s, t in zip(backbone[:-1], backbone[1:]):
             leg = shortest_path(bundle.graph, s, t, "travel_time")
+            leg_durations.append(leg.total_weight)
             cur_t += leg.total_weight + cfg.service_time
-        expected_window_end = cur_t + cfg.window_total_extra
+        backbone_return = cur_t
+        # Phase 5 规格 §四 — tw_end 必须 ≥ max(backbone_return + extra, H)
+        tau_max = max(leg_durations) if leg_durations else 0.0
+        n_vertices = len(list(bundle.graph.get_all_nodes()))
+        n_orders = len(backbone) - 2
+        h_bound = cfg.conservative_h_upper_bound(
+            tau_max=tau_max, n_vertices=n_vertices, n_orders=n_orders,
+        )
+        from_backbone = backbone_return + cfg.window_total_extra
+        expected_window_end = max(from_backbone, h_bound)
 
         self.assertAlmostEqual(
             next(iter(ends)), expected_window_end, delta=0.5,
-            msg="window_end should be last_backbone_return + window_total_extra",
+            msg="window_end should be max(backbone_return + extra, H)",
         )
 
 
