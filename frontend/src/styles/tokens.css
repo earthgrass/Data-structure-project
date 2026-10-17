@@ -1,0 +1,91 @@
+/* Phase 5 —— 设计 tokens（颜色、间距、字号、阴影）。
+   浅色 / 低饱和 / 专业风格。dataviz skill 推荐规范：
+   - 颜色按 job 分配：identity=categorical；magnitude=sequential；polarity=diverging；state=status
+   - 标志色为 status 专用
+   - CVD ΔE ≥ 8 为通过门槛
+*/
+
+:root {
+  /* —— 表面 —— */
+  --surface-page: #f5f6f8;
+  --surface-panel: #ffffff;
+  --surface-elevated: #fbfcfd;
+  --surface-overlay: rgba(15, 23, 42, 0.06);
+
+  /* —— 文字 —— */
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --text-on-accent: #ffffff;
+
+  /* —— 边框 —— */
+  --border-default: #e3e6ea;
+  --border-strong: #cbd5e1;
+
+  /* —— 状态色（reserved）—— */
+  --status-good: #15803d;       /* 可行 / 配送完成 */
+  --status-good-soft: #d1fae5;
+  --status-warn: #b45309;       /* 警告 / 部分配送 */
+  --status-warn-soft: #fef3c7;
+  --status-serious: #c2410c;    /* 严重 / 路线高亮 */
+  --status-serious-soft: #ffedd5;
+  --status-critical: #b91c1c;   /* 错误 / 不可行 */
+  --status-critical-soft: #fee2e2;
+
+  /* —— Categorical（identity）—— 节点类型 + 路由模式 */
+  --identity-warehouse: #c2410c;   /* 仓库（橙） */
+  --identity-customer: #1e40af;    /* 客户（蓝） */
+  --identity-transfer: #475569;    /* 中转（灰） */
+  --identity-route-active: #c2410c; /* 当前路线 = status-serious */
+  --identity-route-edge: #cbd5e1;   /* 非路线边（淡灰） */
+  --identity-district-fill: #e8edf3;/* 行政区填充（极淡） */
+  --identity-district-stroke: #cbd5e1;/* 行政区描边 */
+  --identity-district-text: #94a3b8; /* 区名（弱） */
+
+  /* —— Sequential（magnitude）—— 距离/成本等数值梯度 */
+  --magnitude-low: #15803d;
+  --magnitude-mid: #ca8a04;
+  --magnitude-high: #c2410c;
+
+  /* —— 间距 —— */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* —— 圆角 —— */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  /* —— 阴影 —— */
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+
+  /* —— 字号层级 —— */
+  --font-xs: 11px;
+  --font-sm: 12px;
+  --font-base: 13px;
+  --font-md: 14px;
+  --font-lg: 16px;
+  --font-xl: 18px;
+  --font-2xl: 22px;
+
+  /* —— 行高 —— */
+  --leading-tight: 1.3;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7;
+
+  /* —— 字体 —— */
+  --font-stack: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'SF Mono', Menlo, Consolas, 'Courier New', monospace;
+}
+
+/* 暗色模式（预留 / 当前未启用，但满足 dataviz 暗色独立 ramp 要求） */
+@media (prefers-color-scheme: dark) {
+  /* 当前 Phase 5 Dashboard 浅色优先；暗色留待后续 */
+}

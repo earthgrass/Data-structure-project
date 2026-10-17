@@ -1,9 +1,6 @@
-// Phase 5 —— 前端 API 客户端。
-// 所有调用都基于 fetch（浏览器原生），不引入 axios / ky。
-// 返回值统一：成功时返回 T；后端 4xx/5xx 时抛 ApiClientError（前端统一捕获并显示）。
+// Phase 5 —— 前端 API 客户端（统一接口：algorithm 字段已弃用）。
 
 import type {
-  Algorithm,
   CompareResponse,
   HealthResponse,
   Objective,
@@ -11,7 +8,7 @@ import type {
   ScenarioResponse,
 } from './types';
 
-const BASE = ''; // 同源；Vite proxy 转发到 127.0.0.1:8000。
+const BASE = '';
 
 export class ApiClientError extends Error {
   status: number;
@@ -39,7 +36,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     body = { raw: text };
   }
   if (!resp.ok) {
-    const errBody = body as { error?: { kind: string; message: string; details?: Record<string, unknown> } } | null;
+    const errBody = body as {
+      error?: { kind: string; message: string; details?: Record<string, unknown> };
+    } | null;
     const kind = errBody?.error?.kind ?? 'http_error';
     const message = errBody?.error?.message ?? `HTTP ${resp.status}`;
     throw new ApiClientError(message, resp.status, kind, errBody?.error?.details);
@@ -71,21 +70,20 @@ export async function fetchCurrentScenario(): Promise<ScenarioResponse> {
 }
 
 export async function planDeliveries(
-  algorithm: Algorithm,
   objective: Objective,
 ): Promise<PlanResponse> {
   return request<PlanResponse>('/api/plan', {
     method: 'POST',
-    body: JSON.stringify({ algorithm, objective }),
+    body: JSON.stringify({ objective }),
   });
 }
 
-export async function compareAlgorithms(
-  objective: Objective,
-  algorithms?: Algorithm[],
+export async function compareObjectives(
+  distance: boolean = true,
+  cost: boolean = true,
 ): Promise<CompareResponse> {
   return request<CompareResponse>('/api/compare', {
     method: 'POST',
-    body: JSON.stringify({ objective, algorithms }),
+    body: JSON.stringify({ distance, cost }),
   });
 }

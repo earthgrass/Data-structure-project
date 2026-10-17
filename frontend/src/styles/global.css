@@ -1,0 +1,45 @@
+/* Phase 5 —— 全局 reset + 基础排版 */
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-stack);
+  font-size: var(--font-base);
+  line-height: var(--leading-normal);
+  color: var(--text-primary);
+  background: var(--surface-page);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+}
+
+select, input, button {
+  font-family: inherit;
+}
+
+/* dataviz：值/标签/图例一律用 primary/secondary/muted ink；不用系列色 */
+.value,
+.label,
+.legend-text,
+.metric-value {
+  color: var(--text-primary);
+}
+
+.metric-label,
+.secondary {
+  color: var(--text-secondary);
+}
+
+.muted {
+  color: var(--text-muted);
+}

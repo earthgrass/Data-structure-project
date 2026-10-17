@@ -9,6 +9,12 @@ export interface NodeData {
   type: NodeType;
   x: number;
   y: number;
+  /** Phase 5 可视化经度（WGS84）；null 时回退到 x/y 投影 */
+  lng: number | null;
+  /** Phase 5 可视化纬度（WGS84）；null 时回退到 x/y 投影 */
+  lat: number | null;
+  /** 节点 metadata（如 viz_source 等） */
+  metadata?: Record<string, unknown>;
 }
 
 export interface EdgeData {
@@ -87,6 +93,12 @@ export interface ValidationReport {
   service_time: number;
   initial_time: number;
   violations: { check: string; message: string }[];
+}
+
+/** Phase 5 统一规划器响应——比较接口的双目标结构 */
+export interface CompareResponse {
+  objectives: string[];
+  results: Record<string, ScheduleResult>;
 }
 
 export interface ScenarioResponse {
@@ -170,6 +182,7 @@ export interface ScheduleResult {
 }
 
 export interface PlanResponse {
+  objective: string;
   result: ScheduleResult;
 }
 
@@ -184,7 +197,7 @@ export type Objective = 'distance' | 'cost';
 export interface HealthResponse {
   status: string;
   version: string;
-  test_count: number;
+  objectives: string[];
 }
 
 export interface ApiError {

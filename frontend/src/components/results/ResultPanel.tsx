@@ -1,18 +1,19 @@
-// ResultPanel —— 右侧调度结果展示。
+// Phase 5 —— 右侧调度结果面板：指标 + 路线时间表 + 统计。
 
-import type { ScheduleResult } from '../types';
+import type { ScheduleResult } from '../../types';
 
 interface ResultPanelProps {
   result: ScheduleResult | null;
+  objective: string | null;
   emptyMessage?: string;
 }
 
-export function ResultPanel({ result, emptyMessage }: ResultPanelProps) {
+export function ResultPanel({ result, objective, emptyMessage }: ResultPanelProps) {
   if (!result) {
     return (
       <div className="panel result">
         <h2>调度结果</h2>
-        <p className="empty-result">{emptyMessage ?? '尚无调度结果。'}</p>
+        <p className="empty-state">{emptyMessage ?? '尚无调度结果。'}</p>
       </div>
     );
   }
@@ -23,7 +24,7 @@ export function ResultPanel({ result, emptyMessage }: ResultPanelProps) {
 
   return (
     <div className="panel result">
-      <h2>调度结果 — {result.algorithm}</h2>
+      <h2>调度结果{objective ? ` · ${objective}` : ''}</h2>
 
       <div className="metric-grid">
         <div className={`metric ${result.is_feasible ? 'good' : 'bad'}`}>
@@ -52,12 +53,19 @@ export function ResultPanel({ result, emptyMessage }: ResultPanelProps) {
         </div>
       </div>
 
-      <div style={{ fontSize: 12, color: '#4a4f57', marginBottom: 6 }}>
-        车辆 <strong>{result.vehicle_id}</strong> · 仓库 <strong>{result.depot_id}</strong> ·{' '}
+      <div style={{
+          fontSize: 12, color: 'var(--text-secondary)',
+          marginBottom: 6,
+        }}>
+        车辆 <strong>{result.vehicle_id}</strong> ·
+        仓库 <strong>{result.depot_id}</strong> ·
         主目标 <strong>{result.objective}</strong>（实际 {result.main_objective_total.toFixed(2)}）
       </div>
 
-      <div style={{ fontSize: 12, color: '#4a4f57', marginBottom: 6 }}>
+      <div style={{
+          fontSize: 12, color: 'var(--text-secondary)',
+          marginBottom: 6,
+        }}>
         耗时：调度 {result.planning_stats.runtime_seconds.toFixed(3)} s ·{' '}
         Dijkstra 调用 {result.planning_stats.dijkstra_calls} ·{' '}
         缓存命中 {result.planning_stats.cache_hits} ·{' '}
@@ -77,24 +85,29 @@ export function ResultPanel({ result, emptyMessage }: ResultPanelProps) {
         </div>
       )}
 
-      <div style={{ fontSize: 12, color: '#4a4f57', marginTop: 8, marginBottom: 4 }}>
+      <div style={{
+          fontSize: 12, color: 'var(--text-secondary)',
+          marginTop: 8, marginBottom: 4,
+        }}>
         配送顺序（{result.route_plan.stop_sequence.length - 1} 段 → 闭合回路）：
       </div>
-      <div className="route-list">
+      <div className="route-timeline">
         {result.route_plan.stop_sequence.map((node, i) => {
           const isLast = i === result.route_plan.stop_sequence.length - 1;
           const stop = result.route_plan.stops[i];
           const isDepot = i === 0 || isLast;
           return (
-            <div key={`stop-${i}`} className={`step ${isDepot ? 'depot' : 'customer'}`}>
-              {String(i + 1).padStart(2, '0')}. {node}
+            <div key={`stop-${i}`} className={`route-step ${isDepot ? 'depot' : 'customer'}`}>
+              <span className="step-id">{String(i + 1).padStart(2, '0')}. {node}</span>
               {stop && (
-                <span style={{ color: '#6c7079', marginLeft: 8 }}>
+                <span className="step-meta">
                   t={stop.arrival_time.toFixed(1)}
-                  {stop.waiting_time > 0 && ` (等待 ${stop.waiting_time.toFixed(1)})`}
-                  → 服务结束 {stop.service_end.toFixed(1)}
+                  {stop.waiting_time > 0 && ` · wait ${stop.waiting_time.toFixed(1)}`}
                 </span>
               )}
+              <span className="step-meta">
+                {stop && `服务 ${stop.service_start.toFixed(1)} → ${stop.service_end.toFixed(1)}`}
+              </span>
             </div>
           );
         })}
