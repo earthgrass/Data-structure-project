@@ -1,0 +1,34 @@
+# Phase 5 — 前端工程的 .gitignore
+# 与工程根目录的 .gitignore 分离（Vite 项目级）
+
+# Vite 构建产物
+dist/
+.vite/
+
+# Node 依赖
+node_modules/
+
+# TypeScript 临时文件
+*.tsbuildinfo
+.tmp/
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 操作系统
+.DS_Store
+Thumbs.db
+
+# 环境文件
+.env
+.env.local
+.env.*.local
+
+# 日志
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
