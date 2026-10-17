@@ -1,13 +1,19 @@
-// Phase 5 —— Dashboard 顶层组件（统一规划器 / 双目标）。
-// 状态机：场景生成 → 调度计算 → 比较；防 race condition 用 requestId。
+// Phase 5.1 —— Dashboard 顶层组件（统一规划器 / 双目标 / 时间轴联动）。
+// 状态机：场景生成 → 调度计算 → 比较；防 race condition 用 requestRef。
+// 跨组件联动：时间轴 ↔ 地图节点高亮。
 
 import { useEffect, useRef, useState } from 'react';
-import { ApiClientError, compareObjectives, generateRandomScenario, planDeliveries } from './api';
+import {
+  ApiClientError,
+  compareObjectives,
+  generateRandomScenario,
+  planDeliveries,
+} from './api';
 import { HeaderBar } from './components/layout/HeaderBar';
 import { Sidebar } from './components/planning/Sidebar';
-import { BeijingMap } from './components/BeijingMap';
-import { ObjectiveComparison } from './components/results/ObjectiveComparison';
+import { NetworkMap } from './components/map/NetworkMap';
 import { ResultPanel } from './components/results/ResultPanel';
+import { ObjectiveComparison } from './components/results/ObjectiveComparison';
 import type {
   CompareResponse,
   Objective,
@@ -31,10 +37,16 @@ export function App() {
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [isRunning, setIsRunning] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [planError, setPlanError] = useState<string | null>(null);
+  const [compareError, setCompareError] = useState<string | null>(null);
+  const [globalError, setGlobalError] = useState<string | null>(null);
+
+  // 时间轴 ↔ 地图联动
+  const [activeTimelineNodeId, setActiveTimelineNodeId] = useState<string | null>(null);
 
   const requestRef = useRef<number>(0);
 
+  // 首次挂载自动生成 seed=42
   useEffect(() => {
     void handleGenerate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -44,9 +56,12 @@ export function App() {
     const id = ++REQUEST_ID;
     requestRef.current = id;
     setIsGenerating(true);
-    setErrorMsg(null);
+    setPlanError(null);
+    setCompareError(null);
+    setGlobalError(null);
     setPlanResp(null);
     setCompareResp(null);
+    setActiveTimelineNodeId(null);
     try {
       const resp = await generateRandomScenario({ seed });
       if (requestRef.current !== id) return;
@@ -54,7 +69,9 @@ export function App() {
     } catch (e) {
       if (requestRef.current !== id) return;
       setScenarioResp(null);
-      setErrorMsg(e instanceof ApiClientError ? `[${e.kind}] ${e.message}` : String(e));
+      setGlobalError(
+        e instanceof ApiClientError ? `[${e.kind}] ${e.message}` : String(e),
+      );
     } finally {
       if (requestRef.current === id) setIsGenerating(false);
     }
@@ -64,8 +81,9 @@ export function App() {
     const id = ++REQUEST_ID;
     requestRef.current = id;
     setIsRunning(true);
-    setErrorMsg(null);
-    setCompareResp(null);
+    setPlanError(null);
+    setCompareError(null);
+    setActiveTimelineNodeId(null);
     try {
       const resp = await planDeliveries(objective);
       if (requestRef.current !== id) return;
@@ -73,7 +91,9 @@ export function App() {
     } catch (e) {
       if (requestRef.current !== id) return;
       setPlanResp(null);
-      setErrorMsg(e instanceof ApiClientError ? `[${e.kind}] ${e.message}` : String(e));
+      setPlanError(
+        e instanceof ApiClientError ? `[${e.kind}] ${e.message}` : String(e),
+      );
     } finally {
       if (requestRef.current === id) setIsRunning(false);
     }
@@ -83,26 +103,38 @@ export function App() {
     const id = ++REQUEST_ID;
     requestRef.current = id;
     setIsRunning(true);
-    setErrorMsg(null);
+    setPlanError(null);
+    setCompareError(null);
     setPlanResp(null);
+    setActiveTimelineNodeId(null);
     try {
       const resp = await compareObjectives(true, true);
       if (requestRef.current !== id) return;
-      setCompareResp(resp);
+      // 后端可能只返回一个目标（接口宽容）；不完整时显示错误
+      const objectives = resp.objectives ?? [];
+      if (objectives.length < 2 || !resp.results['distance'] || !resp.results['cost']) {
+        setCompareResp(null);
+        setCompareError(
+          `双目标结果不完整（仅 ${objectives.length} 个目标），无法对比`,
+        );
+      } else {
+        setCompareResp(resp);
+      }
     } catch (e) {
       if (requestRef.current !== id) return;
       setCompareResp(null);
-      setErrorMsg(e instanceof ApiClientError ? `[${e.kind}] ${e.message}` : String(e));
+      setCompareError(
+        e instanceof ApiClientError ? `[${e.kind}] ${e.message}` : String(e),
+      );
     } finally {
       if (requestRef.current === id) setIsRunning(false);
     }
   }
 
-  // display 结果：plan 与 compare 互斥；plan 默认显示当前 objective 对应结果
   const displayedResult = planResp?.result ?? null;
-
   const validation = scenarioResp?.validation ?? null;
   const scenario = scenarioResp?.scenario ?? null;
+  const hasScenario = !!scenario;
 
   return (
     <div className="app">
@@ -119,70 +151,61 @@ export function App() {
         vehicleCount={scenario?.vehicles.length ?? 0}
       />
 
-      {errorMsg && <div className="error-banner">{errorMsg}</div>}
+      {globalError && (
+        <div className="error-banner" role="alert" style={{ gridColumn: '1 / -1' }}>
+          <span>⚠ 场景生成失败：{globalError}</span>
+          <button onClick={() => setGlobalError(null)}>关闭</button>
+        </div>
+      )}
 
       <Sidebar
+        scenarioName={scenario?.name ?? null}
+        nodeCount={scenario?.graph.node_count ?? 0}
+        edgeCount={scenario?.graph.edge_count ?? 0}
+        orderCount={scenario?.orders.length ?? 0}
+        vehicleCount={scenario?.vehicles.length ?? 0}
+        seed={seed}
+        isGenerating={isGenerating}
+        onGenerate={handleGenerate}
         objective={objective}
         onObjectiveChange={setObjective}
         onPlan={handlePlan}
         onCompare={handleCompare}
         isRunning={isRunning}
-        hasScenario={!!scenario}
+        hasScenario={hasScenario}
       />
 
       <div className="center">
-        <div className="map-legend">
-          <span className="legend-item">
-            <svg width="12" height="12">
-              <rect x="2" y="2" width="8" height="8" fill="var(--identity-warehouse)" />
-            </svg>
-            仓库
-          </span>
-          <span className="legend-item">
-            <svg width="12" height="12">
-              <circle cx="6" cy="6" r="5" fill="var(--identity-customer)" />
-            </svg>
-            客户
-          </span>
-          <span className="legend-item">
-            <svg width="12" height="12">
-              <polygon points="6,1 11,10 1,10" fill="var(--identity-transfer)" />
-            </svg>
-            中转
-          </span>
-          <span className="legend-item">
-            <svg width="14" height="2">
-              <rect y="0" width="14" height="2" fill="var(--identity-route-active)" />
-            </svg>
-            当前配送路线
-          </span>
-          <span className="legend-item">
-            <svg width="14" height="2">
-              <rect y="0" width="14" height="2" fill="var(--identity-route-edge)" opacity="0.55" />
-            </svg>
-            非路线边
-          </span>
-        </div>
-        <BeijingMap
+        <NetworkMap
           graph={scenario?.graph ?? null}
           route={displayedResult?.route_plan ?? null}
+          validation={validation}
+          scenarioName={scenario?.name ?? null}
+          resultSummary={displayedResult}
+          activeTimelineNodeId={activeTimelineNodeId}
+          onNodeHover={setActiveTimelineNodeId}
         />
-        <div className="disclaimer">
-          本系统以北京区域为示意场景；物流网络及其权重为系统生成的课程设计数据，不代表真实道路导航结果。
-        </div>
       </div>
 
       <ResultPanel
         result={displayedResult}
-        objective={planResp?.objective ?? null}
-        emptyMessage={
-          scenario
-            ? '请选择目标后点击「运行规划」或「双目标比较」。'
-            : '请先在左侧生成场景。'
+        objective={
+          planResp?.objective === 'distance' || planResp?.objective === 'cost'
+            ? planResp.objective
+            : null
         }
+        hasScenario={hasScenario}
+        activeTimelineNodeId={activeTimelineNodeId}
+        onSelectTimelineNode={setActiveTimelineNodeId}
+        errorMessage={planError}
+        onRetry={planError ? handlePlan : undefined}
       />
 
-      <ObjectiveComparison data={compareResp} />
+      <ObjectiveComparison
+        data={compareResp}
+        scenarioName={scenario?.name ?? null}
+        errorMessage={compareError}
+      />
     </div>
   );
 }

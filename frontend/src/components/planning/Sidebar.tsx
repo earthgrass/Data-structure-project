@@ -1,8 +1,17 @@
-// Phase 5 验收整改 —— Sidebar：两卡片（目标函数 + 算法原理）。
+// Phase 5.1 —— Sidebar：3 卡片布局。
+// A. 场景控制（操作所需） / B. 目标函数控制（运行规划） / C. 算法说明。
 
 import type { Objective } from '../../types';
 
 interface SidebarProps {
+  scenarioName: string | null;
+  nodeCount: number;
+  edgeCount: number;
+  orderCount: number;
+  vehicleCount: number;
+  seed: number;
+  isGenerating: boolean;
+  onGenerate: () => void;
   objective: Objective;
   onObjectiveChange: (o: Objective) => void;
   onPlan: () => void;
@@ -11,16 +20,38 @@ interface SidebarProps {
   hasScenario: boolean;
 }
 
-const ALGO_PRINCIPLES = [
-  { name: 'Dijkstra', desc: '站点间路径权重计算' },
-  { name: 'CFI', desc: '最低增量可行插入' },
-  { name: '2-opt', desc: '有向图约束局部优化' },
-  { name: '闭合回路', desc: 'depot → 全部客户 → depot' },
+const ALGO_STEPS = [
+  {
+    name: '手写 Dijkstra',
+    desc: '站点之间的有向最短路径由手写 MinHeap + Dijkstra 计算。',
+  },
+  {
+    name: 'CFI 初始闭环',
+    desc: 'Cheapest Feasible Insertion 构造满足容量 / 时间窗的初始路线。',
+  },
+  {
+    name: '受约束 2-opt',
+    desc: '在有向图 + 单车辆约束下做局部搜索改进。',
+  },
+  {
+    name: '单车辆闭合回路',
+    desc: '一辆车从仓库出发，访问所有待配送点后返回仓库。',
+  },
+  {
+    name: 'distance / cost 双目标',
+    desc: '两种主目标在同一场景快照下可并行对比；travel_time 仅作对比列。',
+  },
 ];
 
-void ALGO_PRINCIPLES;  // referenced via JSX below
-
 export function Sidebar({
+  scenarioName,
+  nodeCount,
+  edgeCount,
+  orderCount,
+  vehicleCount,
+  seed,
+  isGenerating,
+  onGenerate,
   objective,
   onObjectiveChange,
   onPlan,
@@ -29,12 +60,77 @@ export function Sidebar({
   hasScenario,
 }: SidebarProps) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto' }}>
-      {/* 卡片 1：目标函数 */}
-      <div className="card">
+    <div className="sidebar-stack">
+      {/* ===== 卡片 A：场景控制 ===== */}
+      <div className="card" aria-label="场景控制">
         <h3 className="card-title">
-          <span>规划控制</span>
-          <span className="icon" />
+          <span>场景控制</span>
+          <span className="icon-pill warehouse" title="场景">W</span>
+        </h3>
+
+        <div className="form-group">
+          <label>当前场景</label>
+          <div
+            style={{
+              fontSize: 'var(--font-sm)',
+              color: 'var(--text-primary)',
+              fontWeight: 600,
+              padding: '6px 0',
+            }}
+          >
+            {scenarioName ?? '未加载'}
+          </div>
+        </div>
+
+        <div className="form-group">
+          <label>当前 seed</label>
+          <div
+            style={{
+              fontSize: 'var(--font-sm)',
+              color: 'var(--text-secondary)',
+              fontVariantNumeric: 'tabular-nums',
+              padding: '6px 0',
+            }}
+          >
+            {seed}
+          </div>
+        </div>
+
+        <ul className="status-list">
+          <li>
+            <span className="key">节点</span>
+            <span className="val">{nodeCount}</span>
+          </li>
+          <li>
+            <span className="key">边</span>
+            <span className="val">{edgeCount}</span>
+          </li>
+          <li>
+            <span className="key">订单</span>
+            <span className="val">{orderCount}</span>
+          </li>
+          <li>
+            <span className="key">车辆（严格单车辆）</span>
+            <span className="val">{vehicleCount}</span>
+          </li>
+        </ul>
+
+        <div className="btn-row">
+          <button
+            className="btn btn-secondary"
+            onClick={onGenerate}
+            disabled={isGenerating || isRunning}
+          >
+            {isGenerating ? '生成中…' : '随机生成场景'}
+          </button>
+        </div>
+      </div>
+
+      {/* ===== 卡片 B：目标函数控制 ===== */}
+      <div className="card" aria-label="目标函数控制">
+        <h3 className="card-title">
+          <span>目标函数</span>
+          <span className="icon-pill customer" title="目标">C</span>
         </h3>
 
         <div className="form-group">
@@ -42,13 +138,14 @@ export function Sidebar({
           <select
             value={objective}
             onChange={(e) => onObjectiveChange(e.target.value as Objective)}
-            disabled={isRunning}
+            disabled={isRunning || !hasScenario}
           >
             <option value="distance">最短距离</option>
             <option value="cost">最低运输成本</option>
           </select>
           <p className="form-hint">
-            travel_time 作为结果对比指标展示，AGENTS §3.7 不允许作主目标。
+            travel_time 仅作为对比指标展示；本系统授权范围内不允许作为主目标
+            （AGENTS.md §3.6 / §3.7）。
           </p>
         </div>
 
@@ -58,7 +155,7 @@ export function Sidebar({
             onClick={onPlan}
             disabled={!hasScenario || isRunning}
           >
-            运行规划
+            {isRunning ? '计算中…' : '运行规划'}
           </button>
           <button
             className="btn btn-secondary"
@@ -74,21 +171,23 @@ export function Sidebar({
         )}
       </div>
 
-      {/* 卡片 2：算法原理 */}
-      <div className="card">
+      {/* ===== 卡片 C：算法说明 ===== */}
+      <div className="card card-scroll" aria-label="算法说明">
         <h3 className="card-title">
-          <span>算法原理</span>
-          <span
-            className="icon"
-            style={{ background: 'var(--identity-transfer)' }}
-          />
+          <span>算法说明</span>
+          <span className="icon-pill transfer" title="算法">T</span>
         </h3>
+
         <ul className="algo-list">
-          <li><code>Dijkstra</code>：站点间最优路径（手写 + 手写 MinHeap）</li>
-          <li><code>CFI</code>：构造满足容量 / 时间窗的初始闭环</li>
-          <li><code>2-opt</code>：有向图约束局部优化</li>
-          <li>单车辆 + depot → 客户 → depot 闭合回路</li>
-          <li>同场景可比较 distance / cost 两种目标</li>
+          {ALGO_STEPS.map((s, i) => (
+            <li className="algo-step" key={`algo-${i}`}>
+              <span className="step-num">{i + 1}</span>
+              <span className="step-text">
+                <strong>{s.name}</strong>
+                <span>{s.desc}</span>
+              </span>
+            </li>
+          ))}
         </ul>
       </div>
     </div>

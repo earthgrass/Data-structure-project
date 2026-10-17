@@ -1,7 +1,8 @@
-// Phase 5 —— 北京区域 + 物流网络 + 配送路线渲染器。
-// 渲染顺序：背景 → 行政区划 → 物流边 → 节点（节点必须在边之上）。
+// Phase 5.1 —— 北京区域 + 物流网络 + 配送路线渲染器。
+// 渲染顺序：底色 → 行政区划 → 物流边 → 路线 → 节点 → 标签 → 交互覆盖层。
+// 支持：网络普通边开关、节点 hover tooltip、时间轴选中节点联动。
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { EdgeData, GraphData, NodeData, RoutePlanData } from '../types';
 import {
   BEIJING_DISTRICTS, findDistrict,
@@ -16,6 +17,12 @@ import { NetworkNodeLayer } from './map/NetworkNodeLayer';
 interface BeijingMapProps {
   graph: GraphData | null;
   route: RoutePlanData | null;
+  /** 是否显示网络普通边（淡灰细线）；关闭时只显示当前路线 */
+  showNetworkEdges?: boolean;
+  /** 当前时间轴选中的节点（同步高亮） */
+  activeTimelineNodeId?: string | null;
+  /** 节点 hover 时通知父组件（用于在时间轴联动） */
+  onNodeHover?: (nodeId: string | null) => void;
 }
 
 interface HoverInfo {
@@ -28,11 +35,21 @@ interface HoverInfo {
 const VIEW_W = 820;
 const VIEW_H = 600;
 
-export function BeijingMap({ graph, route }: BeijingMapProps) {
+export function BeijingMap({
+  graph,
+  route,
+  showNetworkEdges = true,
+  activeTimelineNodeId = null,
+  onNodeHover,
+}: BeijingMapProps) {
   const [hoverNodeId, setHoverNodeId] = useState<string | null>(null);
+  const positionsRef = useRef<Map<string, { id: string; x: number; y: number }>>(
+    new Map(),
+  );
+  const [positionsTick, setPositionsTick] = useState(0);
 
+  // 投影 bbox 固定（按北京 16 区）
   const projection = useMemo(() => {
-    // 投影以北京 16 区 bbox 为基准；节点位置若在 bbox 外仍能落点
     const bbox = BEIJING_DISTRICTS.metadata.bbox;
     return makeProjection(
       { minLng: bbox[0], maxLng: bbox[2], minLat: bbox[1], maxLat: bbox[3] },
@@ -40,16 +57,24 @@ export function BeijingMap({ graph, route }: BeijingMapProps) {
     );
   }, []);
 
-  const positions = useMemo(() => {
+  // 节点位置重算
+  useEffect(() => {
     const map = new Map<string, { id: string; x: number; y: number }>();
-    if (!graph) return map;
+    if (!graph) {
+      positionsRef.current = map;
+      setPositionsTick((t) => t + 1);
+      return;
+    }
     const fallbackBBox = computeNodeBBox(graph.nodes);
     for (const n of graph.nodes) {
       const p = projectNode(n, projection, fallbackBBox, VIEW_W, VIEW_H, 30, 30);
       map.set(n.id, { id: n.id, x: p.x, y: p.y });
     }
-    return map;
+    positionsRef.current = map;
+    setPositionsTick((t) => t + 1);
   }, [graph, projection]);
+
+  const positions = positionsRef.current;
 
   const activeEdges = useMemo(() => {
     const set = new Set<string>();
@@ -86,6 +111,11 @@ export function BeijingMap({ graph, route }: BeijingMapProps) {
     };
   }, [graph, hoverNodeId, route, activeNodeIds]);
 
+  function handleHover(nodeId: string | null) {
+    setHoverNodeId(nodeId);
+    onNodeHover?.(nodeId);
+  }
+
   if (!graph) {
     return (
       <div className="map-empty">
@@ -98,6 +128,13 @@ export function BeijingMap({ graph, route }: BeijingMapProps) {
     );
   }
 
+  const highlightedNodeIds = new Set<string>(
+    activeNodeIds,
+  );
+  if (activeTimelineNodeId) highlightedNodeIds.add(activeTimelineNodeId);
+
+  const hoverPos = hoverNodeId ? positions.get(hoverNodeId) : null;
+
   return (
     <svg
       className="map-svg"
@@ -105,14 +142,29 @@ export function BeijingMap({ graph, route }: BeijingMapProps) {
       preserveAspectRatio="xMidYMid meet"
       role="img"
       aria-label="北京区域物流网络图"
+      key={positionsTick}
     >
       <defs>
-        <marker id="arrow-route-idle" viewBox="0 0 10 10" refX="9" refY="5"
-                markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+        <marker
+          id="arrow-route-idle"
+          viewBox="0 0 10 10"
+          refX={9}
+          refY={5}
+          markerWidth={5}
+          markerHeight={5}
+          orient="auto-start-reverse"
+        >
           <path d="M0 0 L10 5 L0 10 z" fill="var(--identity-route-edge)" />
         </marker>
-        <marker id="arrow-route-active" viewBox="0 0 10 10" refX="9" refY="5"
-                markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <marker
+          id="arrow-route-active"
+          viewBox="0 0 10 10"
+          refX={9}
+          refY={5}
+          markerWidth={6}
+          markerHeight={6}
+          orient="auto-start-reverse"
+        >
           <path d="M0 0 L10 5 L0 10 z" fill="var(--identity-route-active)" />
         </marker>
       </defs>
@@ -120,12 +172,14 @@ export function BeijingMap({ graph, route }: BeijingMapProps) {
       {/* 1. 行政区划底板 */}
       <DistrictLayer project={projection} />
 
-      {/* 2. 物流边 */}
-      <NetworkEdgeLayer
-        positions={positions}
-        edges={graph.edges as EdgeData[]}
-        activeEdges={activeEdges}
-      />
+      {/* 2. 物流边（开关控制） */}
+      {showNetworkEdges && (
+        <NetworkEdgeLayer
+          positions={positions}
+          edges={graph.edges as EdgeData[]}
+          activeEdges={activeEdges}
+        />
+      )}
 
       {/* 3. 物流节点（顶层） */}
       <NetworkNodeLayer
@@ -133,30 +187,28 @@ export function BeijingMap({ graph, route }: BeijingMapProps) {
         positions={positions}
         activeNodeIds={activeNodeIds}
         hoverNodeId={hoverNodeId}
-        onHover={setHoverNodeId}
+        timelineHighlightId={activeTimelineNodeId}
+        onHover={handleHover}
       />
 
       {/* 4. 节点悬停 tooltip（HTML overlay） */}
-      {hoverInfo && (
-        <foreignObject x={positions.get(hoverInfo.node.id)!.x + 10}
-                       y={positions.get(hoverInfo.node.id)!.y - 30}
-                       width={180} height={70}>
-          <div style={{
-            background: 'white',
-            border: '1px solid var(--border-strong)',
-            borderRadius: 4,
-            padding: '4px 8px',
-            fontSize: 11,
-            color: 'var(--text-primary)',
-            boxShadow: 'var(--shadow-sm)',
-            pointerEvents: 'none',
-          }}>
-            <div style={{ fontWeight: 700 }}>{hoverInfo.node.name}</div>
-            <div style={{ color: 'var(--text-secondary)' }}>
-              {hoverInfo.node.type} · {hoverInfo.districtName ?? '未知区'}
+      {hoverInfo && hoverPos && (
+        <foreignObject
+          x={Math.min(hoverPos.x + 10, VIEW_W - 230)}
+          y={Math.max(hoverPos.y - 60, 10)}
+          width={220}
+          height={80}
+        >
+          <div className="map-tooltip">
+            <strong>{hoverInfo.node.name}</strong>
+            <div className="meta">
+              ID: {hoverInfo.node.id}
+            </div>
+            <div className="meta">
+              类型：{hoverInfo.node.type} · 区域：{hoverInfo.districtName ?? '未知区'}
             </div>
             {hoverInfo.onRoute && (
-              <div style={{ color: 'var(--status-serious)' }}>当前路线经过</div>
+              <span className="badge-on-route">当前路线经过</span>
             )}
           </div>
         </foreignObject>
