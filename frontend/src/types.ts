@@ -186,10 +186,6 @@ export interface PlanResponse {
   result: ScheduleResult;
 }
 
-export interface CompareResponse {
-  objective: string;
-  results: Record<string, ScheduleResult>;
-}
 
 export type Algorithm = 'nearest_neighbor' | 'insertion' | 'two_opt';
 export type Objective = 'distance' | 'cost';

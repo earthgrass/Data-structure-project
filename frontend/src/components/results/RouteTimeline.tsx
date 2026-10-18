@@ -35,7 +35,10 @@ export function RouteTimeline({
           <div
             key={`stop-${i}-${node}`}
             className={`timeline-row ${role} ${isActive ? 'is-active' : ''}`}
-            role="listitem"
+            role="button"
+            tabIndex={0}
+            aria-pressed={isActive}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelectNode?.(node); } }}
             onClick={() => onSelectNode?.(node)}
             onMouseEnter={() => onSelectNode?.(node)}
             title={isDepot ? `${node} · 仓库` : `${node} · 配送站点`}
@@ -63,7 +66,7 @@ export function RouteTimeline({
               {stop
                 ? stop.waiting_time > 0
                   ? `等 ${fmt(stop.waiting_time)}`
-                  : '不停'
+                  : '无等待'
                 : '—'}
             </span>
           </div>

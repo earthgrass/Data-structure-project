@@ -14,6 +14,7 @@ import type { Objective, ValidationReport } from '../../types';
 import type { PlaybackView } from '../../state/usePlayback';
 
 interface SideNavProps {
+  sourceLabel: string;
   // —— 规划组 ——
   seed: number;
   onSeedChange: (s: number) => void;
@@ -64,6 +65,7 @@ const ALGO_STEPS = [
 ];
 
 export function SideNav({
+  sourceLabel,
   seed,
   onSeedChange,
   onGenerate,
@@ -86,242 +88,46 @@ export function SideNav({
   validation,
   scenarioIsStale = false,
 }: SideNavProps) {
+  const busy = isGenerating || isRunning;
   return (
-    <aside className="sidenav" role="navigation" aria-label="左侧导航">
+    <aside className="sidenav" aria-label="规划控制">
       <div className="sidenav-stack">
-        {/* ===== 组 1：规划 ===== */}
-        <section className="sidenav-group" aria-label="规划">
-          <div className="sidenav-group-title">
-            <span>规划</span>
-            <span className="sidenav-group-dot" aria-hidden />
-          </div>
-
-          <div className="sidenav-row sidenav-row-control">
-            <label htmlFor="sidenav-seed-input" className="sidenav-row-label">
-              SEED
-            </label>
-            <div className="seed-input sidenav-seed-input">
-              <input
-                id="sidenav-seed-input"
-                type="number"
-                value={seed}
-                onChange={(e) => {
-                  const n = parseInt(e.target.value, 10);
-                  if (Number.isFinite(n)) onSeedChange(n);
-                }}
-                aria-label="随机场景种子"
-              />
-            </div>
-          </div>
-
-          <button
-            className="btn btn-accent sidenav-row sidenav-row-primary"
-            onClick={onGenerate}
-            disabled={isGenerating || isRunning}
-          >
-            {isGenerating ? '生成中…' : '随机生成场景'}
-          </button>
-
-          <div className="sidenav-row sidenav-row-control">
-            <span className="sidenav-row-label">主目标</span>
-            <div className="sidenav-chip-row" role="radiogroup" aria-label="主目标">
-              <button
-                type="button"
-                className={`sidenav-chip ${objective === 'distance' ? 'is-active' : ''}`}
-                onClick={() => onObjectiveChange('distance')}
-                disabled={isRunning || !hasScenario}
-                role="radio"
-                aria-checked={objective === 'distance'}
-              >
-                最短距离
-              </button>
-              <button
-                type="button"
-                className={`sidenav-chip ${objective === 'cost' ? 'is-active' : ''}`}
-                onClick={() => onObjectiveChange('cost')}
-                disabled={isRunning || !hasScenario}
-                role="radio"
-                aria-checked={objective === 'cost'}
-              >
-                最低成本
-              </button>
-            </div>
-          </div>
-
-          <button
-            className="btn btn-primary sidenav-row sidenav-row-primary"
-            onClick={onPlan}
-            disabled={!hasScenario || isRunning}
-          >
-            {isRunning ? '计算中…' : '运行规划'}
-          </button>
-          <button
-            className="btn btn-secondary sidenav-row"
-            onClick={onCompare}
-            disabled={!hasScenario || isRunning}
-          >
-            双目标比较
-          </button>
-
-          <div className="sidenav-divider" aria-hidden />
-
-          <button
-            className="btn btn-accent sidenav-row sidenav-row-primary"
-            onClick={onPlay}
-            disabled={!hasPlan || playback.isPlaying}
-          >
-            {playback.isPlaying
-              ? '播放中…'
-              : playback.isDone
-                ? '重播配送过程'
-                : '▶ 播放配送过程'}
-          </button>
-          {(playback.isPlaying || playback.isDone) && (
-            <button
-              className="btn btn-ghost sidenav-row sidenav-row-secondary"
-              onClick={onReset}
-            >
-              重置
-            </button>
-          )}
-
-          {isRunning && (
-            <div className="status-line running sidenav-status">调度计算中…</div>
-          )}
+        <div className="sidenav-heading"><span className="eyebrow">PLANNING CONSOLE</span><h2>规划控制台</h2><p>配置场景，生成单车配送闭环。</p></div>
+        <section className="sidenav-group" aria-label="场景控制">
+          <h3>01 <span>场景控制</span></h3>
+          <label className="sidenav-row-label" htmlFor="sidenav-seed-input">随机种子 Seed</label>
+          <input id="sidenav-seed-input" type="number" value={seed} disabled={busy} aria-label="随机场景种子"
+            onChange={(e) => { const n = Number(e.target.value); if (Number.isSafeInteger(n)) onSeedChange(n); }} />
+          <button className="btn btn-secondary" onClick={onGenerate} disabled={busy}>{isGenerating ? '生成中…' : '↻ 随机生成场景'}</button>
+          <p className="sidenav-caption">相同种子可复现相同场景。</p>
         </section>
-
-        {/* ===== 组 2：数据 ===== */}
-        <section className="sidenav-group" aria-label="数据">
-          <div className="sidenav-group-title">
-            <span>数据</span>
-            <span className="sidenav-group-dot" aria-hidden />
+        <section className="sidenav-group" aria-label="规划目标与操作">
+          <h3>02 <span>规划目标</span></h3>
+          <div className="sidenav-chip-row" aria-label="主目标">
+            {(['distance', 'cost'] as const).map((o) => <button key={o} type="button" className={`sidenav-chip ${objective === o ? 'is-active' : ''}`}
+              aria-pressed={objective === o} disabled={busy || !hasScenario} onClick={() => onObjectiveChange(o)}>{o === 'distance' ? '最短距离' : '最低成本'}</button>)}
           </div>
-
-          <div className="sidenav-row sidenav-row-meta">
-            <div className="sidenav-row-meta-key">场景</div>
-            <div className="sidenav-row-meta-val">
-              {scenarioName ?? '—'}
-              <span
-                className={`badge sidenav-row-badge ${
-                  scenarioName ? 'badge-real' : 'badge-na'
-                }`}
-              >
-                <span className="dot" />
-                {scenarioName ? 'REAL' : 'NA'}
-              </span>
-            </div>
-          </div>
-
-          {scenarioIsStale && (
-            <div className="sidenav-row sidenav-row-stale">
-              <span className="badge badge-warn">
-                <span className="dot" />
-                旧场景（stale）
-              </span>
-            </div>
-          )}
-
-          <div className="sidenav-row sidenav-row-meta">
-            <div className="sidenav-row-meta-key">节点</div>
-            <div className="sidenav-row-meta-val">
-              {nodeCount}
-              <span
-                className={`badge sidenav-row-badge ${
-                  nodeCount > 0 ? 'badge-real' : 'badge-na'
-                }`}
-              >
-                <span className="dot" />
-                {nodeCount > 0 ? 'REAL' : 'NA'}
-              </span>
-            </div>
-          </div>
-          <div className="sidenav-row sidenav-row-meta">
-            <div className="sidenav-row-meta-key">边</div>
-            <div className="sidenav-row-meta-val">
-              {edgeCount}
-              <span
-                className={`badge sidenav-row-badge ${
-                  edgeCount > 0 ? 'badge-real' : 'badge-na'
-                }`}
-              >
-                <span className="dot" />
-                {edgeCount > 0 ? 'REAL' : 'NA'}
-              </span>
-            </div>
-          </div>
-          <div className="sidenav-row sidenav-row-meta">
-            <div className="sidenav-row-meta-key">订单</div>
-            <div className="sidenav-row-meta-val">
-              {orderCount}
-              <span
-                className={`badge sidenav-row-badge ${
-                  orderCount > 0 ? 'badge-real' : 'badge-na'
-                }`}
-              >
-                <span className="dot" />
-                {orderCount > 0 ? 'REAL' : 'NA'}
-              </span>
-            </div>
-          </div>
-          <div className="sidenav-row sidenav-row-meta">
-            <div className="sidenav-row-meta-key">车辆</div>
-            <div className="sidenav-row-meta-val">
-              {vehicleCount}
-              <span
-                className={`badge sidenav-row-badge badge-info sidenav-row-badge-lock`}
-                title="严格单车辆硬约束（AGENTS §3.6）"
-              >
-                <span className="dot" />
-                已锁定
-              </span>
-            </div>
-          </div>
-
-          {validation && (
-            <div className="sidenav-row sidenav-row-meta">
-              <div className="sidenav-row-meta-key">校验</div>
-              <div className="sidenav-row-meta-val">
-                <span
-                  className={`badge sidenav-row-badge ${
-                    validation.feasible ? 'badge-real' : 'badge-na'
-                  }`}
-                  title="独立 validator 七项校验"
-                >
-                  <span className="dot" />
-                  {validation.feasible ? 'PASS' : 'FAIL'}
-                </span>
-              </div>
-            </div>
-          )}
+          <button className="btn btn-primary" onClick={onPlan} disabled={!hasScenario || busy}>{isRunning ? '计算中…' : '运行规划 →'}</button>
+          <button className="btn btn-secondary" onClick={onCompare} disabled={!hasScenario || busy}>双目标比较</button>
+          <button className="btn btn-ghost" onClick={onPlay} disabled={!hasPlan || busy || playback.isPlaying}>{playback.isPlaying ? '播放中…' : playback.isDone ? '重播配送过程' : '▷ 播放配送过程'}</button>
+          {(playback.isPlaying || playback.isDone) && <button className="btn btn-ghost" onClick={onReset}>重置回放</button>}
         </section>
-
-        {/* ===== 组 3：算法 ===== */}
-        <section className="sidenav-group sidenav-group-scroll" aria-label="算法">
-          <div className="sidenav-group-title">
-            <span>算法</span>
-            <span className="sidenav-group-dot" aria-hidden />
-          </div>
-
-          <ul className="algo-list sidenav-algo-list">
-            {ALGO_STEPS.map((s, i) => (
-              <li className="algo-step" key={`algo-${i}`}>
-                <span className="step-num">{i + 1}</span>
-                <span className="step-text">
-                  <strong>{s.name}</strong>
-                  <span>{s.desc}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
+        <section className="sidenav-group" aria-label="场景数据">
+          <h3>03 <span>场景数据</span></h3>
+          <div className="sidenav-caption mono">{scenarioName ?? '尚未加载场景'}</div>
+          {scenarioIsStale && <span className="badge badge-warn">保留旧场景</span>}
+          <dl className="sidebar-stats">
+            <div><dt>节点 / 有向边</dt><dd>{hasScenario ? `${nodeCount} / ${edgeCount}` : '—'}</dd></div>
+            <div><dt>订单 / 车辆</dt><dd>{hasScenario ? `${orderCount} / ${vehicleCount}` : '—'}</dd></div>
+            <div><dt>Validator</dt><dd>{validation ? (validation.feasible ? 'PASS' : 'FAIL') : '—'}</dd></div>
+          </dl>
+          <p className="sidenav-caption">{sourceLabel} · 示意坐标</p>
+          {validation && !validation.feasible && <ul className="validation-errors">{validation.violations.map((v, i) => <li key={i}>{v.message}</li>)}</ul>}
         </section>
-
-        {/* ===== 脚注 ===== */}
-        <div className="sidenav-footer">
-          <div className="sidenav-footer-mark">LogiRoute</div>
-          <div className="sidenav-footer-sub">
-            Phase 5.3 · 单车辆物流调度
-          </div>
-        </div>
+        <details className="sidenav-group algorithm-help"><summary>算法与约束说明</summary>
+          <ul className="algo-list">{ALGO_STEPS.map((s) => <li key={s.name}><strong>{s.name}</strong><p>{s.desc}</p></li>)}</ul>
+          <p>启发式规划，不保证全局最优。不可行订单将保留原因。</p>
+        </details>
       </div>
     </aside>
   );

@@ -9,13 +9,14 @@
 
 import type { Objective, ScheduleResult } from '../../types';
 import type { PlaybackView } from '../../state/usePlayback';
-import { EmptyState } from '../shared/EmptyState';
+import { EmptyState, ErrorState } from '../shared/EmptyState';
 import { RouteTimeline } from './RouteTimeline';
 import { RouteLegDetails } from './RouteLegDetails';
 import { PlaybackStrip } from './PlaybackStrip';
 
 interface ResultPanelProps {
   result: ScheduleResult | null;
+  isLoading?: boolean;
   objective: Objective | null;
   hasScenario: boolean;
   /** 当前选中节点（受控；用于时间轴 ↔ 地图联动） */
@@ -28,7 +29,7 @@ interface ResultPanelProps {
 }
 
 function fmtNum(n: number, digits = 2): string {
-  return n.toFixed(digits);
+  return Number.isFinite(n) ? n.toFixed(digits) : '—';
 }
 
 const OBJECTIVE_LABEL: Record<string, string> = {
@@ -38,6 +39,7 @@ const OBJECTIVE_LABEL: Record<string, string> = {
 
 export function ResultPanel({
   result,
+  isLoading = false,
   objective,
   hasScenario,
   activeTimelineNodeId,
@@ -50,30 +52,15 @@ export function ResultPanel({
   if (errorMessage) {
     return (
       <div className="panel result panel-scroll" role="region" aria-label="调度结果">
-        <EmptyState
-          title="请求失败"
-          description={errorMessage}
-          steps={hasScenario ? ['请稍后重试或检查后端日志。'] : undefined}
-          actions={
-            onRetry ? (
-              <button className="btn btn-primary" onClick={onRetry}>
-                重试
-              </button>
-            ) : undefined
-          }
-        />
+        <ErrorState title="规划失败" message={errorMessage} onRetry={onRetry} />
       </div>
     );
   }
 
+  if (isLoading) return <section className="panel result" aria-label="调度结果" aria-busy="true"><h2 className="panel-h2">调度结果</h2><div className="result-empty" role="status"><span className="loading-dot" />正在生成配送方案…<p>校验容量、时间窗与闭合路线。</p></div></section>;
+
   // 空状态
   if (!result) {
-    const steps = hasScenario
-      ? [
-          '在左侧选择主目标（最短距离 / 最低运输成本）。',
-          '点击「运行规划」获取单个目标结果，或点击「双目标比较」并行对比。',
-        ]
-      : ['先在左侧「场景控制」中点击「随机生成场景」。'];
     return (
       <div className="panel result panel-scroll" role="region" aria-label="调度结果">
         <h2 className="panel-h2">
@@ -84,10 +71,9 @@ export function ResultPanel({
           title="尚未生成配送方案"
           description={
             hasScenario
-              ? '请选择目标后点击「运行规划」或「双目标比较」。'
+              ? '在左侧选择目标，点击「运行规划」。'
               : '请先在左侧生成场景。'
           }
-          steps={steps}
           illustration={
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
               <path
@@ -139,7 +125,7 @@ export function ResultPanel({
       {/* KPI 卡片 2×3 */}
       <div className="kpi-grid">
         <div
-          className={`kpi ${isFull ? 'kpi-good' : 'kpi-bad'} kpi-full`}
+          className={`kpi ${isFull ? '' : 'kpi-bad'}`}
           title={isFull ? '全部订单已完成配送' : `${unservedCount} 个订单未配送`}
         >
           <div className="kpi-label">已配送 / 总订单</div>
@@ -193,8 +179,8 @@ export function ResultPanel({
       </div>
 
       {/* 方案概览 */}
-      <div className="panel-section">
-        <div className="panel-h3">方案概览</div>
+      <details className="panel-section">
+        <summary>方案与运行统计</summary>
         <ul className="status-list">
           <li>
             <span className="key">主目标</span>
@@ -206,7 +192,7 @@ export function ResultPanel({
           </li>
           <li>
             <span className="key">主目标值</span>
-            <span className="val">{fmtNum(result.main_objective_total)}</span>
+            <span className="val">{fmtNum(result.main_objective_total)} {obj === 'cost' ? '元' : 'km'}</span>
           </li>
           <li>
             <span className="key">车辆 ID</span>
@@ -239,7 +225,7 @@ export function ResultPanel({
             <span className="val">{stats.feasibility_checks}</span>
           </li>
         </ul>
-      </div>
+      </details>
 
       {/* 错误订单（如果有） */}
       {unservedCount > 0 && (
@@ -257,59 +243,17 @@ export function ResultPanel({
         </div>
       )}
 
-      {/* 配送顺序时间轴 */}
-      <div className="panel-section">
-        <div className="panel-h3">
-          配送顺序 ·{' '}
-          <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>
-            {route.stop_sequence.length - 1}
-          </span>{' '}
-          段
-          <span
-            style={{
-              marginLeft: 'auto',
-              fontSize: 10,
-              fontWeight: 500,
-              color: 'var(--text-muted)',
-              letterSpacing: 0,
-              textTransform: 'none',
-            }}
-          >
-            悬停 / 点击与地图联动
-          </span>
-        </div>
-        <RouteTimeline
-          stops={route.stops}
-          stopSequence={route.stop_sequence}
-          depotId={result.depot_id}
-          activeNodeId={activeTimelineNodeId ?? null}
-          onSelectNode={(id) => onSelectTimelineNode?.(id)}
-        />
-      </div>
-
-      {/* 路段详情 */}
-      <div className="panel-section">
-        <div className="panel-h3">
-          路段详情 ·{' '}
-          <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>
-            {route.legs.length}
-          </span>{' '}
-          段
-          <span
-            style={{
-              marginLeft: 'auto',
-              fontSize: 10,
-              fontWeight: 500,
-              color: 'var(--text-muted)',
-              letterSpacing: 0,
-              textTransform: 'none',
-            }}
-          >
-            距离 / 时间 / 成本（高亮主目标列）
-          </span>
-        </div>
+      <details className="panel-section" open>
+        <summary>配送顺序 · {route.stop_sequence.length - 1} 段</summary>
+        <p className="section-hint">点击站点与地图联动 · 到达 / 等待时间单位 min</p>
+        <RouteTimeline stops={route.stops} stopSequence={route.stop_sequence} depotId={result.depot_id}
+          activeNodeId={activeTimelineNodeId ?? null} onSelectNode={(id) => onSelectTimelineNode?.(id)} />
+      </details>
+      <details className="panel-section">
+        <summary>路段详情 · {route.legs.length} 段</summary>
+        <p className="section-hint">Dijkstra 实际路径 · 距离 km / 时间 min / 成本 元</p>
         <RouteLegDetails legs={route.legs} mainObjective={obj} />
-      </div>
+      </details>
     </div>
   );
 }

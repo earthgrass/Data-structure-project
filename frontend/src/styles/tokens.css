@@ -9,7 +9,7 @@
 
 :root {
   /* —— 表面层级（背景） —— */
-  --surface-page: #f4f5f8;           /* 页面整体底色（最暗） */
+  --surface-page: #f3f5f9;           /* 页面整体底色（最暗） */
   --surface-panel: #ffffff;          /* 卡片 / 面板 */
   --surface-elevated: #fafbfc;       /* 卡片内子区块 */
   --surface-overlay: rgba(15, 23, 42, 0.04);
@@ -19,7 +19,7 @@
   /* —— 文字层级（排版三阶） —— */
   --text-primary: #0f172a;           /* 主标题 / 数字 */
   --text-secondary: #475569;         /* 次级文本 / 卡片标题 */
-  --text-muted: #94a3b8;             /* 辅助说明 / 单位 */
+  --text-muted: #64748b;             /* 辅助说明 / 单位 */
   --text-on-accent: #ffffff;         /* 主按钮文字 */
   --text-disabled: #cbd5e1;
 
@@ -83,9 +83,9 @@
   --shadow-focus: 0 0 0 3px rgba(37, 99, 235, 0.18);
 
   /* —— 字号层级 —— */
-  --font-xs: 11px;
-  --font-sm: 12px;
-  --font-base: 13px;
+  --font-xs: 12px;
+  --font-sm: 13px;
+  --font-base: 14px;
   --font-md: 14px;
   --font-lg: 16px;
   --font-xl: 18px;
@@ -103,18 +103,14 @@
   --font-mono: 'SF Mono', Menlo, Consolas, 'Courier New', monospace;
 
   /* —— 强调色 —— 主 CTA / 主菜单激活态 —— */
-  --accent-primary: #dc2626;            /* 强调红：运行规划 / 随机生成场景 */
-  --accent-primary-hover: #b91c1c;
-
-  /* —— 数据源状态 (REAL / N/A) —— */
-  --status-real: #15803d;
-  --status-real-soft: #d1fae5;
-  --status-na: #94a3b8;
-  --status-na-soft: #f1f5f9;
+  --accent-primary: #2563eb;            /* 主操作蓝 */
+  --accent-primary-hover: #1d4ed8;
 
   /* —— 布局尺寸 —— */
   --layout-sidenav-w: 260px;
-  --layout-result-w: 380px;
-  --layout-topbar-h: 64px;
-  --layout-gap: 14px;
+  --surface-sidebar: #14213d;
+  --text-sidebar: #e2e8f0;
+  --text-sidebar-muted: #b3c0d4;
+  --layout-topbar-h: 72px;
+  --layout-gap: 24px;
 }

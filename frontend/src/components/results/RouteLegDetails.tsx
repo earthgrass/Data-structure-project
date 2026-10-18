@@ -15,8 +15,7 @@ function fmt(n: number, digits = 2): string {
 }
 
 function getLegMetric(leg: LegData, key: string): number {
-  if (key === 'distance') return leg.total_weight;
-  return leg.cross_metrics?.[key] ?? NaN;
+  return leg.cross_metrics?.[key] ?? (leg.metric === key ? leg.total_weight : NaN);
 }
 
 export function RouteLegDetails({ legs, mainObjective }: RouteLegDetailsProps) {
@@ -58,13 +57,13 @@ export function RouteLegDetails({ legs, mainObjective }: RouteLegDetailsProps) {
               }
               title="距离"
             >
-              {Number.isFinite(distance) ? fmt(distance) : '—'}
+              {Number.isFinite(distance) ? `${fmt(distance)} km` : '—'}
             </span>
             <span
               className="leg-metric"
               title="时间"
             >
-              {Number.isFinite(time) ? fmt(time) : '—'}
+              {Number.isFinite(time) ? `${fmt(time)} min` : '—'}
             </span>
             <span
               className="leg-metric"
@@ -75,7 +74,7 @@ export function RouteLegDetails({ legs, mainObjective }: RouteLegDetailsProps) {
               }
               title="成本"
             >
-              {Number.isFinite(cost) ? fmt(cost) : '—'}
+              {Number.isFinite(cost) ? `${fmt(cost)} 元` : '—'}
             </span>
           </div>
         );

@@ -314,6 +314,8 @@ node_ids, m_time     = bundle.graph.get_adjacency_matrix(metric="travel_time")
 
 ## 文档导航
 
+* [`docs/dashboard-ui-round2.md`](docs/dashboard-ui-round2.md) — Dashboard 第二轮 UI / UX 重构、工程审计与浏览器验证记录
+
 * [`AGENTS.md`](AGENTS.md) — Claude Code / Codex 协作约束（**强约束：核心算法必须手搓**）
 * [`docs/architecture.md`](docs/architecture.md) — 分层结构、模块依赖、图实现原理、随机生成器设计
 * [`docs/development-plan.md`](docs/development-plan.md) — Phase 2-7 路线图

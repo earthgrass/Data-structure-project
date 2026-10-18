@@ -11,6 +11,8 @@ import type { CompareResponse, ScheduleResult } from '../../types';
 
 interface ObjectiveComparisonProps {
   data: CompareResponse | null;
+  isLoading?: boolean;
+  onRetry?: () => void;
   scenarioName?: string | null;
   /** 错误信息（任一目标失败时显示） */
   errorMessage?: string | null;
@@ -24,7 +26,7 @@ interface Row {
 }
 
 function fmtNum(n: number, digits = 2): string {
-  return n.toFixed(digits);
+  return Number.isFinite(n) ? n.toFixed(digits) : '—';
 }
 
 const OBJECTIVE_LABEL: Record<string, string> = {
@@ -50,25 +52,25 @@ const ROWS: Row[] = [
   },
   {
     key: 'distance',
-    label: '总距离',
+    label: '总距离 (km)',
     format: (r) => fmtNum(r.total_distance),
-    goodWhen: (r) => r.objective === 'distance' || false,
+
   },
   {
     key: 'time',
-    label: '总时间',
+    label: '总行驶时间 (min)',
     format: (r) => fmtNum(r.total_travel_time),
   },
   {
     key: 'cost',
-    label: '总成本',
+    label: '总成本 (元)',
     format: (r) => fmtNum(r.total_cost),
-    goodWhen: (r) => r.objective === 'cost' || false,
+
   },
   {
     key: 'main',
     label: '主目标值',
-    format: (r) => fmtNum(r.main_objective_total),
+    format: (r) => `${fmtNum(r.main_objective_total)} ${r.objective === 'cost' ? '元' : 'km'}`,
   },
   {
     key: 'feasible',
@@ -84,11 +86,14 @@ const ROWS: Row[] = [
 ];
 
 function computeDelta(a: number, b: number): { sign: 'pos' | 'neg' | 'zero'; text: string } {
-  if (!Number.isFinite(a) || !Number.isFinite(b) || a === b) {
+  if (!Number.isFinite(a) || !Number.isFinite(b)) {
     return { sign: 'zero', text: '—' };
   }
+  if (a < 0 || b < 0) return { sign: 'zero', text: '不适用' };
+  if (a === b) return { sign: 'zero', text: '相同' };
+  if (a === 0) return { sign: 'zero', text: '基准为 0，不适用' };
   const diff = b - a;
-  const pct = a === 0 ? 0 : (diff / a) * 100;
+  const pct = (diff / a) * 100;
   const sign = diff > 0 ? 'pos' : 'neg';
   // 对比列：以 distance 为基准；正值表示 cost 比 distance 大
   const arrow = diff > 0 ? '↑' : '↓';
@@ -100,6 +105,8 @@ function computeDelta(a: number, b: number): { sign: 'pos' | 'neg' | 'zero'; tex
 
 export function ObjectiveComparison({
   data,
+  isLoading = false,
+  onRetry,
   scenarioName,
   errorMessage,
 }: ObjectiveComparisonProps) {
@@ -114,7 +121,7 @@ export function ObjectiveComparison({
       <div className="comparison-head">
         <h3>双目标对比</h3>
         <span className="meta">
-          同一场景快照 · 两种主目标统一规划器（CFI + 2-opt）
+          同一场景快照 · CFI + 2-opt · 启发式结果，不保证全局最优
           {scenarioName && (
             <>
               {' · 场景 '}
@@ -126,7 +133,9 @@ export function ObjectiveComparison({
         </span>
       </div>
 
-      {!data ? (
+      {errorMessage ? (
+        <div className="comparison-empty" role="alert"><span>比较失败：{errorMessage}</span>{onRetry && <button className="btn btn-secondary" onClick={onRetry}>重试比较</button>}</div>
+      ) : isLoading ? <div className="comparison-empty" role="status" aria-busy="true">正在对同一场景计算两种方案…</div> : !data ? (
         <div className="comparison-empty">
           点击「双目标比较」对当前场景的距离 / 成本目标并行规划并对比结果。
         </div>

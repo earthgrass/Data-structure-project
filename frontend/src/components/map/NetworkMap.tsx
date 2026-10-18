@@ -1,20 +1,15 @@
 // Phase 5.3 —— NetworkMap：路线网络示意图容器。
-// 内含：顶部工具栏（场景名 + 站点段数 + 边开关）+ RouteSchematic + 图例。
-// 校验器状态（PASS/FAIL）已迁移到 SideNav 数据区（Phase 5.3+）。
+// 顶部工具栏、等比缩放的 RouteSchematic 与底部图例。
 
 import { useEffect, useState } from 'react';
-import type { GraphData, RoutePlanData, ScheduleResult } from '../../types';
+import type { GraphData, RoutePlanData } from '../../types';
 import { RouteSchematic } from './RouteSchematic';
 import { MapLegend } from './MapLegend';
 
 interface NetworkMapProps {
   graph: GraphData | null;
   route: RoutePlanData | null;
-  /** 已废弃：校验状态由 SideNav 展示；保留字段以兼容调用方 */
-  validation?: unknown;
   scenarioName: string | null;
-  /** 当前展示结果的目标 / 计划摘要（用于工具栏右上角状态徽章） */
-  resultSummary: ScheduleResult | null;
   /** 时间轴联动高亮 */
   activeTimelineNodeId?: string | null;
   onNodeHover?: (nodeId: string | null) => void;
@@ -28,7 +23,6 @@ export function NetworkMap({
   graph,
   route,
   scenarioName,
-  resultSummary,
   activeTimelineNodeId,
   onNodeHover,
   vehiclePosition = null,
@@ -47,16 +41,8 @@ export function NetworkMap({
       <div className="map-toolbar">
         <div className="map-title">配送网络</div>
         <div className="map-toolbar-meta">
-          {scenarioName && (
-            <span>
-              <strong style={{ color: 'var(--text-secondary)' }}>
-                场景：
-              </strong>
-              {scenarioName}
-            </span>
-          )}
           {stopsCount > 0 && (
-            <span>站点 {stopsCount - 1} 段</span>
+            <span>路线 {stopsCount - 1} 段</span>
           )}
           <label className="map-toggle" title="切换显示普通网络边">
             <input
@@ -79,10 +65,8 @@ export function NetworkMap({
           vehiclePosition={vehiclePosition}
           completedStops={completedStops}
         />
-        {resultSummary && (
-          <MapLegend showNetworkEdges={showEdges} />
-        )}
       </div>
+      <MapLegend showNetworkEdges={showEdges} />
     </div>
   );
 }

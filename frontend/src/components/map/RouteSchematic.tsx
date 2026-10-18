@@ -8,7 +8,7 @@
 //
 // 不变量：
 //   * 所有 NodeData 必须有 finite 的 x / y；否则视为非法并显示空态。
-//   * 当前路线高亮（activeEdges）由 route.stop_sequence 派生；
+//   * 当前路线高亮（activeEdges）由 route.road_node_sequence 派生；
 //   * 节点 hover 同时通知 onNodeHover（与 RouteTimeline 联动）。
 
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -87,8 +87,8 @@ export function RouteSchematic({
   const activeEdges = useMemo(() => {
     const set = new Set<string>();
     if (!route) return set;
-    for (let i = 0; i < route.stop_sequence.length - 1; i++) {
-      set.add(`${route.stop_sequence[i]}->${route.stop_sequence[i + 1]}`);
+    for (let i = 0; i < route.road_node_sequence.length - 1; i++) {
+      set.add(`${route.road_node_sequence[i]}->${route.road_node_sequence[i + 1]}`);
     }
     return set;
   }, [route]);
@@ -144,9 +144,6 @@ export function RouteSchematic({
     );
   }
 
-  const highlightedNodeIds = new Set<string>(activeNodeIds);
-  if (activeTimelineNodeId) highlightedNodeIds.add(activeTimelineNodeId);
-
   const hoverPos = hoverNodeId ? positions.get(hoverNodeId) : null;
 
   return (
@@ -184,11 +181,12 @@ export function RouteSchematic({
       </defs>
 
       {/* 1. 物流边（开关控制） */}
-      {showNetworkEdges && (
+      {(
         <NetworkEdgeLayer
           positions={positions}
           edges={graph.edges as EdgeData[]}
           activeEdges={activeEdges}
+          showNetworkEdges={showNetworkEdges}
         />
       )}
 
@@ -210,7 +208,7 @@ export function RouteSchematic({
             if (!pos) return null;
             return (
               <g key={`completed-${id}`} transform={`translate(${pos.x + 10}, ${pos.y - 10})`}>
-                <circle r={9} fill="var(--status-real)" stroke="var(--surface-panel)" strokeWidth={1.5} />
+                <circle r={9} fill="var(--status-good)" stroke="var(--surface-panel)" strokeWidth={1.5} />
                 <path
                   d="M -3.5 0 L -1 2.5 L 3.5 -2.5"
                   fill="none"

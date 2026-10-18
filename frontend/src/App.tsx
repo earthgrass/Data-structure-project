@@ -78,6 +78,8 @@ export function App() {
     const id = scenario.start();
     inFlightRef.current.generate = id;
     // 关键转换：scenario 进入 loading 时，强制清空 plan / compare 与联动节点
+    inFlightRef.current.plan = undefined;
+    inFlightRef.current.compare = undefined;
     plan.reset();
     compare.reset();
     setActiveTimelineNodeId(null);
@@ -95,6 +97,7 @@ export function App() {
   }
 
   async function handlePlan() {
+    if (!scenario.fresh || scenario.loading || plan.loading || compare.loading) return;
     const id = plan.start();
     inFlightRef.current.plan = id;
     // plan 操作不动 scenario，但清空时间轴联动（节点可能在旧 plan 中）
@@ -102,6 +105,9 @@ export function App() {
     try {
       const resp = await planDeliveries(objective);
       if (inFlightRef.current.plan !== id) return;
+      if (resp.result.scenario_name !== scenario.fresh.scenario.name || resp.objective !== objective) {
+        throw new ApiClientError('规划结果与当前场景或目标不一致，请重新生成场景后重试', 200, 'scenario_mismatch');
+      }
       plan.settle(resp);
     } catch (e) {
       if (inFlightRef.current.plan !== id) return;
@@ -110,6 +116,7 @@ export function App() {
   }
 
   async function handleCompare() {
+    if (!scenario.fresh || scenario.loading || plan.loading || compare.loading) return;
     const id = compare.start();
     inFlightRef.current.compare = id;
     setActiveTimelineNodeId(null);
@@ -118,7 +125,8 @@ export function App() {
       if (inFlightRef.current.compare !== id) return;
       // 完整性校验：必须两个目标都返回才能视为成功
       const objectives = resp.objectives ?? [];
-      if (objectives.length < 2 || !resp.results['distance'] || !resp.results['cost']) {
+      if (!objectives.includes('distance') || !objectives.includes('cost') ||
+          !resp.results['distance'] || !resp.results['cost']) {
         compare.fail(
           new ApiClientError(
             `双目标结果不完整（仅 ${objectives.length} 个目标），无法对比`,
@@ -126,6 +134,10 @@ export function App() {
             'incomplete_compare',
           ),
         );
+      } else if (resp.results.distance.scenario_name !== scenario.fresh.scenario.name ||
+                 resp.results.cost.scenario_name !== scenario.fresh.scenario.name ||
+                 resp.results.distance.objective !== 'distance' || resp.results.cost.objective !== 'cost') {
+        compare.fail(new ApiClientError('比较结果与当前场景或目标不一致，请重新生成场景后重试', 200, 'scenario_mismatch'));
       } else {
         compare.settle(resp);
       }
@@ -141,6 +153,9 @@ export function App() {
   const scenarioView = displayData(scenario.state);
   const scenarioData = scenarioView.data;
   const scenarioIsStale = scenarioView.isStale || (scenario.state.kind === 'error' && scenario.data !== null);
+
+  const sourceLabel = scenarioData?.scenario.metadata.generator === 'logiroute.scenario_generator'
+    ? '随机示意场景' : scenarioData ? '固定 / 未核验来源场景' : '等待场景';
 
   const planResult = plan.fresh?.result ?? null;
   const compareData = compare.fresh ?? null;
@@ -190,6 +205,7 @@ export function App() {
         />
 
         <SideNav
+          sourceLabel={sourceLabel}
           seed={seed}
           onSeedChange={setSeed}
           onGenerate={handleGenerate}
@@ -199,7 +215,7 @@ export function App() {
           onPlan={handlePlan}
           onCompare={handleCompare}
           isRunning={plan.loading || compare.loading}
-          hasScenario={!!scenarioData}
+          hasScenario={!!scenario.fresh}
           hasPlan={!!planResult}
           playback={playbackControl.view}
           onPlay={playbackControl.play}
@@ -213,44 +229,52 @@ export function App() {
           scenarioIsStale={scenarioIsStale}
         />
 
-        <div className="center">
-          <NetworkMap
-            graph={scenarioData?.scenario.graph ?? null}
-            route={planResult?.route_plan ?? null}
-            validation={scenarioData?.validation ?? null}
+        <main className="workspace">
+          <div className="workspace-heading">
+            <div><span className="eyebrow">DELIVERY OPERATIONS</span><h1>配送调度工作台</h1><p className="mono">{scenarioData?.scenario.name ?? '等待加载场景'}</p></div>
+            <div className="workspace-status" role="status"><span>{sourceLabel}</span><strong>{scenario.loading ? '正在生成场景…' : plan.loading ? '正在规划…' : compare.loading ? '正在比较…' : `当前目标 · ${objective === 'distance' ? '最短距离' : '最低成本'}`}</strong></div>
+          </div>
+          <div className="workspace-grid">
+            <div className="center">
+              <NetworkMap
+                graph={scenarioData?.scenario.graph ?? null}
+                route={planResult?.route_plan ?? null}
+                scenarioName={scenarioData?.scenario.name ?? null}
+                activeTimelineNodeId={activeTimelineNodeId}
+                onNodeHover={setActiveTimelineNodeId}
+                vehiclePosition={playbackControl.view.vehiclePosition}
+                completedStops={playbackControl.view.completedStops}
+              />
+            </div>
+
+            <ResultPanel
+              result={planResult}
+              isLoading={plan.loading}
+              objective={
+                plan.fresh?.objective === 'distance' || plan.fresh?.objective === 'cost'
+                  ? plan.fresh.objective
+                  : null
+              }
+              hasScenario={!!scenario.fresh}
+              activeTimelineNodeId={activeTimelineNodeId}
+              onSelectTimelineNode={setActiveTimelineNodeId}
+              errorMessage={
+                plan.state.kind === 'error' ? errorMessageOf(plan.state.error) : null
+              }
+              playback={playbackControl.view}
+              onRetry={plan.state.kind === 'error' ? handlePlan : undefined}
+            />
+          </div>
+          <ObjectiveComparison
+            isLoading={compare.loading}
+            onRetry={handleCompare}
+            data={compareData}
             scenarioName={scenarioData?.scenario.name ?? null}
-            resultSummary={planResult}
-            activeTimelineNodeId={activeTimelineNodeId}
-            onNodeHover={setActiveTimelineNodeId}
-            vehiclePosition={playbackControl.view.vehiclePosition}
-            completedStops={playbackControl.view.completedStops}
+            errorMessage={
+              compare.state.kind === 'error' ? errorMessageOf(compare.state.error) : null
+            }
           />
-        </div>
-
-        <ResultPanel
-          result={planResult}
-          objective={
-            plan.fresh?.objective === 'distance' || plan.fresh?.objective === 'cost'
-              ? plan.fresh.objective
-              : null
-          }
-          hasScenario={!!scenarioData}
-          activeTimelineNodeId={activeTimelineNodeId}
-          onSelectTimelineNode={setActiveTimelineNodeId}
-          errorMessage={
-            plan.state.kind === 'error' ? errorMessageOf(plan.state.error) : null
-          }
-          playback={playbackControl.view}
-          onRetry={plan.state.kind === 'error' ? handlePlan : undefined}
-        />
-
-        <ObjectiveComparison
-          data={compareData}
-          scenarioName={scenarioData?.scenario.name ?? null}
-          errorMessage={
-            compare.state.kind === 'error' ? errorMessageOf(compare.state.error) : null
-          }
-        />
+        </main>
       </div>
     </div>
   );

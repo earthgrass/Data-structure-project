@@ -97,6 +97,12 @@ export function NetworkNodeLayer({
         return (
           <g
             key={`node-${n.id}`}
+            tabIndex={0}
+            role="button"
+            aria-label={`${n.id} ${n.name}`}
+            onFocus={() => onHover(n.id)}
+            onBlur={() => onHover(null)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onHover(n.id); } }}
             onMouseEnter={() => onHover(n.id)}
             onMouseLeave={() => onHover(null)}
             style={{ cursor: 'pointer' }}
