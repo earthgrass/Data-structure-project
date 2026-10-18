@@ -18,7 +18,7 @@
 
 * ``stop_sequence`` 形如 ``(depot, s1, s2, ..., sK, depot)``，内层 K 个
   配送站（K = ``len(stop_sequence) - 2``）；
-* 2-opt 反转段 ``stop_seq[i+1 : j+1]``（``1 <= i < j <= K``），
+* 2-opt 反转段 ``stop_seq[i+1 : j+1]``（``0 <= i < j <= K``），
   depot 端点永不参与反转；
 * 策略：first-improvement —— 发现第一个严格改善的候选立即接受并重启外层
   扫描；
@@ -58,6 +58,7 @@ _EPS = 1e-9
 
 def _rebuild_stops_with_timing(
     stop_seq: tuple[str, ...],
+    order_ids: tuple[str | None, ...],
     legs: tuple[PathResult, ...],
     ctx: PlanningContext,
 ) -> tuple[DeliveryStop, ...]:
@@ -76,12 +77,12 @@ def _rebuild_stops_with_timing(
       ``arrival = previous.service_end + drive_time(legs[-1])``，
       ``service_start = service_end = arrival``，仓库无时间窗与 demand。
 
-    订单元数据（``order_id / demand / time_window_start / time_window_end``）
-    通过 ``ctx.scenario.orders`` 按节点 ID 反查；若节点无订单（例如过路的
-    中转站），则按"到达即服务 + service_time 处理"。
+    订单元数据由种子站点的 ``order_id`` 精确匹配；同一节点允许多个订单，
+    不可按目的地 ID 取第一个订单，否则重排后会重复计算一个订单。
 
     Args:
         stop_seq: 闭合 stop 序列（含首尾 depot）；长度 ``K+2``。
+        order_ids: 与站点一一对应的订单 ID（仓库为 ``None``）。
         legs: 相邻 leg 序列（来自 ``ctx.path_provider.all_pairs``）；长度 ``K+1``。
         ctx: 调度上下文。
 
@@ -91,15 +92,12 @@ def _rebuild_stops_with_timing(
     Time   : O(K) 线性。
     Space  : O(K)。
     """
-    # 订单元数据按 destination_id 反查（首个匹配胜出；同一节点多个订单在
-    # 调用方负责的更上层去重；本函数只关心快照元数据）。
-    order_by_dest: dict[str, Any] = {}
+    order_by_id: dict[str, Any] = {}
     scenario = getattr(ctx, "scenario", None)
     for order in getattr(scenario, "orders", ()) or ():
-        dest = getattr(order, "destination_id", None)
         oid = getattr(order, "id", None)
-        if dest is not None and oid is not None and dest not in order_by_dest:
-            order_by_dest[dest] = order
+        if oid is not None:
+            order_by_id[oid] = order
 
     stops: list[DeliveryStop] = []
     cumulative_load = 0.0
@@ -145,7 +143,7 @@ def _rebuild_stops_with_timing(
             continue
 
         # ---- 客户 / 中转站 ----
-        order = order_by_dest.get(nid)
+        order = order_by_id.get(order_ids[i])
         if order is None:
             waiting = 0.0
             service_start = arrival
@@ -230,6 +228,7 @@ def _route_plan_from_state(
     total: float,
     iterations_done: int,
     ctx: PlanningContext,
+    seed_notes: dict[str, Any],
 ) -> RoutePlan:
     """用最终 ``stop_seq / legs / stops`` 重新组装 :class:`RoutePlan`。
 
@@ -278,7 +277,7 @@ def _route_plan_from_state(
         capacity=ctx.capacity,
         served_order_ids=served,
         is_feasible=True,
-        notes={"iterations": iterations_done},
+        notes={**seed_notes, "iterations": iterations_done},
     )
 
 
@@ -310,8 +309,9 @@ def constrained_two_opt(
     Raises:
         InfeasibleSeedError: ``plan_seed.is_feasible is False``。
 
-    Time   : 最坏 O(K^3 · (V + E) log V) —— K^2 对 + 每次重建 leg。
-    Space  : O(K) 候选缓存。
+    Time   : 最坏 O(K^5 · (V + E) log V) —— K² 轮、每轮 K² 个反转、
+             每个反转最多重建 K 条 leg；命中路径缓存时实际代价更低。
+    Space  : O(K² + V + E) —— 路径缓存及候选路线。
     """
     # ---- 硬规则：拒绝不可行种子 ----------------------------------------
     if not plan_seed.is_feasible:
@@ -335,6 +335,7 @@ def constrained_two_opt(
             total=plan_seed.main_objective_total,
             iterations_done=0,
             ctx=ctx,
+            seed_notes=plan_seed.notes,
         )
 
     pp: PathProvider = ctx.path_provider
@@ -351,12 +352,17 @@ def constrained_two_opt(
         improved = False
         iterations_done += 1
         # first-improvement：i 从小到大、j 从小到大；找到首个严格改善即重启。
-        for i in range(1, K):
+        for i in range(K):
             for j in range(i + 1, K + 1):
                 candidate = (
                     current_stop_seq[: i + 1]
                     + tuple(reversed(current_stop_seq[i + 1 : j + 1]))
                     + current_stop_seq[j + 1 :]
+                )
+                candidate_order_ids = (
+                    tuple(s.order_id for s in current_stops[: i + 1])
+                    + tuple(s.order_id for s in reversed(current_stops[i + 1 : j + 1]))
+                    + tuple(s.order_id for s in current_stops[j + 1 :])
                 )
                 cand_legs_list = pp.all_pairs(candidate, ctx.objective)
                 # 任一腿不可达 → 候选直接否决（RoutePlan 不可构造）。
@@ -364,7 +370,7 @@ def constrained_two_opt(
                     continue
                 cand_legs: tuple[PathResult, ...] = tuple(cand_legs_list)
                 cand_stops = _rebuild_stops_with_timing(
-                    candidate, cand_legs, ctx
+                    candidate, candidate_order_ids, cand_legs, ctx
                 )
                 cand_report = check_feasibility(
                     cand_stops,
@@ -394,6 +400,7 @@ def constrained_two_opt(
         total=current_total,
         iterations_done=iterations_done,
         ctx=ctx,
+        seed_notes=plan_seed.notes,
     )
 
 

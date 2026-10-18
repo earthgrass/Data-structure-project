@@ -3,7 +3,7 @@
 * :func:`nearest_neighbor` —— 最近邻基线（保留作回归测试）；
 * :func:`cheapest_feasible_insertion` —— 可行插入（CFI）；
 * :func:`constrained_two_opt` —— 受约束 2-opt 局部搜索；
-* :func:`unified_planner` —— Phase 5 默认公开入口（CFI + 2-opt 组合）。
+* :func:`unified_planner` —— Phase 5 默认公开入口（NN / CFI + 2-opt 择优）。
 
 公开入口（Phase 5）只接受 :func:`logiroute.scheduling.planner.plan_deliveries`
 的 ``objective`` 参数；用户不再选择 NN / CFI / 2-opt 显式算法。

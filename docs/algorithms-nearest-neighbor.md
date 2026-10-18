@@ -118,31 +118,28 @@ def nearest_neighbor(ctx, eligible_orders):
     current_node = ctx.depot_id
     current_time = ctx.initial_time
     current_load = 0.0
-    remaining = sorted(eligible_orders,
-                       key=lambda o: (priority_rank[o.priority], o.id))
+    remaining = _stable_sort_by_priority_id(eligible_orders)
     plan_stops = [depot_start_stop(ctx)]        # seq_index = 0
     plan_legs = []
 
     # ---- 2. 主循环 ------------------------------------------------------
     while remaining:
-        best, best_key, best_leg_main, best_leg_time = None, None, None, None
+        best, best_key, best_leg_main = None, None, None
 
         for order in remaining:
             # 容量硬约束
             if current_load + order.demand > ctx.capacity + _TOL:
                 continue
 
-            # 主目标维度 + 时间维度（不同 Dijkstra 路径）
+            # 只查询主目标路径；时间窗按这条实际选中的路径传播
             leg_main = ctx.path_provider.shortest_path(
                 current_node, order.destination_id, ctx.objective)
-            leg_time = ctx.path_provider.shortest_path(
-                current_node, order.destination_id, "travel_time")
 
-            if not (leg_main.reachable and leg_time.reachable):
+            if not leg_main.reachable:
                 continue
 
             # 时间传播
-            drive_time = leg_time.cross_metrics["travel_time"]
+            drive_time = leg_main.cross_metrics["travel_time"]
             arrival = current_time + drive_time
             wait = max(0.0, order.time_window_start - arrival)
             service_start = arrival + wait
@@ -152,14 +149,13 @@ def nearest_neighbor(ctx, eligible_orders):
             # tie-break：(total_weight, order.id, len(path)) 升序
             key = (leg_main.total_weight, order.id, len(leg_main.path))
             if best_key is None or key < best_key:
-                best, best_key, best_leg_main, best_leg_time = (
-                    order, key, leg_main, leg_time)
+                best, best_key, best_leg_main = order, key, leg_main
 
         if best is None:
             break  # 剩余订单全部不可行
 
         # 推进：实际进入路线
-        drive_time = best_leg_time.cross_metrics["travel_time"]
+        drive_time = best_leg_main.cross_metrics["travel_time"]
         arrival = current_time + drive_time
         wait = max(0.0, best.time_window_start - arrival)
         service_start = arrival + wait
@@ -205,33 +201,30 @@ def nearest_neighbor(ctx, eligible_orders):
 | 操作 | 每次 | 调用次数 | 累计 |
 | --- | --- | --- | --- |
 | 全扫描 `remaining` | O(M) | 每轮一次 | O(M²) |
-| `shortest_path(main)` | O((V+E) log V) 未命中；O(1) 命中 | 每候选每轮 1 次 | O(M · ((V+E) log V)) |
-| `shortest_path(time)` | 同上 | 每候选每轮 1 次 | O(M · ((V+E) log V)) |
+| `shortest_path(main)` | O((V+E) log V) 未命中；O(1) 命中 | 每候选每轮 1 次 | 最坏 O(M² · ((V+E) log V)) |
 | 时间传播 / stop 构造 | O(1) | 每轮 1 次 | O(K) |
 | 闭合段路径查询 | O((V+E) log V) | 1 次 | O((V+E) log V) |
 | `check_feasibility` | O(K) | 1 次 | O(K) |
 | 道路序列拼接 | O(L) | 1 次 | O(L) |
 
-**总时间**：O(M · ((V + E) log V)) —— 主项是 Dijkstra 调用；M² 上界在实际场景
-中远未触顶（多数候选在 M 小规模内被剪枝）。
+**总时间**：最坏 O(M² · ((V + E) log V))；路径缓存命中时只需 O(1) 查询，
+但不能假定所有候选都命中。
 
 **辅助空间**：
 
 * `plan_stops / plan_legs / remaining` —— O(K + M)；
-* `PathProvider` 缓存 —— O(K²)（同一对 stop 反复出现）；
-* **合计 O(K + M + V + E)** —— 与图邻接表存储 O(V+E) 同量级。
+* `PathProvider` 缓存 —— O(M²)（最多 M² 个不同站点对）；
+* **合计 O(M² + V + E)**。
 
 ### 5.2 与朴素实现的对比
 
 | 候选集合 | 取最小 | 主项 | 总时间 |
 | --- | --- | --- | --- |
-| 每轮全扫描 + 不缓存 | O(M) | M² · Dijkstra | O(M · ((V+E) log V)) |
-| **本项目（带缓存）** | O(M) | M · 命中摊销 O(1) | **O(M · ((V+E) log V))** |
-| 优先队列候选 | O(log M) | M · log M · Dijkstra | O(M · log M · ((V+E) log V)) |
+| 每轮全扫描 + 不缓存 | O(M) | M² · Dijkstra | O(M² · ((V+E) log V)) |
+| **本项目（带缓存）** | O(M) | 命中 O(1)，未命中运行 Dijkstra | **最坏 O(M² · ((V+E) log V))** |
 
 **实际收益**：同一对 `(current_node, order.destination_id, metric)` 在 NN 主循环
-中频繁出现，PathProvider 的 O(1) 摊销查找把"主项"压缩到 M · Dijkstra 而非
-M² · Dijkstra。
+中重复出现时，PathProvider 的 O(1) 查找避免重复运行 Dijkstra。
 
 ---
 
@@ -309,8 +302,8 @@ M² · Dijkstra。
 
 * NN 在主循环每轮对**每个候选**调 `ctx.path_provider.shortest_path` 两次：
 
-  * `shortest_path(current_node, order.destination_id, ctx.objective)`
-  * `shortest_path(current_node, order.destination_id, "travel_time")`
+  * `shortest_path(current_node, order.destination_id, ctx.objective)`；
+    该路径的 `cross_metrics["travel_time"]` 用于实际到达时间传播。
 
 * 闭合段调 `path_provider.shortest_path(current_node, ctx.depot_id, ctx.objective)` 一次；
 * 道路序列拼接调 `path_provider.road_node_sequence(stops, ctx.objective)` 一次。

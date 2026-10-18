@@ -5,8 +5,8 @@
 * 单车辆、强制闭合（首尾均为出发仓库）；
 * 所有相邻配送站点之间的最短有向路径**只**通过
   :class:`logiroute.scheduling.path_provider.PathProvider` 调用 Phase 2 Dijkstra；
-* ``travel_time`` 永远走时间维度的最优路径（即便主目标是 ``distance`` /
-  ``cost``），避免「把主目标所选路径错当行驶时间」的语义错位；
+* 时间窗按主目标所选道路的实际 ``cross_metrics['travel_time']`` 传播，
+  避免用另一条最快路低估行驶时间；
 * ``URGENT`` 订单优先扫描，但**不**绕过容量 / 时间窗硬约束；
 * ``served_order_ids`` 自然导出，``is_feasible`` 取自
   :func:`logiroute.scheduling.feasibility.check_feasibility`
@@ -20,9 +20,8 @@
 * 每轮全扫描 ``remaining``，对每个候选订单依次做：
   1. 容量可行性（``current_load + demand ≤ capacity``）；
   2. 主目标路径可达性（``leg_main.reachable``）；
-  3. 时间路径可达性（``leg_time.reachable``）；
-  4. 时间窗硬约束（``service_start ≤ time_window_end``）；
-  5. ``(total_weight, order.id, len(path))`` 三元组 ``min`` 选择最优；
+  3. 时间窗硬约束（``service_start ≤ time_window_end``）；
+  4. ``(total_weight, order.id, len(path))`` 三元组 ``min`` 选择最优；
 * 候选全部不可行 → 记录 ``no_feasible_next_step`` 并 ``break``，剩余订单
   全部归类为「无可行下一步」。
 
@@ -146,8 +145,9 @@ def nearest_neighbor(
         本函数**不**为「节省字典查表时间」而偷偷把 ``unserved_orders``
         塞进 :class:`RoutePlan`（违反 ``types.RoutePlan`` schema 不变量）。
 
-    Time   : O(K · ((V + E) log V))。
-    Space  : O(K + E)。
+    Time   : 最坏 O(M² · ((V + E) log V))，M 为候选订单数；
+             缓存命中时不重复运行 Dijkstra。
+    Space  : O(M² + V + E)，含单次调度的路径缓存。
     """
     # ---- 1. 初始化 ------------------------------------------------------- #
     current_node: str = ctx.depot_id
@@ -180,7 +180,6 @@ def nearest_neighbor(
         best: Order | None = None
         best_key: tuple | None = None
         best_leg_main: Any = None
-        best_leg_time: Any = None
 
         for order in remaining:
             # 容量硬约束；不满足即跳过（不计入 best 候选）
@@ -190,18 +189,11 @@ def nearest_neighbor(
             leg_main = ctx.path_provider.shortest_path(
                 current_node, order.destination_id, ctx.objective
             )
-            leg_time = ctx.path_provider.shortest_path(
-                current_node, order.destination_id, "travel_time"
-            )
-
-            # 任何一条不可达 ⇒ 不可服务
-            if (not getattr(leg_main, "reachable", False)) or (
-                not getattr(leg_time, "reachable", False)
-            ):
+            if not getattr(leg_main, "reachable", False):
                 continue
 
-            # 到达 / 服务时间传播 —— 永远走 travel_time 维度
-            drive_time = _leg_drive_time(leg_time)
+            # 按实际选中的主目标道路传播时间，而非另一条最快路。
+            drive_time = _leg_drive_time(leg_main)
             arrival = current_time + drive_time
             wait = max(0.0, order.time_window_start - arrival)
             service_start = arrival + wait
@@ -215,7 +207,6 @@ def nearest_neighbor(
                 best = order
                 best_key = key
                 best_leg_main = leg_main
-                best_leg_time = leg_time
 
         if best is None:
             # 剩余订单全部不可行 —— 跳出循环，由 planner 推导 unserved
@@ -223,7 +214,7 @@ def nearest_neighbor(
             break
 
         # 推进：实际进入路线
-        drive_time = _leg_drive_time(best_leg_time)
+        drive_time = _leg_drive_time(best_leg_main)
         arrival = current_time + drive_time
         wait = max(0.0, best.time_window_start - arrival)
         service_start = arrival + wait
@@ -327,7 +318,7 @@ def nearest_neighbor(
         total_cost=total_cost,
         main_objective_total=main_objective_total,
         departure_time=ctx.initial_time,
-        return_time=current_time,
+        return_time=return_arrival,
         capacity=ctx.capacity,
         served_order_ids=served_order_ids,
         is_feasible=feasibility_report.is_feasible,

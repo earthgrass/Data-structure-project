@@ -108,13 +108,18 @@ def constrained_two_opt(plan_seed, ctx):
         improved = False
         iterations_done += 1
 
-        for i in range(1, K):                 # 1..K-1
+        for i in range(K):                    # 0..K-1；首个客户也可参与反转
             for j in range(i + 1, K + 1):     # i+1..K
                 # ---- 反转段 stop_seq[i+1 : j+1] -------------------------
                 candidate = (
                     current_stop_seq[: i + 1]
                     + tuple(reversed(current_stop_seq[i + 1 : j + 1]))
                     + current_stop_seq[j + 1 :]
+                )
+                candidate_order_ids = (
+                    tuple(s.order_id for s in current_stops[: i + 1])
+                    + tuple(s.order_id for s in reversed(current_stops[i + 1 : j + 1]))
+                    + tuple(s.order_id for s in current_stops[j + 1 :])
                 )
 
                 # ---- 重建 leg（必须！有向 + 多 metric） -------------------
@@ -123,7 +128,7 @@ def constrained_two_opt(plan_seed, ctx):
                     continue
                 cand_legs = tuple(cand_legs_list)
                 cand_stops = _rebuild_stops_with_timing(
-                    candidate, cand_legs, ctx
+                    candidate, candidate_order_ids, cand_legs, ctx
                 )
 
                 # ---- 可行性 + 主目标评估 --------------------------------
@@ -157,6 +162,7 @@ def constrained_two_opt(plan_seed, ctx):
 **关键策略**：
 
 * **first-improvement** —— 找到首个严格改善立即接受并重启外层；
+* **订单身份不丢失** —— 反转时同时移动订单 ID；同一配送节点的多个订单仍各自计数；
 * **plateau 检测** —— 整轮无改善即 `improved=False`，主循环退出；
 * **iter 上限** —— `iter_cap = K * K`，防止极端退化输入下无限循环。
 
@@ -180,7 +186,8 @@ def constrained_two_opt(plan_seed, ctx):
 | `check_feasibility` | O(K) | 每 trial 1 次 | O(K³) |
 | 主目标比较 | O(1) | 每 trial 1 次 | O(K²) |
 
-**总时间**：O(K² · iter_cap · ((V + E) log V)) = O(K⁴ · ((V+E) log V)) 最坏
+**总时间**：每轮最多 K² 个候选、每候选最多 K 条 leg、最多 K² 轮；
+保守上界 O(K⁵ · ((V+E) log V))。可达站点对命中缓存时，重复查询为 O(1)。
 
 但**实际平均**由于 first-improvement 提前退出 + plateau 检测，绝大多数轮次
 提前终止；课程实测在 K=10 ~ 20 范围内 2-opt 主项 ~K³ · Dijkstra。
@@ -189,14 +196,14 @@ def constrained_two_opt(plan_seed, ctx):
 
 * trial 候选（`candidate / cand_legs / cand_stops`）—— O(K + L)；
 * PathProvider 缓存 —— O(K²)（在内部反复反转后）；
-* **合计 O(K + L + V + E)**。
+* **合计 O(K² + L + V + E)**，含单次调度的路径缓存。
 
 ### 5.2 与 NN / CFI 的对比
 
 | 维度 | NN | CFI | 2-opt |
 | --- | --- | --- | --- |
-| 时间上界 | O(M · ((V+E) log V)) | O(M · K² · ((V+E) log V)) | O(K² · iter_cap · ((V+E) log V)) |
-| 解的质量 | 贪心基线 | 优于 NN 但仍有局部性 | 通常优于 NN / CFI |
+| 时间上界 | O(M² · ((V+E) log V)) | O(M · K² · ((V+E) log V)) | O(K⁵ · ((V+E) log V)) |
+| 解的质量 | 贪心基线 | 不保证优于 NN | 对给定种子只接受严格改善 |
 | 单调可行性 | 构造中保证 | 构造中保证 | **接受候选** 才允许（拒绝 `is_feasible=False` 种子） |
 | 是否新增订单 | 是 | 是 | 否 |
 

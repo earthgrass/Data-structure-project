@@ -103,6 +103,19 @@ class TestUnifiedPlannerRandomScenarios(TestCase):
             )
             self.assertEqual(len(r.served_order_ids), len(b.orders))
 
+    def test_default_keeps_better_nearest_neighbor_result(self) -> None:
+        bundle, _ = generate_scenario(DEFAULT_GENERATOR_CONFIG, seed=3)
+        for objective in ("distance", "cost"):
+            nearest = plan_deliveries(
+                bundle, algorithm="nearest_neighbor", objective=objective
+            )
+            default = plan_deliveries(bundle, objective=objective)
+            self.assertEqual(len(default.served_order_ids), len(bundle.orders))
+            self.assertLessEqual(
+                default.main_objective_total,
+                nearest.main_objective_total + 1e-9,
+            )
+
 
 class TestUnifiedPlannerObjectiveConsistency(TestCase):
     """主目标与 Dijkstra metric 必须一致。"""

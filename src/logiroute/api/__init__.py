@@ -13,8 +13,8 @@ Phase 5 仅承载**最小可用 Dashboard 后端**：
 * ``GET /api/health``：健康检查；
 * ``POST /api/scenario/random``：随机生成场景；
 * ``GET /api/scenario/current``：获取当前激活的场景；
-* ``POST /api/plan``：在当前场景上跑指定算法；
-* ``POST /api/compare``：在同一场景上比较 NN / CFI / 2-opt 三种算法。
+* ``POST /api/plan``：在当前场景上运行统一规划器；
+* ``POST /api/compare``：在同一场景上比较最短距离与最低成本目标。
 
 **算法核心全部复用 Phase 1-4 已交付的模块**，本包**不**重新实现
 Dijkstra / NN / CFI / 2-opt / 随机生成器。Web 框架（FastAPI）与

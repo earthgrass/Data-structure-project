@@ -189,7 +189,7 @@ def plan_deliveries(
 
     Args:
         scenario: 加载完毕的 :class:`ScenarioBundle`。
-        algorithm: 默认 ``"unified"``（CFI + 受约束 2-opt 组合）；
+        algorithm: 默认 ``"unified"``（NN / CFI 双种子 + 受约束 2-opt）；
             其它保留值 ``"nearest_neighbor"`` / ``"insertion"`` / ``"two_opt"``
             用于回归测试与实验比较，**不**作为产品公开 API。
         objective: 主目标 ``"distance"`` 或 ``"cost"``；``travel_time`` 拒绝。
@@ -328,7 +328,7 @@ def plan_deliveries(
     # --- 6. 调度（带计时） ---
     t0 = time.monotonic()
     if algorithm == "unified":
-        # Phase 5 默认路径：CFI 构造初始可行路线 + 受约束 2-opt 局部优化
+        # Phase 5 默认路径：NN / CFI 双种子分别局部优化，再择优
         plan = unified_planner(ctx, eligible_orders)
         extra_unserved = _lift_unserved_from_notes(plan)
         # 2-opt 在 notes 中可能含有 iterations；CFI 不写

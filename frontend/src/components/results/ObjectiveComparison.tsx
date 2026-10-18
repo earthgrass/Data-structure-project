@@ -121,7 +121,7 @@ export function ObjectiveComparison({
       <div className="comparison-head">
         <h3>双目标对比</h3>
         <span className="meta">
-          同一场景快照 · CFI + 2-opt · 启发式结果，不保证全局最优
+          同一场景快照 · NN / CFI + 2-opt 择优 · 启发式结果，不保证全局最优
           {scenarioName && (
             <>
               {' · 场景 '}

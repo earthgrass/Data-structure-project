@@ -557,6 +557,26 @@ class TestTravelTimeFromCrossMetrics(TestCase):
         )
         self.assertEqual(plan.total_travel_time, expected_travel)
 
+    def test_time_window_uses_time_of_chosen_distance_path(self):
+        graph = LogisticsGraph()
+        for node in (_node("W1", NodeType.WAREHOUSE), _node("C1"), _node("C2")):
+            graph.add_node(node)
+        graph.add_edge(_edge("W1", "C1", 100.0, 2.0, 50.0))
+        graph.add_edge(_edge("W1", "C2", 1.0, 50.0, 1.0))
+        graph.add_edge(_edge("C2", "C1", 1.0, 50.0, 1.0))
+        graph.add_edge(_edge("C1", "W1", 2.0, 2.0, 2.0))
+        ctx = _make_ctx(graph, objective="distance")
+        order = _make_order("O1", "C1", demand=1.0, tw_end=600.0)
+        plan = nearest_neighbor(ctx, [order])
+        # 最短距离路需 100 分钟，540 出发将错过 600 的时间窗。
+        self.assertEqual(plan.served_order_ids, ())
+
+    def test_return_time_includes_last_drive_to_depot(self):
+        graph = _tri_graph()
+        ctx = _make_ctx(graph)
+        plan = nearest_neighbor(ctx, [_make_order("O1", "C1", demand=1.0)])
+        self.assertEqual(plan.return_time, plan.stops[-1].arrival_time)
+
 
 # ---------------------------------------------------------------------------
 #  Test 11: 空 eligible_orders

@@ -874,6 +874,53 @@ class TestServedOrderSetPreserved(TestCase):
         result = constrained_two_opt(seed, ctx)
         self.assertEqual(set(result.served_order_ids), {"OA", "OB", "OC"})
 
+    def test_first_customer_can_move_when_reversal_improves_route(self):
+        graph = LogisticsGraph()
+        for node in (_node("W1", NodeType.WAREHOUSE), _node("A"), _node("B")):
+            graph.add_node(node)
+        for src, target, distance in (
+            ("W1", "A", 5.0), ("W1", "B", 1.0),
+            ("A", "B", 1.0), ("B", "A", 1.0),
+            ("A", "W1", 1.0), ("B", "W1", 5.0),
+        ):
+            graph.add_edge(_edge(src, target, distance, distance, distance))
+        orders = [_order("OA", "A"), _order("OB", "B")]
+        seed = _seed_route(("W1", "A", "B", "W1"), graph=graph, orders=orders)
+        result = constrained_two_opt(seed, _ctx(graph, orders=orders))
+        self.assertEqual(result.stop_sequence, ("W1", "B", "A", "W1"))
+        self.assertLess(result.main_objective_total, seed.main_objective_total)
+
+    def test_same_destination_orders_keep_distinct_identities(self):
+        from logiroute.scheduling.algorithms.nearest_neighbor import nearest_neighbor
+
+        graph = LogisticsGraph()
+        for node in (_node("W1", NodeType.WAREHOUSE), _node("A"), _node("B")):
+            graph.add_node(node)
+        for src, target, distance in (
+            ("W1", "A", 1.0), ("W1", "B", 2.0),
+            ("A", "B", 5.0), ("B", "A", 1.0),
+            ("A", "W1", 1.0), ("B", "W1", 5.0),
+        ):
+            graph.add_edge(_edge(src, target, distance, distance, distance))
+        orders = [_order("OA1", "A"), _order("OA2", "A"), _order("OB", "B")]
+        ctx = _ctx(graph, orders=orders)
+        seed = nearest_neighbor(ctx, orders)
+        result = constrained_two_opt(seed, ctx)
+        self.assertLess(result.main_objective_total, seed.main_objective_total)
+        self.assertCountEqual(result.served_order_ids, ("OA1", "OA2", "OB"))
+        self.assertEqual(len(set(result.served_order_ids)), 3)
+
+    def test_seed_unserved_notes_survive_optimization(self):
+        from dataclasses import replace
+
+        graph = _graph_with_3_customers()
+        orders = [_order("OA", "A"), _order("OB", "B")]
+        seed = _seed_route(("W1", "A", "B", "W1"), graph=graph, orders=orders)
+        unserved = ({"order_id": "OC", "kind": "no_feasible_insertion", "message": "window"},)
+        seed = replace(seed, notes={"unserved_orders": unserved})
+        result = constrained_two_opt(seed, _ctx(graph, orders=orders))
+        self.assertEqual(result.notes["unserved_orders"], unserved)
+
 
 if __name__ == "__main__":
     unittest.main()

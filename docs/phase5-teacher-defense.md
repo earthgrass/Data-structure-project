@@ -23,13 +23,13 @@ LogiRoute 当前演示的是**随机生成的假设物流场景**：单车辆从
    手写 `ArrayQueue`、索引式 `MinHeap`；不使用 `heapq` / `networkx` / `numpy`。
 3. **算法**：Phase 2 手写 Dijkstra，支持 distance / travel_time / cost 三种
    边权；Phase 3 实现最近邻基线、可行插入（CFI）、受约束 2-opt；Phase 5 的
-   统一规划器固定走 **CFI → 2-opt**。
+   统一规划器以 **NN / CFI 双种子 → 各自 2-opt → 择优** 规划。
 4. **场景生成**：Phase 4 生成强连通有向图、客户 backbone、订单与扁平宽时间窗；
    独立 validator 不调用 planner，单独校验覆盖性、容量、时间窗、可达性与闭环。
 5. **Dashboard**：FastAPI 提供 `/api/scenario/random`、`/api/plan`、
    `/api/compare`；React/Vite 前端展示场景、路线、时刻表与双目标对比。
    前端不重算任何调度算法。
-6. **本轮冻结**：修复了 seed=42 跨进程不可复现的 P0；全量 495 个 unittest、
+6. **本轮冻结**：修复了 seed=42 跨进程不可复现的 P0；全量 501 个 unittest、
    前端 typecheck、生产 build 与真实代理联调全部通过。未启动 Phase 6。
 
 ---
@@ -58,7 +58,7 @@ npm run dev
 命令行复核：
 
 ```bash
-PYTHONPATH=src python -m unittest discover -s tests -t .          # 495 OK
+PYTHONPATH=src python -m unittest discover -s tests -t .          # 501 OK
 PYTHONPATH=src python -m unittest tests.test_seed_reproducibility -v
 ```
 
@@ -77,7 +77,7 @@ PYTHONPATH=src python -m unittest tests.test_seed_reproducibility -v
 | 峰值载重 | 194.9 / 250.0 | 194.9 / 250.0 |
 
 **如实说明**：在本实例上 cost 模式的路线同时在距离与成本上更小。原因是两种
-主目标的 CFI 构造种子不同，2-opt 各自落入不同的可行局部最优；**不是**指标
+主目标的候选排序不同，2-opt 各自落入不同的可行局部最优；**不是**指标
 串味。已逐 leg 校验：两种模式每条 leg 的 `metric` 分别等于 `distance` /
 `cost`，且 `Σ leg.cross_metrics[m]` 与三个总额完全一致。
 
@@ -93,7 +93,7 @@ PYTHONPATH=src python -m unittest tests.test_seed_reproducibility -v
 | 实时交通 | **未接入**；`traffic_status` 默认 `clear` |
 | 订单 | 生成器构造的**模拟订单**，不是真实电商订单 |
 | 车辆 | **严格单车辆** VH1；其余车辆设计已作废 |
-| 最优性 | CFI + 2-opt 启发式，**不保证全局最优** |
+| 最优性 | NN / CFI 双种子 + 2-opt 启发式，**不保证全局最优** |
 | 未服务订单 | 如存在会如实列出原因，不伪造 100% |
 | 下一阶段 | BJUT 周边真实道路网络：仅设计存档，本轮未下载数据 |
 
@@ -115,13 +115,12 @@ PYTHONPATH=src python -m unittest tests.test_seed_reproducibility -v
 `clear`。实时交通接入方案放在下一阶段设计文档中，本轮未实施。
 
 ### Q4：为什么 distance 模式的路线距离反而比 cost 模式大？
-因为统一规划器是 **CFI + 受约束 2-opt** 的启发式，不是精确求解器。两种主目标
-在插入阶段的候选排序与 2-opt 的接受准则不同，最终落入不同的可行局部最优；
+因为统一规划器是 **NN / CFI 双种子 + 受约束 2-opt** 的启发式，不是精确求解器。两种主目标
+在候选排序与 2-opt 的接受准则上不同，最终落入不同的可行局部最优；
 cost 模式的落点恰好在这一实例上距离也更短。这不违反主目标传播：distance
 模式每条 leg 都用 distance 边权，cost 模式每条 leg 都用 cost 边权，累计值
-分别与 `total_distance` / `total_cost` 一致。进一步地，对两条路线分别枚举
-190 个可行反转，均无单段反转能改善各自主目标，确认它们都已是 2-opt 局部
-最优。我们不声称任何全局最优。
+分别与 `total_distance` / `total_cost` 一致。2-opt 会枚举包含首个配送点的
+反转候选，但仍不能保证全局最优。
 
 ### Q5：怎么证明没有把两种指标混在一起？
 每个 leg 的 `PathResult` 带 `metric` 与 `cross_metrics`。测试
@@ -157,7 +156,7 @@ seed=42 场景 20/20 全部送达。系统如实记录 `unserved_orders` 及原�
 
 ### Q11：复杂度是多少？
 Dijkstra 用索引式二叉最小堆：`O((V+E) log V)`；CFI 最坏
-`O(K² · Dijkstra)`；受约束 2-opt 最坏 `O(K³ · Dijkstra)`，K 为配送站数。
+`O(K³ · Dijkstra)`；受约束 2-opt 保守上界 `O(K⁵ · Dijkstra)`，K 为配送站数。
 详细推导见 `docs/algorithms-*.md`。
 
 ### Q12：为什么地图上的路线看起来绕？
