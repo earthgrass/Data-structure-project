@@ -31,6 +31,8 @@ from __future__ import annotations
 from logiroute.algorithms.dijkstra import (
     SUPPORTED_METRICS,
     PathResult,
+    UnknownNodeError,
+    dijkstra_single_source,
     shortest_path,
 )
 from logiroute.graph.logistics_graph import LogisticsGraph
@@ -155,6 +157,90 @@ class PathProvider:
                 )
             )
         return legs
+
+    def shortest_paths_from(
+        self,
+        source: str,
+        targets: tuple[str, ...],
+        metric: str,
+    ) -> dict[str, PathResult]:
+        """一次 Dijkstra 单源运行填充多个目标的路径与三项指标。
+
+        TSP 距离矩阵只需仓库及订单目的地作为起点，故每个不同起点最多
+        运行一次 Phase 2 ``dijkstra_single_source``；沿 ``prev`` 回溯路径，
+        不实现第二套最短路。可达结果写入现有调度作用域缓存。
+
+        Time   : O((V+E)log V + T·V)，T 为目标数，回溯最坏 O(V)。
+        Space  : O(V+E + T·V)，含返回的路径及缓存。
+        """
+        if metric not in SUPPORTED_METRICS:
+            raise ValueError(f"unknown metric: {metric!r}; allowed: {SUPPORTED_METRICS}")
+        if not self._graph.has_node(source):
+            raise UnknownNodeError(f"source node {source!r} not in graph")
+        for target in targets:
+            if not self._graph.has_node(target):
+                raise UnknownNodeError(f"target node {target!r} not in graph")
+
+        results: dict[str, PathResult] = {}
+        missing = False
+        for target in targets:
+            if source == target:
+                continue
+            if (self._graph_id, source, target, metric) not in self._cache:
+                missing = True
+                break
+
+        single = None
+        if missing:
+            single = dijkstra_single_source(self._graph, source, metric)
+            self.dijkstra_calls += 1
+            self.cache_misses += 1
+
+        for target in targets:
+            if target in results:
+                continue
+            self.paths_evaluated += 1
+            if source == target:
+                results[target] = PathResult(
+                    source=source, target=target, metric=metric,
+                    path=(source,), total_weight=0.0, reachable=True,
+                    cross_metrics={m: 0.0 for m in SUPPORTED_METRICS},
+                )
+                continue
+            key = (self._graph_id, source, target, metric)
+            cached = self._cache.get(key)
+            if cached is not None:
+                self.cache_hits += 1
+                results[target] = cached
+                continue
+            assert single is not None
+            distance = single["dist"][target]
+            if distance == float("inf"):
+                results[target] = PathResult(
+                    source=source, target=target, metric=metric,
+                    path=(), total_weight=distance, reachable=False,
+                    cross_metrics={},
+                )
+                continue
+            reverse_path: list[str] = []
+            cursor: str | None = target
+            while cursor is not None:
+                reverse_path.append(cursor)
+                cursor = single["prev"][cursor]
+            reverse_path.reverse()
+            cross = {m: 0.0 for m in SUPPORTED_METRICS}
+            for i in range(len(reverse_path) - 1):
+                edge = self._graph.get_edge(reverse_path[i], reverse_path[i + 1])
+                for m in SUPPORTED_METRICS:
+                    cross[m] += edge.weight(m)
+            path = PathResult(
+                source=source, target=target, metric=metric,
+                path=tuple(reverse_path), total_weight=distance,
+                reachable=True, cross_metrics=cross,
+            )
+            self._cache[key] = path
+            results[target] = path
+        return results
 
     def road_node_sequence(
         self,

@@ -63,6 +63,7 @@ class GeneratorConfig:
     max_demand: float = 15.0
     # 优先级
     urgent_fraction: float = 0.10
+    tsp_beam_width: int = 1024
     # 拒绝重试上限（为安全保险，可行性主源是 backbone-first）
     max_rejection_attempts: int = 16
 
@@ -114,6 +115,12 @@ class GeneratorConfig:
             raise ValueError("window_total_extra must be non-negative")
         if not 0.0 <= self.urgent_fraction <= 1.0:
             raise ValueError("urgent_fraction must be in [0, 1]")
+        if (
+            isinstance(self.tsp_beam_width, bool)
+            or not isinstance(self.tsp_beam_width, int)
+            or self.tsp_beam_width < 1
+        ):
+            raise ValueError("tsp_beam_width must be a positive integer")
         if self.max_demand > self.capacity:
             raise ValueError(
                 f"max_demand ({self.max_demand}) must be <= vehicle capacity "

@@ -22,15 +22,15 @@ LogiRoute 当前演示的是**随机生成的假设物流场景**：单车辆从
 2. **数据结构**：`LogisticsGraph` 以邻接表为唯一可变状态，邻接矩阵按需导出；
    手写 `ArrayQueue`、索引式 `MinHeap`；不使用 `heapq` / `networkx` / `numpy`。
 3. **算法**：Phase 2 手写 Dijkstra，支持 distance / travel_time / cost 三种
-   边权；Phase 3 实现最近邻基线、可行插入（CFI）、受约束 2-opt；Phase 5 的
-   统一规划器以 **NN / CFI 双种子 → 各自 2-opt → 择优** 规划。
+   边权；Phase 3 实现最近邻基线、可行插入（CFI）、受约束 2-opt；当前
+   默认规划器以 **Dijkstra 配送站距离矩阵 → 有向 TSP 状态搜索** 规划。
 4. **场景生成**：Phase 4 生成强连通有向图、客户 backbone、订单与扁平宽时间窗；
    独立 validator 不调用 planner，单独校验覆盖性、容量、时间窗、可达性与闭环。
 5. **Dashboard**：FastAPI 提供 `/api/scenario/random`、`/api/plan`、
    `/api/compare`；React/Vite 前端展示场景、路线、时刻表与双目标对比。
    前端不重算任何调度算法。
-6. **本轮冻结**：修复了 seed=42 跨进程不可复现的 P0；全量 501 个 unittest、
-   前端 typecheck、生产 build 与真实代理联调全部通过。未启动 Phase 6。
+6. **当前版本**：seed=42 可跨进程复现；默认规划已切换为 Dijkstra 距离矩阵
+   与有向 TSP 有界搜索。未启动 Phase 6。
 
 ---
 
@@ -58,7 +58,7 @@ npm run dev
 命令行复核：
 
 ```bash
-PYTHONPATH=src python -m unittest discover -s tests -t .          # 501 OK
+PYTHONPATH=src python -m unittest discover -s tests -t .          # 508 OK
 PYTHONPATH=src python -m unittest tests.test_seed_reproducibility -v
 ```
 
@@ -71,15 +71,14 @@ PYTHONPATH=src python -m unittest tests.test_seed_reproducibility -v
 | 可行 / 送达 | True / 20 of 20 | True / 20 of 20 |
 | 单车辆 | VH1（250 kg） | VH1（250 kg） |
 | 闭合回路 | W1 → … → W1 | W1 → … → W1 |
-| 总距离 | 1887.917 | 1808.696 |
-| 总成本 | 4475.234 | 4128.650 |
-| 总行驶时间（仅对比） | 2512.982 | 2390.511 |
+| 总距离 | 1717.315 | 1732.588 |
+| 总成本 | 4037.206 | 3993.425 |
+| 总行驶时间（仅对比） | 2194.306 | 2226.081 |
 | 峰值载重 | 194.9 / 250.0 | 194.9 / 250.0 |
 
-**如实说明**：在本实例上 cost 模式的路线同时在距离与成本上更小。原因是两种
-主目标的候选排序不同，2-opt 各自落入不同的可行局部最优；**不是**指标
-串味。已逐 leg 校验：两种模式每条 leg 的 `metric` 分别等于 `distance` /
-`cost`，且 `Σ leg.cross_metrics[m]` 与三个总额完全一致。
+**如实说明**：distance 模式得到较短距离，cost 模式得到较低成本。
+两者在同一场景上分别搜索有向 TSP 顺序，每条 leg 的 `metric` 分别为
+`distance` / `cost`，三个总额均来自各自实际选中的道路路径。
 
 ---
 
@@ -93,7 +92,7 @@ PYTHONPATH=src python -m unittest tests.test_seed_reproducibility -v
 | 实时交通 | **未接入**；`traffic_status` 默认 `clear` |
 | 订单 | 生成器构造的**模拟订单**，不是真实电商订单 |
 | 车辆 | **严格单车辆** VH1；其余车辆设计已作废 |
-| 最优性 | NN / CFI 双种子 + 2-opt 启发式，**不保证全局最优** |
+| 最优性 | 有界 TSP 状态搜索；束宽截断时**不保证全局最优** |
 | 未服务订单 | 如存在会如实列出原因，不伪造 100% |
 | 下一阶段 | BJUT 周边真实道路网络：仅设计存档，本轮未下载数据 |
 
@@ -114,13 +113,11 @@ PYTHONPATH=src python -m unittest tests.test_seed_reproducibility -v
 没有。`travel_time` 与 `cost` 来自生成器的规则采样，`traffic_status` 默认
 `clear`。实时交通接入方案放在下一阶段设计文档中，本轮未实施。
 
-### Q4：为什么 distance 模式的路线距离反而比 cost 模式大？
-因为统一规划器是 **NN / CFI 双种子 + 受约束 2-opt** 的启发式，不是精确求解器。两种主目标
-在候选排序与 2-opt 的接受准则上不同，最终落入不同的可行局部最优；
-cost 模式的落点恰好在这一实例上距离也更短。这不违反主目标传播：distance
-模式每条 leg 都用 distance 边权，cost 模式每条 leg 都用 cost 边权，累计值
-分别与 `total_distance` / `total_cost` 一致。2-opt 会枚举包含首个配送点的
-反转候选，但仍不能保证全局最优。
+### Q4：为什么地图上相近的配送点不连续服务？
+图上坐标只是示意位置；订单之间是否相邻，要看完整路网的**有向道路最短路**
+与整条闭环总量。先用 Dijkstra 形成仓库 + 配送站的距离矩阵，再在矩阵上
+求 TSP 顺序。seed=42 中 C4 与 C26 虽近，但彼此没有直接道路，
+强行相邻可能增加整条路线距离。束宽截断时仍不保证全局最优。
 
 ### Q5：怎么证明没有把两种指标混在一起？
 每个 leg 的 `PathResult` 带 `metric` 与 `cross_metrics`。测试
@@ -150,18 +147,18 @@ seed=42 场景 20/20 全部送达。系统如实记录 `unserved_orders` 及原�
 校验 `service_start ≤ time_window_end`。`travel_time` 只作为对比列，不能作主目标。
 
 ### Q10：用了现成的算法包吗？
-没有。图、堆、Dijkstra、队列、NN、CFI、2-opt 全部手写；不使用
+没有。图、堆、Dijkstra、TSP 搜索、队列、NN、CFI、2-opt 全部手写；不使用
 `networkx`、`numpy`、`scipy`、`ortools`、`heapq`。FastAPI / React / Vite
 仅在 Phase 5 Dashboard 层授权使用，不参与算法核心。
 
 ### Q11：复杂度是多少？
-Dijkstra 用索引式二叉最小堆：`O((V+E) log V)`；CFI 最坏
-`O(K³ · Dijkstra)`；受约束 2-opt 保守上界 `O(K⁵ · Dijkstra)`，K 为配送站数。
-详细推导见 `docs/algorithms-*.md`。
+Dijkstra 用索引式二叉最小堆：`O((V+E) log V)`；对至多 `K+1` 个
+不同配送起点各运行一次。TSP 有界搜索的保守上界为
+`O(K⁴·B + K²·B·log B)`，`B` 是束宽。详见 `docs/algorithms-tsp.md`。
 
 ### Q12：为什么地图上的路线看起来绕？
-地图是抽象坐标到经纬度的示意投影，路线是图上的最短路径（含中转节点），
-不是地理直线；看起来绕是图结构与投影共同造成的，不代表真实导航路径。
+地图直接绘制抽象坐标；路线是图上的有向最短路径（可经过中转节点），
+不是地理直线；看起来绕主要由稀疏随机路网造成，不代表真实导航路径。
 
 ### Q13：seed=42 真的可复现吗？
 可复现。本轮修复了 `graph_sampler` 直接迭代 `set` 导致跨进程边权漂移的 P0，
@@ -169,7 +166,7 @@ Dijkstra 用索引式二叉最小堆：`O((V+E) log V)`；CFI 最坏
 两个独立进程，比较图、订单、distance/cost 路线与总额，结果完全一致。
 
 ### Q14：前端会重新计算调度吗？
-不会。前端只调用 `/api/*`，所有 Dijkstra / CFI / 2-opt / 生成器逻辑都在
+不会。前端只调用 `/api/*`，所有 Dijkstra / TSP / 生成器逻辑都在
 Python 后端；这是 AGENTS §3.7 的强约束。
 
 ### Q15：为什么 Phase 5 能引入 FastAPI？

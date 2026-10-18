@@ -16,8 +16,8 @@ Phase 5 仅承载**最小可用 Dashboard 后端**：
 * ``POST /api/plan``：在当前场景上运行统一规划器；
 * ``POST /api/compare``：在同一场景上比较最短距离与最低成本目标。
 
-**算法核心全部复用 Phase 1-4 已交付的模块**，本包**不**重新实现
-Dijkstra / NN / CFI / 2-opt / 随机生成器。Web 框架（FastAPI）与
+**算法核心位于调度与图算法模块**，本包**不**重新实现
+Dijkstra / TSP / NN / CFI / 2-opt / 随机生成器。Web 框架（FastAPI）与
 Pydantic 属于运行期依赖，**不**在课程要求的"核心算法禁表"中。
 """
 from __future__ import annotations

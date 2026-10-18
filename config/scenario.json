@@ -2174,6 +2174,7 @@
   },
   "optimization": {
     "default_objective": "distance",
+    "tsp_beam_width": 1024,
     "weights": {
       "distance": 1.0,
       "travel_time": 1.0,

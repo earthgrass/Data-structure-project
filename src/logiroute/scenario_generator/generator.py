@@ -154,6 +154,7 @@ def generate_scenario(
             },
             optimization={
                 "default_objective": "distance",
+                "tsp_beam_width": config.tsp_beam_width,
                 "weights": {"distance": 1.0, "travel_time": 1.0, "cost": 1.0},
                 "late_penalty_per_minute": 0.5,
                 "expiry_grace_minutes": 10,

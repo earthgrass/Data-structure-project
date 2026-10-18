@@ -82,6 +82,7 @@ VIOLATION_KINDS: tuple[str, ...] = (
     "no_feasible_next_step",
     "no_feasible_insertion",
     "infeasible_seed",
+    "search_budget_exhausted",
 )
 
 

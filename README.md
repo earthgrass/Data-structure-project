@@ -25,26 +25,26 @@
 | 数据模型 | `Node` / `Edge` / `Vehicle` / `Courier` / `Order` |
 | 图容器 | `LogisticsGraph`（邻接表主存 + 邻接矩阵按需导出） |
 | 自实现数据结构 | `ArrayQueue`（FIFO 队列） / `MinHeap`（索引式二叉最小堆） |
-| 算法 | BFS 弱连通 / 双向 DFS 强连通 / **Dijkstra 三种 metric** / **最近邻 NN** / **可行插入 CFI** / **受约束 2-opt** |
+| 算法 | BFS 弱连通 / 双向 DFS 强连通 / **Dijkstra 三种 metric** / **有向 TSP 有界状态搜索**；NN / CFI / 2-opt 保留实验对比 |
 | 调度层 | `logiroute.scheduling` —— `plan_deliveries(scenario, algorithm, objective)` 统一入口；`PathProvider` 单调度缓存；`check_feasibility` 硬约束 |
 | 配置层 | `config/scenario.json` + `logiroute.config.loader` |
 | 固定场景 | 35 节点 / 192 有向边 / 强连通 / **严格单车辆 VH1**（容量 250 kg @ W1） / 单配送员 CO1 / 20 订单 |
 | 随机场景 | `logiroute.scenario_generator` —— `generate_scenario(config, seed)` 生成完整场景（**严格单车辆**：生成器只造 VH1，loader 拒绝 `len(vehicles) != 1`）；独立 validator 七项校验 |
-| 测试 | 全部用 `unittest`，共 **495 用例**，全部通过（含 seed=42 跨进程复现回归） |
-| 文档 | `AGENTS.md` + `docs/architecture.md` + `docs/development-plan.md` + `docs/data-structures-and-algorithms.md` + `docs/algorithms-{minheap,dijkstra,nearest-neighbor,insertion,two-opt}.md` + 各阶段教师答辩 / 终评审材料 + `docs/PHASE3_SUMMARY.md` / `docs/PHASE4_SUMMARY.md`（单文件总览） |
+| 测试 | 全部用 `unittest`，共 **508 用例**，全部通过（含 Dijkstra + TSP 与 seed 跨进程回归） |
+| 文档 | `AGENTS.md` + `docs/architecture.md` + `docs/development-plan.md` + `docs/data-structures-and-algorithms.md` + `docs/algorithms-tsp.md` 与各阶段算法说明 + 教师答辩 / 终评审材料 |
 
-## 课程检查冻结基线（2026-10-17）
+## 当前课程检查版本（2026-10-18）
 
-> 本轮为周一课程检查冻结版本：只做稳定性验证，**不**接入真实道路 / 实时交通 /
-> 动态订单，也**不**启动 Phase 6。
+> 默认调度已切换为 Dijkstra 距离矩阵 + 有向 TSP 有界搜索；**不**接入真实道路 /
+> 实时交通 / 动态订单，也**不**启动 Phase 6。
 
 ### 实测验收结果
 
 | 项目 | 命令 | 结果 |
 | --- | --- | --- |
-| Python 全量测试 | `PYTHONPATH=src python -m unittest discover -s tests -t .` | **495 用例，OK，退出码 0** |
+| Python 全量测试 | `PYTHONPATH=src python -m unittest discover -s tests -t .` | **508 用例，OK，退出码 0** |
 | 前端类型检查 | `cd frontend && npm run typecheck` | **0 错误，退出码 0** |
-| 前端生产构建 | `cd frontend && npm run build` | **成功（44 modules，输出 `frontend/dist/`）** |
+| 前端生产构建 | `cd frontend && npm run build` | **成功（51 modules，输出 `frontend/dist/`）** |
 | 后端端到端 | `TestClient` + 真实 uvicorn / Vite 代理 | health / random / plan / compare 全部 200 |
 | seed=42 跨进程复现 | 不同 `PYTHONHASHSEED` 子进程 | 图、订单、distance / cost 路线与总额完全一致 |
 
@@ -56,9 +56,9 @@
 | 送达订单 | 20 / 20 | 20 / 20 |
 | 单车辆 | VH1（250 kg） | VH1（250 kg） |
 | 闭合回路 | W1 → … → W1 | W1 → … → W1 |
-| 总距离 | 1887.917 | 1808.696 |
-| 总成本 | 4475.234 | 4128.650 |
-| 总行驶时间（仅对比列） | 2512.982 | 2390.511 |
+| 总距离 | 1717.315 | 1732.588 |
+| 总成本 | 4037.206 | 3993.425 |
+| 总行驶时间（仅对比列） | 2194.306 | 2226.081 |
 | 峰值载重 | 194.9 / 250.0 | 194.9 / 250.0 |
 
 > 上述数字来自 `plan_deliveries(..., objective=...)` 的实际输出；每条 leg 的
@@ -75,12 +75,11 @@
 * **没有接入实时交通**：`travel_time` / `cost` 来自生成器的规则采样；
   `traffic_status` 默认 `clear`，不含实时拥堵数据。
 * **严格单车辆**：只有 VH1 参与配送，路线必须从仓库出发并回到同一仓库。
-* **启发式而非全局最优**：统一规划器分别以最近邻（NN）和可行插入（CFI）
-  构造路线，分别运行受约束 2-opt，优先选完成订单更多的路线，随后比较主目标；
-  不保证全局最优，也不承诺 distance 模式在所有指标上支配 cost 模式。
-* **已知现象（如实报告）**：不同主目标可能落入不同的可行局部最优；
-  距离目标未必同时取得最低成本。道路为有向图，地图上相近的两点之间也可能
-  因道路权重或时间窗而插入其他站点，路线按实际道路 leg 而非坐标直线优化。
+* **默认规划方式**：在完整路网中对仓库和订单目的地运行 Phase 2 Dijkstra，
+  构建配送站间的有向最短路矩阵，再用手写有界 TSP 状态搜索决定单车闭环顺序。
+  搜索发生束宽截断时不保证全局最优；distance 与 cost 各自优化自己的主目标。
+* **地图与道路**：地图上相近的两点未必有直接有向道路。规划使用实际道路
+  路径与权重，而非坐标直线距离；历史 NN / CFI / 2-opt 仅供实验对比。
 * **尚未实现**：真实道路网络、实时交通、动态订单、多车辆、跨车调度。
 
 ### 下一阶段（设计存档，本轮未实施）
@@ -119,14 +118,14 @@
 │   ├── config/
 │   │   └── loader.py         强校验的 JSON 加载器，含连通性自检
 │   ├── algorithms/           MinHeap + Dijkstra（手写）
-│   ├── scheduling/           Phase 3 单车辆配送调度（NN / CFI / 2-opt）
+│   ├── scheduling/           单车辆 TSP 调度；NN / CFI / 2-opt 历史对比
 │   ├── scenario_generator/   Phase 4 随机场景生成（RandomSource / 图采样 /
 │   │                         backbone / 独立 validator）
 │   ├── simulation/           占位（后续阶段）
 │   ├── api/                  FastAPI 场景 / 规划 / 比较路由（Phase 5）
 │   └── web/                  预留入口（前端工程位于 frontend/）
 │
-├── tests/                    unittest 单元测试（495 用例，含调度、随机场景与跨进程复现回归）
+├── tests/                    unittest 单元测试（508 用例，含 TSP、随机场景与跨进程复现回归）
 │
 └── docs/
     ├── architecture.md       分层架构 + 随机生成器设计
@@ -183,8 +182,8 @@ npm run dev
 
 * Vite proxy 已把 `/api/*` 转发到 `http://127.0.0.1:8000`（见 `frontend/vite.config.ts`）。
 * 后端单独 ``GET /docs`` 可访问 Swagger UI。
-* **算法核心全部复用 Phase 1-4 已交付模块**，前端**不**重新实现
-  Dijkstra / NN / CFI / 2-opt / 随机生成器（AGENTS §3.7）。
+* **算法核心位于 Python 后端**，前端**不**重新实现
+  Dijkstra / TSP / NN / CFI / 2-opt / 随机生成器。
 
 > Windows PowerShell 下等价启动命令：
 >
@@ -206,7 +205,7 @@ npm run dev
 6. 可选命令行复核：
 
    ```bash
-   PYTHONPATH=src python -m unittest discover -s tests -t .      # 495 OK
+   PYTHONPATH=src python -m unittest discover -s tests -t .      # 508 OK
    PYTHONPATH=src python -m unittest tests.test_seed_reproducibility -v
    ```
 
@@ -248,42 +247,12 @@ PYTHONPATH=src python -m unittest tests.test_graph
 PYTHONPATH=src python -m unittest tests.test_config.TestValidationErrors.test_edge_to_unknown_node
 ```
 
-### 当前测试用例分布
+### 当前测试
 
-| 模块                                    | 用例数 |
-| --------------------------------------- | ------ |
-| tests.test_nodes                        | 13 |
-| tests.test_edges                        | 16 |
-| tests.test_vehicles                     | 14 |
-| tests.test_couriers                     |  9 |
-| tests.test_orders                       |  9 |
-| **tests.test_graph**                    | 40 |
-| **tests.test_config**                   | 22 |
-| **tests.test_queue** (Phase 1)          | 16 |
-| **tests.test_phase1_regression** (Phase 1) | 24 |
-| **tests.test_heap** (Phase 2)           | 32 |
-| **tests.test_dijkstra** (Phase 2)       | 31 |
-| **tests.test_scheduling_types** (Phase 3) | 32 |
-| **tests.test_scheduling_feasibility**   | 16 |
-| **tests.test_scheduling_path_provider** | 21 |
-| **tests.test_scheduling_nearest_neighbor** | 23 |
-| **tests.test_scheduling_insertion**     | 14 |
-| **tests.test_scheduling_two_opt**       | 18 |
-| **tests.test_scheduling_planner**       | 16 |
-| **tests.test_phase3_regression**        | 15 |
-| **tests.test_phase3_10of20_regression** |  8 |
-| **tests.test_scenario_generator** (Phase 4) | 11 |
-| **tests.test_scenario_generator_random_source** | 12 |
-| **tests.test_scenario_generator_graph_sampler** |  8 |
-| **tests.test_scenario_generator_backbone_builder** |  6 |
-| **tests.test_scenario_generator_validator** |  6 |
-| **tests.test_phase4_regression**        | 10 |
-| **tests.test_scheduling_unified** (Phase 5) | 17 |
-| **tests.test_phase5_stress** (Phase 5, 20 seed × 2 obj) |  6 |
-| **tests.test_phase5_objective_tradeoff** (Phase 5, distance vs cost) | 10 |
-| **tests.test_api** (Phase 5 FastAPI) | 19 |
-| **tests.test_seed_reproducibility** (Phase 5, 跨进程 seed=42) |  1 |
-| **合计**                                | **495** |
+`unittest discover` 共运行 **508 项**。其中
+`tests/test_scheduling_tsp.py` 验证有向距离矩阵、经过非配送节点的道路路径、
+闭环顺序、时间窗、同址多订单、束宽截断标识与配置校验；其余测试覆盖
+图结构、Dijkstra、历史算法、随机场景、API 和跨进程 seed 复现。
 
 ## 重新生成固定场景
 
@@ -313,7 +282,8 @@ node_ids, m_time     = bundle.graph.get_adjacency_matrix(metric="travel_time")
 
 ## 文档导航
 
-* [`docs/scheduling-algorithm-audit.md`](docs/scheduling-algorithm-audit.md) — 调度算法审查、修复与前后对比
+* [`docs/algorithms-tsp.md`](docs/algorithms-tsp.md) — 当前 Dijkstra 距离矩阵与有向 TSP 算法、伪代码和复杂度
+* [`docs/scheduling-algorithm-audit.md`](docs/scheduling-algorithm-audit.md) — 历史 NN / CFI / 2-opt 调度审查记录（已被 TSP 默认流程替代）
 * [`docs/dashboard-ui-round2.md`](docs/dashboard-ui-round2.md) — Dashboard 第二轮 UI / UX 重构、工程审计与浏览器验证记录
 
 * [`AGENTS.md`](AGENTS.md) — Claude Code / Codex 协作约束（**强约束：核心算法必须手搓**）

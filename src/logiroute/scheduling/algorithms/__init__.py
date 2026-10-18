@@ -3,7 +3,8 @@
 * :func:`nearest_neighbor` —— 最近邻基线（保留作回归测试）；
 * :func:`cheapest_feasible_insertion` —— 可行插入（CFI）；
 * :func:`constrained_two_opt` —— 受约束 2-opt 局部搜索；
-* :func:`unified_planner` —— Phase 5 默认公开入口（NN / CFI + 2-opt 择优）。
+* :func:`solve_tsp` —— Dijkstra 距离闭包上的有向 TSP 搜索；
+* :func:`unified_planner` —— 默认公开入口，委托 ``solve_tsp``。
 
 公开入口（Phase 5）只接受 :func:`logiroute.scheduling.planner.plan_deliveries`
 的 ``objective`` 参数；用户不再选择 NN / CFI / 2-opt 显式算法。
@@ -18,11 +19,13 @@ from logiroute.scheduling.algorithms.insertion import (
 )
 from logiroute.scheduling.algorithms.nearest_neighbor import nearest_neighbor
 from logiroute.scheduling.algorithms.two_opt import constrained_two_opt
+from logiroute.scheduling.algorithms.tsp import solve_tsp
 from logiroute.scheduling.algorithms.unified import unified_planner
 
 ALGORITHM_NAMES: tuple[str, ...] = (
     "unified",
     "nearest_neighbor",
+    "solve_tsp",
     "insertion",
     "two_opt",
 )

@@ -5,8 +5,8 @@
 
 Phase 5 规格 §3.1 / §五：
 
-* 用户公开 API **不**再传入 algorithm；统一规划器内部以
-  ``CFI / NN`` 双种子运行受约束 2-opt 并择优；
+* 用户公开 API **不**再传入 algorithm；统一规划器内部运行
+  ``Dijkstra 距离矩阵 + 有向 TSP``；
 * ``algorithm`` 字段保留作向后兼容；传入时记录 deprecation warning 并被
   强制忽略（生产流程仍走 unified）；
 * 比较接口不再比较三算法，仅比较 distance vs cost 两种主目标。
@@ -43,7 +43,7 @@ class PlanRequest(BaseModel):
         default=None,
         description=(
             "DEPRECATED —— 已废弃。用户公开 API 不再传入算法名称；"
-            "统一规划器内部使用 NN / CFI 双种子 + 2-opt。传任何值都会被忽略。"
+            "统一规划器内部使用 Dijkstra 距离矩阵 + TSP 搜索。传任何值都会被忽略。"
         ),
     )
 
@@ -79,7 +79,7 @@ def post_plan(body: PlanRequest, request: Request) -> dict[str, Any]:
     if body.algorithm is not None:
         warnings.warn(
             "POST /api/plan 'algorithm' field is deprecated and ignored; "
-            "use 'objective' only. Unified planner compares NN/CFI + 2-opt routes.",
+            "use 'objective' only. Unified planner runs Dijkstra + TSP search.",
             DeprecationWarning,
             stacklevel=2,
         )

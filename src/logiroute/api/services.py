@@ -5,7 +5,7 @@
 * 单进程持有**一个**当前激活场景（``threading.Lock`` 串行化）；
 * ``/api/scenario/random`` —— 调用 Phase 4 生成器创建新场景；
 * ``/api/plan`` —— 在当前场景上调用 Phase 3 ``plan_deliveries``；
-* ``/api/compare`` —— 同一场景并行调用三个算法（仍走 Phase 3）；
+* ``/api/compare`` —— 同一场景比较 distance 与 cost 两个主目标；
 
 **算法核心全部复用**：
 

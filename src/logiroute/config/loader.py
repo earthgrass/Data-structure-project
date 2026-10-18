@@ -341,6 +341,13 @@ def load_scenario_from_dict(data: dict[str, Any]) -> ScenarioBundle:
                 "optimization.default_objective must be one of "
                 "{distance, travel_time, cost}"
             )
+    if "tsp_beam_width" in opt:
+        width = opt["tsp_beam_width"]
+        if isinstance(width, bool) or not isinstance(width, int) or width < 1:
+            raise ConfigError(
+                "optimization.tsp_beam_width must be a positive integer",
+                path="optimization.tsp_beam_width",
+            )
 
     return ScenarioBundle(
         name=name,

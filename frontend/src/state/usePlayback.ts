@@ -1,7 +1,7 @@
 // Phase 5.3 —— usePlayback：客户端配送回放状态机。
 //
 // 与 AsyncState 解耦：playback 仅是 UI 表现，不参与任何业务计算；
-// 不调用后端，不重跑 Dijkstra/CFI/2-opt，路径顺序来自已有的 route_plan。
+// 不调用后端，不重跑 Dijkstra/TSP，路径顺序来自已有的 route_plan。
 //
 // 数据归属：
 //   - OWN：当前播放进度（stepIndex / legProgress / cumulative / 完成集）

@@ -60,6 +60,7 @@ class TestUnifiedPlannerFixedScenario(TestCase):
     def test_default_distance_serves_all_20(self) -> None:
         b = self._bundle()
         r = plan_deliveries(b, objective="distance")
+        self.assertEqual(r.route_plan.algorithm, "tsp_beam")
         self.assertEqual(len(r.served_order_ids), 20)
         self.assertEqual(len(r.unserved_orders), 0)
         self.assertTrue(r.is_feasible)
@@ -67,6 +68,7 @@ class TestUnifiedPlannerFixedScenario(TestCase):
     def test_default_cost_serves_all_20(self) -> None:
         b = self._bundle()
         r = plan_deliveries(b, objective="cost")
+        self.assertEqual(r.route_plan.algorithm, "tsp_beam")
         self.assertEqual(len(r.served_order_ids), 20)
         self.assertEqual(len(r.unserved_orders), 0)
         self.assertTrue(r.is_feasible)

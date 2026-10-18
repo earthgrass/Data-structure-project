@@ -43,16 +43,16 @@ interface SideNavProps {
 
 const ALGO_STEPS = [
   {
-    name: '手写 Dijkstra',
-    desc: '站点之间的有向最短路径由手写 MinHeap + Dijkstra 计算。',
+    name: 'Dijkstra 距离矩阵',
+    desc: '在完整路网上运行手写单源 Dijkstra，形成仓库与订单点的有向最短路矩阵。',
   },
   {
-    name: 'CFI 初始闭环',
-    desc: 'Cheapest Feasible Insertion 构造满足容量 / 时间窗的初始路线。',
+    name: '有向 TSP 搜索',
+    desc: '在距离矩阵上搜索访问顺序，逐步检查容量与时间窗。',
   },
   {
-    name: '受约束 2-opt',
-    desc: '在有向图 + 单车辆约束下做局部搜索改进。',
+    name: '有界状态保留',
+    desc: '手写最大堆保留较优候选；束宽截断时不保证全局最优。',
   },
   {
     name: '单车辆闭合回路',
