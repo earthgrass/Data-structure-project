@@ -34,13 +34,14 @@ export interface PlaybackView {
   currentLegIndex: number;          // -1 if not started, route.legs.length - 1 at final
   currentStopId: string | null;
   completedStops: ReadonlySet<string>;
-  vehiclePosition: { fromId: string; toId: string; t: number } | null;
+  vehiclePosition: { path: string[]; t: number } | null;
   cumulative: CumulativeMetrics;
   progress: number;                  // 0..1
 }
 
 const DEFAULT_SPEED_MS = 600;
 const TICK_MS = 60;
+const MIN_ROAD_EDGE_MS = 240;
 
 export interface UsePlaybackResult {
   view: PlaybackView;
@@ -103,7 +104,9 @@ export function usePlayback(
       }
       setState((prev) => {
         if (prev.kind !== 'playing') return prev;
-        const nextProgress = prev.legProgress + TICK_MS / speedMs;
+        const roadEdges = Math.max(1, (cur.legs[prev.stepIndex]?.path.length ?? 1) - 1);
+        const legDuration = Math.max(speedMs, roadEdges * MIN_ROAD_EDGE_MS);
+        const nextProgress = prev.legProgress + TICK_MS / legDuration;
         if (nextProgress < 1) {
           return {
             ...prev,
@@ -164,14 +167,14 @@ export function usePlayback(
       completedStops.add(r.stop_sequence[i]);
     }
 
-    // vehicle position：当前 leg 的 (from, to) + t
+    // 车辆沿后端 leg.path 的道路节点序列移动，而非跨配送站直线移动。
     let vehiclePosition: PlaybackView['vehiclePosition'] = null;
     if (state.kind === 'playing' && stepIndex < r.legs.length) {
       const leg = r.legs[stepIndex];
-      vehiclePosition = { fromId: leg.source, toId: leg.target, t: legProgress };
+      vehiclePosition = { path: leg.path, t: legProgress };
     } else if (state.kind === 'done' && r.legs.length > 0) {
       const last = r.legs[r.legs.length - 1];
-      vehiclePosition = { fromId: last.source, toId: last.target, t: 1 };
+      vehiclePosition = { path: last.path, t: 1 };
     }
 
     // cumulative：完整 leg 求和 + 当前 leg 部分

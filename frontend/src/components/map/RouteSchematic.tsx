@@ -28,8 +28,8 @@ export interface RouteSchematicProps {
   activeTimelineNodeId?: string | null;
   /** 节点 hover 时通知父组件（用于时间轴联动） */
   onNodeHover?: (nodeId: string | null) => void;
-  /** 实时回放：车辆位置（from → to，0≤t≤1） */
-  vehiclePosition?: { fromId: string; toId: string; t: number } | null;
+  /** 实时回放：当前 leg 的实际道路节点路径与进度 */
+  vehiclePosition?: { path: string[]; t: number } | null;
   /** 实时回放：已完成的站点集合 */
   completedStops?: ReadonlySet<string>;
 }
@@ -42,6 +42,41 @@ interface HoverInfo {
 
 const VIEW_W = 820;
 const VIEW_H = 600;
+
+function positionOnRoadPath(
+  path: string[],
+  progress: number,
+  positions: Map<string, { x: number; y: number }>,
+  edgeTimes: Map<string, number>,
+): { x: number; y: number } | null {
+  if (path.length === 0) return null;
+  if (path.length === 1) return positions.get(path[0]) ?? null;
+
+  const segmentTimes: number[] = [];
+  let totalTime = 0;
+  for (let i = 0; i < path.length - 1; i++) {
+    const from = positions.get(path[i]);
+    const to = positions.get(path[i + 1]);
+    const time = edgeTimes.get(`${path[i]}->${path[i + 1]}`);
+    if (!from || !to || time === undefined) return null;
+    const duration = Number.isFinite(time) && time > 0 ? time : 1;
+    segmentTimes.push(duration);
+    totalTime += duration;
+  }
+
+  let elapsed = Math.min(1, Math.max(0, progress)) * totalTime;
+  for (let i = 0; i < segmentTimes.length; i++) {
+    const duration = segmentTimes[i];
+    if (elapsed <= duration || i === segmentTimes.length - 1) {
+      const from = positions.get(path[i])!;
+      const to = positions.get(path[i + 1])!;
+      const t = Math.min(1, Math.max(0, elapsed / duration));
+      return { x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t };
+    }
+    elapsed -= duration;
+  }
+  return null;
+}
 
 export function RouteSchematic({
   graph,
@@ -83,6 +118,14 @@ export function RouteSchematic({
   }, [graph, projection]);
 
   const positions = positionsRef.current;
+
+  const edgeTimes = useMemo(() => {
+    const times = new Map<string, number>();
+    for (const edge of graph?.edges ?? []) {
+      times.set(`${edge.source}->${edge.target}`, edge.travel_time);
+    }
+    return times;
+  }, [graph]);
 
   const activeEdges = useMemo(() => {
     const set = new Set<string>();
@@ -225,16 +268,12 @@ export function RouteSchematic({
 
       {/* 4. 实时回放：车辆标记（橙色填充圆） */}
       {vehiclePosition && (() => {
-        const from = positions.get(vehiclePosition.fromId);
-        const to = positions.get(vehiclePosition.toId);
-        if (!from || !to) return null;
-        const t = vehiclePosition.t;
-        const x = from.x + (to.x - from.x) * t;
-        const y = from.y + (to.y - from.y) * t;
+        const point = positionOnRoadPath(vehiclePosition.path, vehiclePosition.t, positions, edgeTimes);
+        if (!point) return null;
         return (
           <g className="vehicle-marker" aria-label="当前车辆位置">
-            <circle cx={x} cy={y} r={10} fill="var(--accent-primary)" fillOpacity={0.18} />
-            <circle cx={x} cy={y} r={5} fill="var(--accent-primary)" stroke="var(--surface-panel)" strokeWidth={2} />
+            <circle cx={point.x} cy={point.y} r={10} fill="var(--accent-primary)" fillOpacity={0.18} />
+            <circle cx={point.x} cy={point.y} r={5} fill="var(--accent-primary)" stroke="var(--surface-panel)" strokeWidth={2} />
           </g>
         );
       })()}

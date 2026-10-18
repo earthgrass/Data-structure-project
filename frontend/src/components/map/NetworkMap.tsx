@@ -14,7 +14,7 @@ interface NetworkMapProps {
   activeTimelineNodeId?: string | null;
   onNodeHover?: (nodeId: string | null) => void;
   /** 实时回放：车辆位置 */
-  vehiclePosition?: { fromId: string; toId: string; t: number } | null;
+  vehiclePosition?: { path: string[]; t: number } | null;
   /** 实时回放：已完成的站点集合 */
   completedStops?: ReadonlySet<string>;
 }
