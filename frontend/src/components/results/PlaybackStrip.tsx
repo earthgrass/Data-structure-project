@@ -24,8 +24,12 @@ export function PlaybackStrip({ playback }: PlaybackStripProps) {
   const stateLabel = isDone
     ? '回放完成'
     : isPlaying
-      ? '回放中'
-      : '准备就绪';
+      ? playback.state.kind === 'playing' && playback.state.mode === 'manual'
+        ? '单段演示中'
+        : '自动播放中'
+      : playback.isPaused
+        ? '已暂停 · 可播放下一段'
+        : '准备就绪';
 
   return (
     <div className="playback-strip" role="region" aria-label="实时回放指标">

@@ -219,6 +219,8 @@ export function App() {
           hasPlan={!!planResult}
           playback={playbackControl.view}
           onPlay={playbackControl.play}
+          onStep={playbackControl.step}
+          onPause={playbackControl.pause}
           onReset={playbackControl.reset}
           scenarioName={scenarioData?.scenario.name ?? null}
           nodeCount={scenarioData?.scenario.graph.node_count ?? 0}

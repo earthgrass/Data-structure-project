@@ -117,8 +117,8 @@ export function ResultPanel({
         )}
       </h2>
 
-      {/* 实时回放累计指标（仅在 playback 处于 playing/done 时显示） */}
-      {playback && (playback.isPlaying || playback.isDone) && (
+      {/* 播放中、单段到站暂停及完成后均保留累计指标。 */}
+      {playback && (playback.isPlaying || playback.isPaused || playback.isDone) && (
         <PlaybackStrip playback={playback} />
       )}
 

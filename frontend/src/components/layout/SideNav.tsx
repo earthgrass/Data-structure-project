@@ -29,6 +29,8 @@ interface SideNavProps {
   hasPlan: boolean;
   playback: PlaybackView;
   onPlay: () => void;
+  onStep: () => void;
+  onPause: () => void;
   onReset: () => void;
 
   // —— 数据组 ——
@@ -79,6 +81,8 @@ export function SideNav({
   hasPlan,
   playback,
   onPlay,
+  onStep,
+  onPause,
   onReset,
   scenarioName,
   nodeCount,
@@ -109,8 +113,22 @@ export function SideNav({
           </div>
           <button className="btn btn-primary" onClick={onPlan} disabled={!hasScenario || busy}>{isRunning ? '计算中…' : '运行规划 →'}</button>
           <button className="btn btn-secondary" onClick={onCompare} disabled={!hasScenario || busy}>双目标比较</button>
-          <button className="btn btn-ghost" onClick={onPlay} disabled={!hasPlan || busy || playback.isPlaying}>{playback.isPlaying ? '播放中…' : playback.isDone ? '重播配送过程' : '▷ 播放配送过程'}</button>
-          {(playback.isPlaying || playback.isDone) && <button className="btn btn-ghost" onClick={onReset}>重置回放</button>}
+          <div className="playback-controls" aria-label="配送过程回放">
+            <span className="sidenav-row-label">配送过程回放</span>
+            <button className="btn btn-secondary" onClick={onPlay} disabled={!hasPlan || busy || playback.isPlaying}>
+              {playback.isDone ? '▷ 从头自动播放' : playback.isPaused ? '▷ 继续自动播放' : '▷ 自动播放全部'}
+            </button>
+            <button className="btn btn-secondary" onClick={onStep} disabled={!hasPlan || busy || playback.isPlaying}>
+              {playback.isDone ? '▷ 从头手动播放' : '▷ 手动播放下一段'}
+            </button>
+            {playback.nextSegment && <p className="sidenav-caption playback-next-segment">
+              第 {playback.nextSegment.index}/{playback.nextSegment.total} 段：
+              {playback.nextSegment.fromId} → {playback.nextSegment.toId}
+            </p>}
+            {playback.isPlaying && <button className="btn btn-ghost" onClick={onPause}>暂停回放</button>}
+            {(playback.isPlaying || playback.isPaused || playback.isDone) &&
+              <button className="btn btn-ghost" onClick={onReset}>重置回放</button>}
+          </div>
         </section>
         <section className="sidenav-group" aria-label="场景数据">
           <h3>03 <span>场景数据</span></h3>

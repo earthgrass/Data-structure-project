@@ -322,6 +322,17 @@ button:disabled, input:disabled {
 .sidenav .btn-ghost:hover:not(:disabled), .sidenav .btn-secondary:hover:not(:disabled) {
   background: #30486c;
 }
+.playback-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid #33425c;
+}
+.playback-next-segment {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
 .btn-row {
   display: flex;
   gap: 8px;
