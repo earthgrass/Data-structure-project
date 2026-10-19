@@ -1,25 +1,8 @@
-"""Phase 4 — 强连通有向图采样器（手写 + RandomSource 注入）。
-
-依据 ``AGENTS.md`` §3.6 + ``# 十四`` + ``# 十五`` + ``# 十六`` + ``# 十七``：
-
-* 节点数 / 边数 / 类型配额从 :class:`GeneratorConfig` 读取；
-* **不** 引入 NetworkX / OR-Tools / graph-tool / igraph；
-* 全部随机性通过 :class:`RandomSource` —— 单 seed 完全可复现；
-* 边权 ``distance / travel_time / cost`` 全部 ``>= 0`` 且 finite；
-* **不** 出现自环（``source_id == target_id``）；
-* **不** 重复边（同 :class:`LogisticsGraph` 已有的语义）；
-* **强连通骨架 + 额外边**：先建立全节点的有向环（cycle）保证强连通，再在
-  cycle 上加随机有向边形成更真实的物流网。
-
-公开入口：
-
-* :func:`sample_logistics_graph(config, rng)` -> ``LogisticsGraph``
-"""
+"""V2 Phase 1: physical roads over a protected bidirectional spanning tree."""
 from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Iterable, Sequence
 
 from logiroute.core.edges import Edge
 from logiroute.core.enums import NodeType, TrafficStatus
@@ -27,14 +10,6 @@ from logiroute.core.nodes import Node
 from logiroute.graph.logistics_graph import LogisticsGraph
 from logiroute.scenario_generator.config_spec import GeneratorConfig
 from logiroute.scenario_generator.random_source import RandomSource
-
-
-#: 节点 ID 前缀。仓库 ``W`` / 客户 ``C`` / 中转 ``T``，与 Phase 1 既有命名一致。
-_PREFIX: dict[NodeType, str] = {
-    NodeType.WAREHOUSE: "W",
-    NodeType.CUSTOMER: "C",
-    NodeType.TRANSFER: "T",
-}
 
 
 @dataclass(frozen=True)
@@ -79,21 +54,21 @@ def _make_node_specs(
     specs: list[_NodeSpec] = []
 
     # 北京 16 区边界框（WGS84）
-    BJ_LNG_MIN, BJ_LNG_MAX = 115.7, 117.2
-    BJ_LAT_MIN, BJ_LAT_MAX = 39.5, 40.7
+    BJ_LNG_MIN, BJ_LNG_MAX = config.longitude_range
+    BJ_LAT_MIN, BJ_LAT_MAX = config.latitude_range
 
-    def add(prefix: str, kind: NodeType, count: int):
+    def add(prefix: str, kind: NodeType, count: int) -> None:
         for i in range(count):
             nid = f"{prefix}{i + 1}"
-            x = round(rng.uniform(0.0, 100.0), 2)
-            y = round(rng.uniform(0.0, 100.0), 2)
+            x = round(rng.uniform(*config.coordinate_range), 2)
+            y = round(rng.uniform(*config.coordinate_range), 2)
             lng = round(rng.uniform(BJ_LNG_MIN, BJ_LNG_MAX), 5)
             lat = round(rng.uniform(BJ_LAT_MIN, BJ_LAT_MAX), 5)
             specs.append(_NodeSpec(nid, kind, x, y, lng, lat))
 
-    add(_PREFIX[NodeType.WAREHOUSE], NodeType.WAREHOUSE, n_wh)
-    add(_PREFIX[NodeType.TRANSFER], NodeType.TRANSFER, n_tr)
-    add(_PREFIX[NodeType.CUSTOMER], NodeType.CUSTOMER, n_cu)
+    add(config.node_prefixes["warehouse"], NodeType.WAREHOUSE, n_wh)
+    add(config.node_prefixes["transfer"], NodeType.TRANSFER, n_tr)
+    add(config.node_prefixes["customer"], NodeType.CUSTOMER, n_cu)
     return specs
 
 
@@ -102,52 +77,8 @@ def _euclidean_distance(a: _NodeSpec, b: _NodeSpec) -> float:
     return math.hypot(a.x - b.x, a.y - b.y)
 
 
-def _strongly_connected_anchor(
-    specs: list[_NodeSpec], rng: RandomSource
-) -> list[_NodeSpec]:
-    """Fisher-Yates 洗牌后作为有向环骨架。
-
-    不允许顺序保持原状（否则如果原顺序恰好是 W/C/T 分布会显得不自然）。
-    """
-    arr = list(specs)
-    rng.shuffle(arr)
-    return arr
-
-
-def _extra_edges_for_node(
-    anchor_idx: int,
-    anchor_order: list[int],
-    specs: list[_NodeSpec],
-    rng: RandomSource,
-    max_extra: int,
-) -> set[tuple[str, str]]:
-    """返回 (source_id, target_id) 元组集合 —— 随机附加有向边。
-
-    * 自环禁止；
-    * 与已有边重复禁止（由 :class:`LogisticsGraph.add_edge` 负责）；
-    * 数量上限 = ``max_extra`` per node；
-    * target 也必须不在 anchor 同位置（避免 destination==source 自环）。
-    """
-    n = len(specs)
-    src = specs[anchor_idx]
-    cand = []
-    for j in range(n):
-        if j == anchor_idx:
-            continue
-        if j in anchor_order:
-            cand.append(j)  # 加入锚点环的下一个之前的目标
-    if not cand:
-        return set()
-    rng.shuffle(cand)
-    picked: set[tuple[str, str]] = set()
-    k = min(rng.randint(0, max_extra), len(cand))
-    for j in cand[:k]:
-        picked.add((src.node_id, specs[j].node_id))
-    return picked
-
-
 def _sample_edge_weights(
-    src: _NodeSpec, tgt: _NodeSpec, rng: RandomSource
+    src: _NodeSpec, tgt: _NodeSpec, rng: RandomSource, config: GeneratorConfig
 ) -> tuple[float, float, float]:
     """生成 ``(distance_km, travel_time_min, cost_yuan)``。
 
@@ -155,11 +86,11 @@ def _sample_edge_weights(
     travel_time ≈ distance / 平均速度（带噪声）；
     cost      ≈ distance * 单价 + 拥堵系数。
     """
-    base = max(_euclidean_distance(src, tgt), 0.1)
-    distance = base * rng.uniform(0.8, 1.2)
-    speed = rng.uniform(30.0, 60.0)
+    base = max(_euclidean_distance(src, tgt), config.minimum_distance)
+    distance = base * rng.uniform(*config.distance_factor_range)
+    speed = rng.uniform(*config.speed_range)
     travel_time = (distance / speed) * 60.0
-    unit_cost = rng.uniform(1.5, 3.0)
+    unit_cost = rng.uniform(*config.unit_cost_range)
     cost = distance * unit_cost
     return (
         round(distance, 3),
@@ -172,106 +103,62 @@ def sample_logistics_graph(
     config: GeneratorConfig,
     rng: RandomSource,
 ) -> LogisticsGraph:
-    """按 :class:`GeneratorConfig` 与 :class:`RandomSource` 采一个强连通有向图。
+    """Build a bidirectional tree, then sample unordered pairs without replacement.
 
-    算法骨架：
-
-    1. 按配额随机生成节点（类型 + 坐标）；
-    2. Fisher-Yates 打乱后建立 ``0 -> 1 -> 2 -> ... -> n-1 -> 0`` 的有向环；
-       此环是强连通的；
-    3. 对每个节点附加若干额外有向边（在 ``[0, max_extra]`` 区间随机数量）；
-    4. 对每条候选边采样 ``distance / travel_time / cost`` 三个 metric。
-    5. 构建 ``LogisticsGraph`` 并逐边 ``add_edge``，重复由 ``LogisticsGraph`` 自动拒绝。
-
-    Time   : O(V + E)；space O(V + E)。
+    Sets are used for membership only. All RNG consumption follows list order.
+    Quotas and directed budgets are resolved before constructing any edge.
+    Time O(V² + E); Space O(V² + E), including candidate pairs and validation.
     """
     specs = _make_node_specs(config, rng)
     n = len(specs)
-    if n == 0:
-        raise RuntimeError("sampling produced 0 nodes; raise min_nodes")
-
-    # 强连通骨架：洗牌后连成一个环
-    anchor = _strongly_connected_anchor(specs, rng)
-    anchor_edges: set[tuple[str, str]] = set()
-    for i in range(n):
-        j = (i + 1) % n
-        if anchor[i].node_id != anchor[j].node_id:
-            anchor_edges.add((anchor[i].node_id, anchor[j].node_id))
-
-    # 额外边 —— 每节点随机 [0, max_extra] 条
-    extra_edges: set[tuple[str, str]] = set()
-    for i in range(n):
-        extra_edges |= _extra_edges_for_node(
-            i, list(range(n)), anchor, rng, config.max_extra_edges_per_node
-        )
-
-    edge_candidates = (anchor_edges | extra_edges) - {(s, s) for s in [n.node_id for n in specs]}
-
-    # 边数必须在 [min_edges, max_edges] 之间，否则补足或裁剪
-    if len(edge_candidates) < config.min_edges:
-        # 补足
-        n_more = config.min_edges - len(edge_candidates)
-        # 添加反向边（保留有向性）但要避免自环
-        for _ in range(n_more * 4):
-            i = rng.randint(0, n - 1)
-            j = rng.randint(0, n - 1)
-            if i == j:
-                continue
-            s = anchor[i].node_id
-            t = anchor[j].node_id
-            if (s, t) not in edge_candidates:
-                edge_candidates.add((s, t))
-                if len(edge_candidates) >= config.min_edges:
-                    break
-
-    if len(edge_candidates) > config.max_edges:
-        # 随机裁剪。先按 (source, target) 排序：Python 字符串哈希在每个进程
-        # 随机化，直接 list(set) 会让洗牌前的初始顺序跨进程漂移，同 seed 也
-        # 可能裁剪出不同边集。
-        elist = sorted(edge_candidates)
-        rng.shuffle(elist)
-        edge_candidates = set(elist[: config.max_edges])
-
-    # 构造图
+    physical, bidirectional = config.road_quota(n)
+    order = list(range(n))
+    rng.shuffle(order)
+    tree: list[tuple[int, int]] = []
+    tree_pairs: set[tuple[int, int]] = set()
+    for pos in range(1, n):
+        left, right = order[pos], order[rng.randint(0, pos - 1)]
+        pair = (left, right) if left < right else (right, left)
+        tree.append(pair)
+        tree_pairs.add(pair)
+    candidates = [
+        (left, right) for left in range(n) for right in range(left + 1, n)
+        if (left, right) not in tree_pairs
+    ]
+    rng.shuffle(candidates)
+    roads = tree + candidates[:physical - len(tree)]
     graph = LogisticsGraph()
-    spec_by_id = {s.node_id: s for s in specs}
-    for s in specs:
-        graph.add_node(
-            Node(
-                id=s.node_id,
-                name=s.node_id,
-                node_type=s.node_type,
-                x=s.x,
-                y=s.y,
-                metadata={
-                    "lng": float(s.lng),
-                    "lat": float(s.lat),
-                    "viz_source": "beijing_schematic",
-                },
-            )
+    for spec in specs:
+        graph.add_node(Node(
+            id=spec.node_id, name=spec.node_id, node_type=spec.node_type,
+            x=spec.x, y=spec.y,
+            metadata={"lng": spec.lng, "lat": spec.lat,
+                      "viz_source": "beijing_schematic"},
+        ))
+    for index, (left, right) in enumerate(roads):
+        src, dst = specs[left], specs[right]
+        a, b = src.node_id, dst.node_id
+        if a > b:
+            a, b = b, a
+        road_id = f"road:{a}:{b}"
+        two_way = index < bidirectional
+        directions = [(src, dst), (dst, src)] if two_way else (
+            [(src, dst)] if rng.randint(0, 1) == 0 else [(dst, src)]
         )
-
-    # 按固定顺序构造边：边权采样按此顺序消耗 RNG。若直接迭代 set，
-    # 字符串哈希随机化会导致同 seed 在不同进程中生成不同边权。
-    for (sid, tid) in sorted(edge_candidates):
-        if sid == tid:
-            continue
-        d, t, c = _sample_edge_weights(spec_by_id[sid], spec_by_id[tid], rng)
-        try:
-            graph.add_edge(
-                Edge(
-                    source_id=sid,
-                    target_id=tid,
-                    distance=d,
-                    travel_time=t,
-                    cost=c,
-                    traffic_status=TrafficStatus.CLEAR,
-                )
-            )
-        except ValueError:
-            # duplicate (s,t) pair already exists; skip
-            pass
-
+        for source, target in directions:
+            distance, travel_time, cost = _sample_edge_weights(source, target, rng, config)
+            graph.add_edge(Edge(
+                source_id=source.node_id, target_id=target.node_id,
+                distance=distance, travel_time=travel_time, cost=cost,
+                traffic_status=TrafficStatus.CLEAR,
+                metadata={"road_id": road_id,
+                          "edge_id": f"{road_id}:{source.node_id}>{target.node_id}",
+                          "bidirectional": two_way, "skeleton": index < n - 1},
+            ))
+    from logiroute.scenario_generator.road_validator import validate_road_network
+    report = validate_road_network(graph, config)
+    if not report.valid:
+        raise RuntimeError(f"generated road network failed validation: {report.violations}")
     return graph
 
 

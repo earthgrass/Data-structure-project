@@ -27,6 +27,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from logiroute.algorithms.ordering import ordered_strings
+
 from logiroute.config.loader import ScenarioBundle
 from logiroute.core.couriers import Courier
 from logiroute.core.enums import (
@@ -39,6 +41,7 @@ from logiroute.scenario_generator.config_spec import (
 )
 from logiroute.scenario_generator.graph_sampler import sample_logistics_graph
 from logiroute.scenario_generator.random_source import RandomSource
+from logiroute.scenario_generator.road_validator import validate_road_network
 from logiroute.scenario_generator.validator import (
     ScenarioValidationReport, validate_generated_scenario,
 )
@@ -122,7 +125,7 @@ def generate_scenario(
         backbone, orders = result
 
         # 3. 选 depot
-        warehouses = sorted(
+        warehouses = ordered_strings(
             n.id for n in graph.get_all_nodes()
             if n.node_type is NodeType.WAREHOUSE
         )
@@ -166,6 +169,8 @@ def generate_scenario(
                 "orders_count": config.orders_count,
                 "capacity": config.capacity,
                 "backbone_length": len(backbone),
+                "road_generator_version": "v2.phase1",
+                "road_network": validate_road_network(graph, config).to_dict(),
             },
         )
 

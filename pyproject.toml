@@ -26,4 +26,4 @@ dev = []
 where = ["src"]
 
 [tool.setuptools.package-data]
-logiroute = ["py.typed"]
+logiroute = ["py.typed", "scenario_generator/road_defaults.json"]

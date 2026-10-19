@@ -1,0 +1,20 @@
+{
+  "min_nodes": 30,
+  "max_nodes": 60,
+  "min_warehouses": 2,
+  "min_customers": 15,
+  "min_transfers": 3,
+  "min_edges": 50,
+  "max_edges": 220,
+  "physical_road_count": null,
+  "target_directed_edge_count": null,
+  "bidirectional_ratio": 0.95,
+  "coordinate_range": [0.0, 100.0],
+  "longitude_range": [115.7, 117.2],
+  "latitude_range": [39.5, 40.7],
+  "distance_factor_range": [0.8, 1.2],
+  "speed_range": [30.0, 60.0],
+  "unit_cost_range": [1.5, 3.0],
+  "minimum_distance": 0.1,
+  "node_prefixes": {"warehouse": "W", "customer": "C", "transfer": "T"}
+}

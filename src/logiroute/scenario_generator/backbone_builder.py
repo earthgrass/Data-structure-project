@@ -30,6 +30,8 @@ import string
 from dataclasses import dataclass
 from typing import Any
 
+from logiroute.algorithms.ordering import ordered_strings
+
 from logiroute.algorithms.dijkstra import shortest_path
 from logiroute.config.loader import ScenarioBundle
 from logiroute.core.enums import NodeType, OrderPriority, OrderStatus
@@ -47,7 +49,7 @@ class _BackboneResult:
 
 
 def _lex_min_warehouse(graph) -> str:
-    warehouses = sorted(
+    warehouses = ordered_strings(
         n.id for n in graph.get_all_nodes()
         if n.node_type is NodeType.WAREHOUSE
     )
@@ -65,7 +67,7 @@ def _sample_orders_count_customers(
     graph, k: int, rng: RandomSource
 ) -> list[str]:
     """Fisher-Yates 洗牌全部客户节点 ID 后取前 ``k`` 个。"""
-    customer_ids = sorted(
+    customer_ids = ordered_strings(
         n.id for n in graph.get_all_nodes()
         if n.node_type is NodeType.CUSTOMER
     )

@@ -12,7 +12,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import json
+import math
+from pathlib import Path
 from typing import Any
+
+
+ROAD_DEFAULTS: dict[str, Any] = json.loads(
+    Path(__file__).with_name("road_defaults.json").read_text(encoding="utf-8")
+)
 
 
 @dataclass(frozen=True)
@@ -25,8 +33,11 @@ class GeneratorConfig:
         name: 场景名（输出 ``ScenarioBundle.name``）。
         min_nodes, max_nodes: 节点数范围 [min, max]。
         min_warehouses, min_customers, min_transfers: 各类型节点下限。
-        min_edges, max_edges: 边数范围。
-        max_extra_edges_per_node: 在骨架环上每节点额外随机有向边的期望上限。
+        min_edges, max_edges: 有向边数量硬预算，保留旧含义。
+        physical_road_count: 精确物理连接数；None 时按预算选择。
+        target_directed_edge_count: 期望有向边数；整数配额偏差写入道路报告。
+        bidirectional_ratio: 以物理连接为分母的双向比例。
+        max_extra_edges_per_node: 已废弃；显式传入将拒绝，不重新解释其含义。
         orders_count: 订单总数（订单 = 入站配送请求）。
         capacity: 唯一启用车辆的容量（生成器强制 ``total_demand <= capacity``）。
         service_time: 服务时间（分钟）—— 与 Phase 1 ``simulation.service_time`` 一致。
@@ -40,15 +51,14 @@ class GeneratorConfig:
 
     name: str = "logiroute.random.30"
     # 节点规模（与 AGENTS §3.6 兼容）
-    min_nodes: int = 30
-    max_nodes: int = 60
-    min_warehouses: int = 2
-    min_customers: int = 15
-    min_transfers: int = 3
-    min_edges: int = 50
-    max_edges: int = 220
-    # 骨架 + 随机边
-    max_extra_edges_per_node: int = 4
+    min_nodes: int = ROAD_DEFAULTS["min_nodes"]
+    max_nodes: int = ROAD_DEFAULTS["max_nodes"]
+    min_warehouses: int = ROAD_DEFAULTS["min_warehouses"]
+    min_customers: int = ROAD_DEFAULTS["min_customers"]
+    min_transfers: int = ROAD_DEFAULTS["min_transfers"]
+    min_edges: int = ROAD_DEFAULTS["min_edges"]
+    max_edges: int = ROAD_DEFAULTS["max_edges"]
+    max_extra_edges_per_node: int | None = None
     # 订单
     orders_count: int = 20
     capacity: float = 250.0
@@ -66,6 +76,21 @@ class GeneratorConfig:
     tsp_beam_width: int = 1024
     # 拒绝重试上限（为安全保险，可行性主源是 backbone-first）
     max_rejection_attempts: int = 16
+
+    # V2 road fields follow legacy fields to preserve positional field order.
+    physical_road_count: int | None = ROAD_DEFAULTS["physical_road_count"]
+    target_directed_edge_count: int | None = ROAD_DEFAULTS["target_directed_edge_count"]
+    bidirectional_ratio: float = ROAD_DEFAULTS["bidirectional_ratio"]
+    coordinate_range: tuple[float, float] = tuple(ROAD_DEFAULTS["coordinate_range"])
+    longitude_range: tuple[float, float] = tuple(ROAD_DEFAULTS["longitude_range"])
+    latitude_range: tuple[float, float] = tuple(ROAD_DEFAULTS["latitude_range"])
+    distance_factor_range: tuple[float, float] = tuple(ROAD_DEFAULTS["distance_factor_range"])
+    speed_range: tuple[float, float] = tuple(ROAD_DEFAULTS["speed_range"])
+    unit_cost_range: tuple[float, float] = tuple(ROAD_DEFAULTS["unit_cost_range"])
+    minimum_distance: float = ROAD_DEFAULTS["minimum_distance"]
+    node_prefixes: dict[str, str] = field(
+        default_factory=lambda: dict(ROAD_DEFAULTS["node_prefixes"])
+    )
 
     def conservative_h_upper_bound(
         self, tau_max: float, n_vertices: int, n_orders: int,
@@ -89,6 +114,54 @@ class GeneratorConfig:
             + n_orders * self.service_time
 
     def __post_init__(self) -> None:
+        prefixes = self.node_prefixes
+        if (not isinstance(prefixes, dict)
+                or set(prefixes) != {"warehouse", "customer", "transfer"}
+                or any(not isinstance(value, str) or not value.strip()
+                       or ":" in value or ">" in value for value in prefixes.values())
+                or len(set(prefixes.values())) != 3):
+            raise ValueError("node_prefixes must define three distinct nonempty prefixes "
+                             "without ':' or '>'")
+        for name in ("min_nodes", "max_nodes", "min_warehouses", "min_customers",
+                     "min_transfers", "min_edges", "max_edges"):
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+                raise ValueError(f"{name} must be a positive integer")
+        for name in ("physical_road_count", "target_directed_edge_count"):
+            value = getattr(self, name)
+            if value is not None and (
+                isinstance(value, bool) or not isinstance(value, int) or value < 1
+            ):
+                raise ValueError(f"{name} must be a positive integer or None")
+        if self.max_extra_edges_per_node is not None:
+            raise ValueError("max_extra_edges_per_node is retired; use physical_road_count "
+                             "or target_directed_edge_count (directed budget is unchanged)")
+        ratio = self.bidirectional_ratio
+        if (isinstance(ratio, bool) or not isinstance(ratio, (int, float))
+                or not math.isfinite(ratio) or not 0 <= ratio <= 1):
+            raise ValueError("bidirectional_ratio must be finite and in [0, 1]")
+        for name in ("coordinate_range", "longitude_range", "latitude_range",
+                     "distance_factor_range", "speed_range", "unit_cost_range"):
+            values = getattr(self, name)
+            if (not isinstance(values, (tuple, list)) or len(values) != 2
+                    or any(isinstance(v, bool) or not isinstance(v, (int, float))
+                           or not math.isfinite(v) for v in values)
+                    or values[0] > values[1]):
+                raise ValueError(f"{name} must contain finite ordered bounds")
+            if name in ("distance_factor_range", "speed_range") and values[0] <= 0:
+                raise ValueError(f"{name} must be strictly positive")
+            if name == "unit_cost_range" and values[0] < 0:
+                raise ValueError("unit_cost_range must be non-negative")
+            object.__setattr__(self, name, tuple(values))
+        if (isinstance(self.minimum_distance, bool)
+                or not isinstance(self.minimum_distance, (int, float))
+                or not math.isfinite(self.minimum_distance) or self.minimum_distance <= 0):
+            raise ValueError("minimum_distance must be finite and positive")
+        if self.max_edges < self.min_edges:
+            raise ValueError("max_edges must be >= min_edges (directed edges)")
+        if (self.target_directed_edge_count is not None
+                and not self.min_edges <= self.target_directed_edge_count <= self.max_edges):
+            raise ValueError("target_directed_edge_count is outside the directed edge budget")
         if self.min_nodes < self.min_warehouses + self.min_customers + self.min_transfers:
             raise ValueError(
                 f"min_nodes={self.min_nodes} too small for the type quotas "
@@ -126,9 +199,69 @@ class GeneratorConfig:
                 f"max_demand ({self.max_demand}) must be <= vehicle capacity "
                 f"({self.capacity}) to keep every order individually serviceable"
             )
+        # Every permitted node count must admit the protected tree and quota.
+        self.road_quota(self.min_nodes)
+        self.road_quota(self.max_nodes)
+
+    def road_quota(self, node_count: int) -> tuple[int, int]:
+        """Return (physical connections, bidirectional connections), never trim a tree.
+
+        Quota uses nearest integer, ties rounded upward. Explicit physical count
+        is exact; if both counts are supplied they must agree. With only a target,
+        choose the closest feasible directed count, preferring fewer roads on ties.
+        Time O(min(V², max_edges)); Space O(1).
+        """
+        pair_limit = node_count * (node_count - 1) // 2
+        target = self.target_directed_edge_count
+        if target is None:
+            target = self.max_edges
+        best: tuple[int, int] | None = None
+        best_delta: int | None = None
+        if self.physical_road_count is not None:
+            candidates = (self.physical_road_count,)
+        else:
+            candidates = range(node_count - 1, min(pair_limit, self.max_edges) + 1)
+        for physical in candidates:
+            bidirectional = math.floor(self.bidirectional_ratio * physical + 0.5)
+            directed = physical + bidirectional
+            if (physical > pair_limit or bidirectional < node_count - 1
+                    or not self.min_edges <= directed <= self.max_edges):
+                continue
+            if (self.physical_road_count is not None
+                    and self.target_directed_edge_count is not None
+                    and directed != self.target_directed_edge_count):
+                continue
+            delta = abs(directed - target)
+            if best_delta is None or delta < best_delta:
+                best = (physical, bidirectional)
+                best_delta = delta
+        if best is None:
+            raise ValueError(
+                f"road configuration conflict for {node_count} nodes: protected "
+                f"bidirectional tree needs {node_count - 1} roads; physical="
+                f"{self.physical_road_count}, ratio={self.bidirectional_ratio}, "
+                f"directed budget=[{self.min_edges}, {self.max_edges}], "
+                f"target={self.target_directed_edge_count}"
+            )
+        return best
 
 
-#: 默认生成器配置 — 与 ``AGENTS.md`` §3.6 固定场景最低规模一致。
+def load_generator_config(path: str | Path) -> GeneratorConfig:
+    """Load explicit JSON overrides without aliasing old edge-count semantics.
+
+    Unknown keys (including ambiguous 'edge_count') are rejected.
+    Time O(JSON size + quota scan); Space O(JSON size).
+    """
+    values = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(values, dict):
+        raise ValueError("generator configuration must be a JSON object")
+    try:
+        return GeneratorConfig(**values)
+    except TypeError as exc:
+        raise ValueError(f"unknown or invalid generator configuration: {exc}") from exc
+
+
+#: 默认生成器配置 — 与课程固定场景最低规模一致。
 DEFAULT_GENERATOR_CONFIG: GeneratorConfig = GeneratorConfig()
 
 
@@ -152,4 +285,5 @@ class GeneratorStats:
         }
 
 
-__all__ = ["GeneratorConfig", "DEFAULT_GENERATOR_CONFIG", "GeneratorStats"]
+__all__ = ["GeneratorConfig", "DEFAULT_GENERATOR_CONFIG", "GeneratorStats",
+           "load_generator_config"]

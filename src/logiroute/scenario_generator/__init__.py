@@ -18,10 +18,14 @@ from logiroute.scenario_generator.config_spec import (
     DEFAULT_GENERATOR_CONFIG,
     GeneratorConfig,
     GeneratorStats,
+    load_generator_config,
 )
 from logiroute.scenario_generator.generator import generate_scenario
 from logiroute.scenario_generator.graph_sampler import sample_logistics_graph
 from logiroute.scenario_generator.random_source import RandomSource
+from logiroute.scenario_generator.road_validator import (
+    RoadValidationReport, validate_road_network,
+)
 from logiroute.scenario_generator.validator import (
     ScenarioValidationError,
     ScenarioValidationReport,
@@ -40,4 +44,7 @@ __all__ = [
     "generate_scenario",
     "sample_logistics_graph",
     "validate_generated_scenario",
+    "load_generator_config",
+    "RoadValidationReport",
+    "validate_road_network",
 ]
