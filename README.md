@@ -1,5 +1,13 @@
 # LogiRoute — 电商物流配送路径规划系统
 
+> **V2 Phase 1：双向路网生成与验证。** 本分支按物理连接构造约 95% 双向道路，
+> 默认五 seed 实测 107/113 = 94.6903%，保留原有有向边计数口径。
+> 设计、配置迁移、测试与原始数据见 [V2 Phase 1 报告](docs/v2-phase1-road-network.md)
+> 和 [实验 JSON](docs/experiments/v2-phase1-road-results.json)。
+> 本阶段未实现订单队列、多车辆调度、动态订单或 API/UI 改造。
+> 下文 2026-10-18 的路线、耗时及 seed=42 数字属于 V1 基线
+> `eb6fee0` 存档；V2 改变路网后不能继续用作当前分支的数值验收。
+
 > 数据结构课程设计 —— 一个以手写有向带权图为核心的电商物流配送仿真与优化项目。
 >
 > **本项目仅使用 Python 标准库；所有核心数据结构与算法均手工实现，不引入
@@ -14,9 +22,8 @@
 **Phase 4 — 随机初始化完整物流场景（保持单车辆 + 独立 validator） ✅ 已完成**  
 **Phase 5 — 交互式 Dashboard（FastAPI + React + Vite）✅ 已完成（课程检查冻结版）**
 
-> 教师原始题目要求**单车辆**配送：从仓库出发，遍历所有待配送点
-> 后返回仓库。历史多车辆方案作废；后续阶段（含 Phase 4 随机场景、
-> Phase 5 Dashboard、Phase 6 动态重规划）均必须遵守单车辆约束。
+> 以下阶段表描述 V1 已交付的**单车辆**接口。教师已确认 V2 多车辆方向，
+> 实现按新阶段门禁推进；当前 V2 Phase 1 只处理道路，不增加车辆。
 > 详见 [`AGENTS.md`](AGENTS.md) §3.6 与 `docs/development-plan.md`。
 
 | 类别 | 内容 |
@@ -33,7 +40,7 @@
 | 测试 | 全部用 `unittest`，共 **508 用例**，全部通过（含 Dijkstra + TSP 与 seed 跨进程回归） |
 | 文档 | `AGENTS.md` + `docs/architecture.md` + `docs/development-plan.md` + `docs/data-structures-and-algorithms.md` + `docs/algorithms-tsp.md` 与各阶段算法说明 + 教师答辩 / 终评审材料 |
 
-## 当前课程检查版本（2026-10-18）
+## V1 课程检查版本存档（2026-10-18，基线 eb6fee0）
 
 > 默认调度已切换为 Dijkstra 距离矩阵 + 有向 TSP 有界搜索；**不**接入真实道路 /
 > 实时交通 / 动态订单，也**不**启动 Phase 6。
