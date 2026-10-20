@@ -1,4 +1,4 @@
-"""配送调度模块 —— 单车辆闭环路径规划。
+"""配送调度模块 —— V1 单车兼容入口与 V2 静态车队规划。
 
 承担：
 
@@ -8,8 +8,8 @@
   * 通过 :class:`PathProvider` 单次调度作用域缓存复用 Phase 2 Dijkstra
   * 强制单车、强制闭合、如实报告不可行订单（见 :doc:`AGENTS` §3.6）
 
-依据教师原始题目（单车辆：从仓库出发遍历全部待配送点后返回仓库），
-本模块拒绝任何多车辆调度 / 车队优化 / 拆单策略 —— 历史多车辆方案一律作废。
+V1 plan_deliveries 保持原有单车契约；V2 plan_fleet 在一次作用域内联合规划
+所有可用车辆，使用独立车队验证器，不修改 API 或动态执行状态。
 """
 
 from __future__ import annotations
@@ -18,6 +18,7 @@ from logiroute.scheduling.depot import DepotChoice, select_depot
 from logiroute.scheduling.feasibility import check_feasibility
 from logiroute.scheduling.path_provider import PathProvider
 from logiroute.scheduling.planner import plan_deliveries
+from logiroute.scheduling.fleet_planner import plan_fleet
 from logiroute.scheduling.types import (
     DeliveryStop,
     DepotNotFoundError,
@@ -38,6 +39,7 @@ from logiroute.scheduling.types import (
 __all__ = [
     # 入口
     "plan_deliveries",
+    "plan_fleet",
     # 选择
     "DepotChoice",
     "select_depot",
