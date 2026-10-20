@@ -184,6 +184,12 @@ class FleetValidationReport:
             raise ValueError('validation flags must be bool')
         if self.complete and not self.valid:
             raise ValueError('an invalid plan cannot be complete')
+        if self.valid and self.violations:
+            raise ValueError('a valid report cannot contain violations')
+        if not isinstance(self.return_deadline_checked, bool):
+            raise ValueError('return deadline flag must be bool')
+        for message in self.violations:
+            _id(message)
 
     def to_dict(self) -> dict[str, Any]:
         return _json(self)
@@ -237,7 +243,11 @@ class FleetScheduleResult:
             raise ValueError('invalid route record')
         if any(not isinstance(item, UnservedOrder) for item in self.unserved_orders):
             raise ValueError('invalid unserved record')
-        for vehicle_id, reasons in self.unavailable_vehicles:
+        for record in self.unavailable_vehicles:
+            _tuple(record)
+            if len(record) != 2:
+                raise ValueError('unavailable record requires vehicle ID and reasons')
+            vehicle_id, reasons = record
             _id(vehicle_id)
             _tuple(reasons)
             if not reasons or any(not isinstance(reason, str) or not reason for reason in reasons):
@@ -246,6 +256,19 @@ class FleetScheduleResult:
             raise ValueError('invalid statistics record')
         if self.validation is not None and not isinstance(self.validation, FleetValidationReport):
             raise ValueError('invalid validation report')
+        if not isinstance(self.input_fingerprint, str):
+            raise ValueError('input fingerprint must be a string')
+        for record in self.selection_trace:
+            _tuple(record)
+            if len(record) != 5:
+                raise ValueError('selection trace requires five fields')
+            _id(record[0])
+            _id(record[1])
+            if (record[2] not in (0, 1) or any(isinstance(index, bool)
+                    or not isinstance(index, int) or index < 0 for index in record[2:])):
+                raise ValueError('invalid selection trace position')
+        for total in (self.total_distance, self.total_travel_time, self.total_cost):
+            _number(total)
 
     @property
     def status(self) -> str:
@@ -264,6 +287,10 @@ class FleetScheduleResult:
     @property
     def search_outcome(self) -> str:
         """No outcome claims mathematical infeasibility. Time/Space O(1)."""
+        if self.status == 'invalid':
+            return 'invalid_result'
+        if self.status == 'unverified':
+            return 'unverified'
         return 'full_plan_found' if self.is_feasible else 'heuristic_incomplete'
 
     @property
