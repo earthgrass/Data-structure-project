@@ -1,0 +1,153 @@
+{
+  "same_site_orders": {
+    "input_order_ids": [
+      "O1",
+      "O2",
+      "O3"
+    ],
+    "destinations": [
+      "C12",
+      "C12",
+      "C18"
+    ],
+    "route": [
+      "W1",
+      "C12",
+      "C18",
+      "W1"
+    ],
+    "assignments": [
+      {
+        "order_id": "O1",
+        "visit_index": 1
+      },
+      {
+        "order_id": "O2",
+        "visit_index": 1
+      },
+      {
+        "order_id": "O3",
+        "visit_index": 2
+      }
+    ],
+    "coverage_checked": true,
+    "all_orders_covered": true,
+    "route_coverage_ok": true
+  },
+  "queue": {
+    "head": "O1",
+    "pop_sequence": [
+      "O1",
+      "O2",
+      "O3"
+    ],
+    "deadline_then_id": [
+      "Z",
+      "A",
+      "B"
+    ],
+    "invalid_status_rejected": {
+      "cancelled": true,
+      "delivered": true,
+      "expired": true
+    }
+  },
+  "load_trace": [
+    {
+      "capacity": "100",
+      "initial_load": "100",
+      "current_load": "100",
+      "free_capacity": "0",
+      "remaining_orders": {
+        "O1": "40",
+        "O2": "35",
+        "O3": "25"
+      },
+      "delivered_count": 0
+    },
+    {
+      "capacity": "100",
+      "initial_load": "100",
+      "current_load": "60",
+      "free_capacity": "40",
+      "remaining_orders": {
+        "O2": "35",
+        "O3": "25"
+      },
+      "delivered_count": 1
+    },
+    {
+      "capacity": "100",
+      "initial_load": "100",
+      "current_load": "25",
+      "free_capacity": "75",
+      "remaining_orders": {
+        "O3": "25"
+      },
+      "delivered_count": 2
+    },
+    {
+      "capacity": "100",
+      "initial_load": "100",
+      "current_load": "0",
+      "free_capacity": "100",
+      "remaining_orders": {},
+      "delivered_count": 3
+    }
+  ],
+  "overflow_101": {
+    "capacity": "100",
+    "initial_load": "101",
+    "feasible": false
+  },
+  "tiny_overflow_low_precision": {
+    "capacity": "100",
+    "initial_load": "100.0000000000000000000000000000000000000001",
+    "feasible": false
+  },
+  "duplicate_id_rejected": true,
+  "complete_partition_with_unserved": {
+    "valid": true,
+    "all_orders_served": false
+  },
+  "fleet_config": {
+    "vehicles": [
+      {
+        "id": "V1",
+        "capacity": "100",
+        "current_load": "0"
+      },
+      {
+        "id": "V2",
+        "capacity": "120",
+        "current_load": "0"
+      }
+    ],
+    "bindings": [
+      {
+        "courier_id": "D1",
+        "vehicle_id": "V1"
+      },
+      {
+        "courier_id": "D2",
+        "vehicle_id": "V2"
+      }
+    ],
+    "orders": 20,
+    "total_demand": "200.0",
+    "allocation_performed": false
+  },
+  "single_vehicle_compatible": true,
+  "source_sha256": {
+    "src/logiroute/core/orders.py": "7a6beda673c72cbad51db76057a45bbb69b01ff8a5f3ac3a20fbd8803be90617",
+    "src/logiroute/core/vehicles.py": "216af0de4d4192257dc252952e2b4c08105ef0e25969475c85e740795e3be2d6",
+    "src/logiroute/core/enums.py": "91eeece8cf4bb99cce119414efd79ca0494d302d96e06da98db06277f46ca850",
+    "src/logiroute/core/order_identity.py": "77e0cf1a55460ceb348ea6e1f48f0fc1c5411d1c782b3fe7dc748caf8a9ddad5",
+    "src/logiroute/core/quantities.py": "e9757afc20baed00fd18db189882e11ec8c32a384b2793388630a4fc320f7c1d",
+    "src/logiroute/core/delivery_load.py": "8fa7b659ca0417ba05b15b51f24c45a6ca65010263f3f0dc85c1216b7df12b29",
+    "src/logiroute/algorithms/order_queue.py": "d43f20aa0f7959a122b7477fa6b5a05488ec4ee8ea3edeb738e14a6c84758bb5",
+    "src/logiroute/config/loader.py": "05126e8b9337d591aaae6c9ac99849d530399185e746192602c5ac53838b9378",
+    "src/logiroute/scenario_generator/validator.py": "dda9ecc7da38ee44698a36221ea6247c62a69fcd8fce34a8238c299c2de669ec",
+    "src/logiroute/scenario_generator/backbone_builder.py": "79dc9de6254a9baf9d4225f3b592f8df1e48dcaadf9d82524c292b00380845d9"
+  }
+}

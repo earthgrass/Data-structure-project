@@ -1,5 +1,11 @@
 # LogiRoute — 电商物流配送路径规划系统
 
+> **V2 Phase 2：订单身份、手写队列与 Decimal 载荷。** 同址订单按 ID 保留，
+> 一次节点访问可服务多张订单；支持生命周期校验和合法多车配置加载。
+> 设计、测试、固定实例与阶段边界见 [Phase 2 报告](docs/v2-phase2-orders-and-loads.md)
+> 及 [实验数据](docs/experiments/v2-phase2-order-results.json)。
+> 多车全局分配、动态订单和 API/UI 多车执行尚未实现；下段 Phase 1 为阶段存档。
+
 > **V2 Phase 1：双向路网生成与验证。** 本分支按物理连接构造约 95% 双向道路，
 > 默认五 seed 实测 107/113 = 94.6903%，保留原有有向边计数口径。
 > 设计、配置迁移、测试与原始数据见 [V2 Phase 1 报告](docs/v2-phase1-road-network.md)

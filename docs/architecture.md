@@ -1,5 +1,12 @@
 # LogiRoute 系统架构
 
+> **V2 Phase 2 更新**：`core.order_identity` 负责逐 ID 分区和服务分配数据，
+> `algorithms.order_queue` 只负责待处理顺序，`core.delivery_load` 负责逐单精确货物账本；
+> `config.loader` 只验证 JSON 多车 1:1 绑定，不执行分配。依赖方向仍为算法/配置
+> 使用纯 core 模型，core 不依赖路径、调度、Web 或业务服务。
+> 路线节点访问与 `(order_id, visit_index)` 独立，一次访问可服务多单。
+> 细节见 [Phase 2 报告](v2-phase2-orders-and-loads.md)；多车全局调度尚未实现。
+
 > **V2 Phase 1 更新**：道路生成已采用受保护双向生成树、物理连接配额和独立道路
 > 验证。当前实现、复杂度和配置语义以 [V2 道路报告](v2-phase1-road-network.md) 为准。
 > 以下早期阶段架构中的“占位”和旧采样流程为历史记录，不代表当前全部代码状态。
