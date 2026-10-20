@@ -7,9 +7,22 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from decimal import Decimal
+import math
 from typing import Any
 
 from logiroute.core.enums import OrderPriority, OrderStatus
+from logiroute.core.quantities import Quantity, decimal_quantity
+
+
+ORDER_TRANSITIONS: dict[OrderStatus, tuple[OrderStatus, ...]] = {
+    OrderStatus.CREATED: (OrderStatus.PENDING, OrderStatus.CANCELLED),
+    OrderStatus.PENDING: (OrderStatus.PLANNED, OrderStatus.CANCELLED, OrderStatus.EXPIRED),
+    OrderStatus.PLANNED: (OrderStatus.PENDING, OrderStatus.IN_TRANSIT,
+                          OrderStatus.CANCELLED, OrderStatus.EXPIRED),
+    OrderStatus.IN_TRANSIT: (OrderStatus.DELIVERED,),
+    OrderStatus.DELIVERED: (), OrderStatus.CANCELLED: (), OrderStatus.EXPIRED: (),
+}
 
 
 def _validate_id(value: str, name: str) -> None:
@@ -18,7 +31,7 @@ def _validate_id(value: str, name: str) -> None:
 
 
 def _validate_non_negative(value: float, name: str) -> None:
-    if not isinstance(value, (int, float)):
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise ValueError(f"{name} must be a number, got {type(value).__name__}")
     if value != value or value in (float("inf"), float("-inf")):
         raise ValueError(f"{name} must be a finite non-negative number")
@@ -43,12 +56,29 @@ class Order:
 
     id: str
     destination_id: str
-    demand: float
+    demand: Quantity
     time_window_start: float
     time_window_end: float
     priority: OrderPriority = OrderPriority.NORMAL
     status: OrderStatus = OrderStatus.PENDING
     metadata: dict[str, Any] = field(default_factory=dict)
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        # Private exact sources are not dataclass fields: existing asdict/DTOs
+        # retain their float schema. New load code must use demand_decimal.
+        if name == "demand":
+            exact = decimal_quantity(value, "demand")
+            display = float(exact)
+            if not math.isfinite(display):
+                raise ValueError("demand exceeds the finite legacy numeric range")
+            object.__setattr__(self, "_demand_decimal", exact)
+            value = display
+        object.__setattr__(self, name, value)
+
+    @property
+    def demand_decimal(self) -> Decimal:
+        """Original per-order quantity, before float compatibility view. Time/Space O(1)."""
+        return self._demand_decimal
 
     def __post_init__(self) -> None:
         _validate_id(self.id, "order id")
@@ -86,6 +116,18 @@ class Order:
     # ------------------------------------------------------------------ #
     #  业务方法                                                            #
     # ------------------------------------------------------------------ #
+
+    def transition_to(self, status: OrderStatus) -> None:
+        """Apply an explicit legal transition; no clock or queue side effects.
+
+        planned -> pending withdraws a plan before departure; expired/cancelled/
+        delivered are terminal. Duplicate transitions are rejected.
+        Time / Space O(1).
+        """
+        if (not isinstance(status, OrderStatus) or not isinstance(self.status, OrderStatus)
+                or status not in ORDER_TRANSITIONS[self.status]):
+            raise ValueError(f"illegal order transition: {self.status!r} -> {status!r}")
+        self.status = status
 
     @property
     def time_window_length(self) -> float:

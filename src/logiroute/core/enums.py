@@ -65,3 +65,6 @@ class OrderStatus(str, Enum):
     IN_TRANSIT = "in_transit"  # 配送中
     DELIVERED = "delivered"    # 已完成
     EXPIRED = "expired"        # 超时（超过 time_window_end 仍未送达）
+    CREATED = "created"        # 已创建，尚未入待处理队列
+    PLANNED = "planned"        # 已规划，尚未出发
+    CANCELLED = "cancelled"    # 已取消，终态

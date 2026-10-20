@@ -19,6 +19,9 @@ from logiroute.core.enums import (
 from logiroute.core.nodes import Node
 from logiroute.core.orders import Order
 from logiroute.core.vehicles import Vehicle
+from logiroute.core.order_identity import (
+    OrderCoverageReport, ServiceAssignment, validate_order_coverage,
+)
 
 __all__ = [
     "Courier",
@@ -32,4 +35,7 @@ __all__ = [
     "TrafficStatus",
     "Vehicle",
     "VehicleStatus",
+    "ServiceAssignment",
+    "OrderCoverageReport",
+    "validate_order_coverage",
 ]

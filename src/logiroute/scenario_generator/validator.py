@@ -3,8 +3,7 @@
 依据 ``AGENTS.md`` §3.6 + prompt ``# 二十四``：
 
 * 验证器**不** 调用任何 planner / NN / CFI / 2-opt；
-* 仅接受 :class:`ScenarioBundle`（与 Phase 1 ``load_scenario`` 一致）以及
-  可选的 ``backbone: list[str]`` 作为输入；
+* 接受场景、可选节点访问路线和独立的订单服务分配（一次访问可服务多单）；
 * 输出结构化 :class:`ScenarioValidationReport`，含逐项 PASS/FAIL 与
   ``violations`` 列表（每条对应一个硬约束违反）。
 
@@ -21,14 +20,17 @@
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from decimal import Decimal
 from typing import Any, Iterable
+
+from logiroute.core.order_identity import ServiceAssignment, index_orders, validate_order_coverage
+from logiroute.core.quantities import decimal_quantity, exact_sum
 
 from logiroute.algorithms.dijkstra import DijkstraError, shortest_path
 from logiroute.config.loader import ScenarioBundle
-from logiroute.core.enums import NodeType
+from logiroute.core.enums import NodeType, OrderStatus
 from logiroute.core.orders import Order
-from logiroute.scenario_generator.config_spec import GeneratorConfig
 
 
 class ScenarioValidationError(Exception):
@@ -51,7 +53,7 @@ class ScenarioValidationReport:
     customers: int
     transfers: int
     orders: int
-    total_demand: float
+    total_demand: Decimal | float
     capacity: float
     backbone_length: int
     all_orders_covered: bool
@@ -62,9 +64,18 @@ class ScenarioValidationReport:
     service_time: float
     initial_time: float
     violations: tuple[tuple[str, str], ...] = ()
+    coverage_checked: bool = False
+    partition_complete: bool = False
+    route_coverage_ok: bool = False
+    capacity_checked: bool = False
+    capacity_decimal: Decimal | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
+            "coverage_checked": self.coverage_checked,
+            "partition_complete": self.partition_complete,
+            "route_coverage_ok": self.route_coverage_ok,
+            "capacity_checked": self.capacity_checked,
             "feasible": self.feasible,
             "scenario_name": self.scenario_name,
             "nodes": self.nodes,
@@ -73,7 +84,12 @@ class ScenarioValidationReport:
             "customers": self.customers,
             "transfers": self.transfers,
             "orders": self.orders,
-            "total_demand": self.total_demand,
+            # Legacy DTO numbers are converted only here. Exact strings are
+            # provided alongside them; decisions never use these float views.
+            "total_demand": float(self.total_demand),
+            "total_demand_decimal": str(self.total_demand),
+            "capacity_decimal": str(self.capacity_decimal if self.capacity_decimal is not None
+                                    else self.capacity),
             "capacity": self.capacity,
             "backbone_length": self.backbone_length,
             "all_orders_covered": self.all_orders_covered,
@@ -99,10 +115,10 @@ def _node_type_counts(bundle: ScenarioBundle) -> dict[str, int]:
     return counts
 
 
-def _strongly_connected_or_explain(bundle: ScenarioBundle) -> list[str]:
+def _strongly_connected_or_explain(bundle: ScenarioBundle) -> list[tuple[str, str]]:
     """返回 violations（如果有），否则 ``[]``。
 
-    用 BFS 检查：从任一节点出发 forward + reverse 都能到达全部节点。
+    用显式栈 DFS 检查：从任一节点出发 forward + reverse 都能到达全部节点。
     """
     graph = bundle.graph
     if graph.node_count == 0:
@@ -112,11 +128,9 @@ def _strongly_connected_or_explain(bundle: ScenarioBundle) -> list[str]:
     # forward
     seen_f = {seed}
     stack = [seed]
-    edges_f = 0
     while stack:
         u = stack.pop()
         for e in graph.get_neighbors(u):
-            edges_f += 1
             if e.target_id not in seen_f:
                 seen_f.add(e.target_id)
                 stack.append(e.target_id)
@@ -150,6 +164,9 @@ def _strongly_connected_or_explain(bundle: ScenarioBundle) -> list[str]:
 def validate_generated_scenario(
     bundle: ScenarioBundle,
     backbone: list[str] | None = None,
+    *,
+    assignments: Iterable[ServiceAssignment] | None = None,
+    unserved_order_ids: Iterable[str] = (),
 ) -> ScenarioValidationReport:
     """独立验证一个已生成的物流场景（不调用 planner）。
 
@@ -157,19 +174,34 @@ def validate_generated_scenario(
         bundle: 加载后的 :class:`ScenarioBundle`（通常是
             :func:`generate_scenario` 的输出）。
         backbone: 可选：``[depot, stop_1, stop_2, ..., stop_K, depot]``
-            单车辆 backbone 序列。若提供，校验覆盖性 / 时间窗 / 可达性。
+            节点访问序列。若提供，校验订单覆盖 / 服务位置 / 时间窗 / 可达性。
+        assignments: 独立的服务记录；多张订单可绑定同一个 visit_index，
+            同一次访问内按给定记录顺序逐单服务。省略时仅兼容身份无歧义的旧见证。
+        unserved_order_ids: 明确未服务的订单；完整分区不等于全部送达。
+
+    无路线时 feasible 仅保留旧结构检查语义，coverage_checked=False。
+    多车没有分配见证时 capacity_checked=False，不能宣称可配送。
+    Time O(V+E+K+A+R*((V+E)log V)+K*D); Space O(V+E+K+A+D)，
+    R 为节点访问数，A 为服务记录数，D 为对齐的十进制精度。
 
     Returns:
         :class:`ScenarioValidationReport`（不可变）。
     """
     violations: list[tuple[str, str]] = []
+    if assignments is not None and backbone is None:
+        raise ValueError("service assignments require a route witness")
     graph = bundle.graph
     orders = list(bundle.orders)
+    orders_by_id = index_orders(orders)
+    unserved_ids = tuple(unserved_order_ids)
+    if unserved_ids and backbone is None:
+        raise ValueError("order result references require a route witness; "
+                         "use validate_order_coverage for partition-only validation")
     sim = bundle.simulation or {}
     service_time = float(sim.get("service_time", 5.0))
     initial_time = float(sim.get("initial_time", 0.0))
 
-    # 默认从 lex-min IDLE vehicle 取 capacity（如有）。若没有则取 0。
+    # 仅检查旧单车见证；多车必须由后续分配验证器提供逐车证据。
     capacity = 0.0
     for v in bundle.vehicles:
         if v.status.name == "IDLE":
@@ -187,13 +219,22 @@ def validate_generated_scenario(
             ))
 
     # Q2: 总需求与容量
-    total_demand = sum(o.demand for o in orders)
-    capacity_ok = total_demand <= capacity + 1e-9
-    if not capacity_ok:
-        violations.append((
-            "capacity.total_demand",
-            f"total_demand={total_demand} > capacity={capacity}",
-        ))
+    total_decimal = exact_sum(
+        getattr(order, "demand_decimal", decimal_quantity(order.demand, "demand"))
+        for order in orders
+    )
+    capacity_decimal = decimal_quantity(capacity, "capacity")
+    for vehicle in bundle.vehicles:
+        if vehicle.status.name == "IDLE":
+            capacity_decimal = getattr(vehicle, "capacity_decimal", capacity_decimal)
+            break
+    capacity_checked = len(bundle.vehicles) == 1
+    capacity_ok = capacity_checked and total_decimal <= capacity_decimal
+    if not capacity_checked:
+        violations.append(("capacity.allocation_unchecked", "fleet allocation witness is unavailable"))
+    elif not capacity_ok:
+        violations.append(("capacity.total_demand", "single-vehicle initial load exceeds capacity"))
+    total_demand = total_decimal
 
     # Q3: 强连通（仅在提供了 backbone 时校验 —— 无 backbone 时不强求）
     if backbone is not None:
@@ -201,39 +242,61 @@ def validate_generated_scenario(
 
     # Q4 / Q5 / Q6 / Q7 —— backbone 相关
     backbone_length = 0
-    all_orders_covered = True
+    all_orders_covered = not orders
+    coverage_checked = backbone is not None
+    partition_complete = not orders
+    route_coverage_ok = backbone is not None
     time_windows_ok = True
     all_legs_reachable = True
     closed_route_ok = True
 
     if backbone is not None:
         backbone_length = len(backbone)
-        if len(backbone) >= 2 and backbone[0] != backbone[-1]:
+        if (len(backbone) < 2 or backbone[0] != backbone[-1]
+                or backbone[0] not in node_id_set
+                or graph.get_node(backbone[0]).node_type is not NodeType.WAREHOUSE):
             closed_route_ok = False
-            violations.append((
-                "backbone.closed_route",
-                f"backbone[0]={backbone[0]!r} != backbone[-1]={backbone[-1]!r}",
-            ))
+            violations.append(("backbone.closed_route", "route must start/end at the same warehouse"))
 
-        # backbone 内涉及的 destination 去重覆盖 = orders 的 destination 集合
-        backbone_inner = set(backbone[1:-1])
-        order_dests = {o.destination_id for o in orders}
-        if backbone_inner != order_dests:
-            missing = order_dests - backbone_inner
-            extra = backbone_inner - order_dests
-            all_orders_covered = False
-            violations.append((
-                "backbone.coverage",
-                f"missing from backbone: {missing}; extra in backbone: {extra}",
-            ))
+        # Route visits and service assignments are different sequences.
+        # Legacy inference is safe only with one order per destination and visit.
+        services = list(assignments) if assignments is not None else []
+        if assignments is None:
+            destinations: dict[str, list[Order]] = {}
+            for order in orders:
+                destinations.setdefault(order.destination_id, []).append(order)
+            ambiguous = any(len(items) != 1 for items in destinations.values())
+            if ambiguous:
+                violations.append(("backbone.order_identity", "same-site orders require explicit assignments"))
+            else:
+                for visit, node in enumerate(backbone[1:-1], start=1):
+                    for order in destinations.get(node, ()):
+                        services.append(ServiceAssignment(order.id, visit))
+        for service in services:
+            if not isinstance(service, ServiceAssignment):
+                raise ValueError("assignments must contain ServiceAssignment objects")
+        partition = validate_order_coverage(orders, (item.order_id for item in services), unserved_ids)
+        partition_complete = partition.valid
+        all_orders_covered = partition.all_orders_served
+        for message in partition.violations:
+            violations.append(("backbone.coverage", message))
+        services_at_visit: dict[int, list[Order]] = {}
+        for service in services:
+            order = orders_by_id.get(service.order_id)
+            if (order is None or not 0 < service.visit_index < len(backbone) - 1
+                    or backbone[service.visit_index] != order.destination_id):
+                route_coverage_ok = False
+                violations.append(("backbone.route_coverage", f"invalid service location: {service}"))
+                continue
+            if order.status not in (OrderStatus.PENDING, OrderStatus.PLANNED):
+                violations.append(("order.inactive_service",
+                                   f"order {order.id!r} in {order.status.value!r} is not a new service task"))
+                continue
+            services_at_visit.setdefault(service.visit_index, []).append(order)
 
-        # 检查相邻 leg 可达性 + 时间窗
-        # arrival = previous leg drive_time + maybe wait + service
-        # 注意 backbone 没有手算 service_time + wait；这里只校验 'service_start <= time_window_end'
-        dest_to_order = {o.destination_id: o for o in orders}
-        cur = backbone[0]
+        cur = backbone[0] if backbone else ""
         cur_t = initial_time
-        for nxt in backbone[1:]:
+        for visit, nxt in enumerate(backbone[1:], start=1):
             if cur not in node_id_set or nxt not in node_id_set:
                 all_legs_reachable = False
                 violations.append((
@@ -261,8 +324,7 @@ def validate_generated_scenario(
                 cur = nxt
                 continue
             cur_t = cur_t + leg.total_weight
-            order = dest_to_order.get(nxt)
-            if order is not None:
+            for order in services_at_visit.get(visit, ()):
                 tw_s, tw_e = order.time_window_start, order.time_window_end
                 wait = max(0.0, tw_s - cur_t)
                 service_start = cur_t + wait
@@ -280,16 +342,13 @@ def validate_generated_scenario(
     feasible = (
         (backbone is None or (
             all_orders_covered
+            and route_coverage_ok
             and all_legs_reachable
             and time_windows_ok
             and closed_route_ok
         ))
         and capacity_ok
-        and all(check_kind not in v[0] for v in violations
-                for check_kind in [
-                    "graph.strongly_connected",
-                    "order.destination_in_graph",
-                ])
+        and not violations
     )
 
     nt = _node_type_counts(bundle)
@@ -313,6 +372,11 @@ def validate_generated_scenario(
         service_time=service_time,
         initial_time=initial_time,
         violations=tuple(violations),
+        coverage_checked=coverage_checked,
+        partition_complete=partition_complete,
+        route_coverage_ok=route_coverage_ok,
+        capacity_checked=capacity_checked,
+        capacity_decimal=capacity_decimal,
     )
 
 
