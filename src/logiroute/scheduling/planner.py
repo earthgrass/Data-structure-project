@@ -6,7 +6,7 @@
 * 自动选仓库、车辆、跟车配送员（:func:`select_depot`）；
 * 在调度作用域内构造 :class:`PathProvider`，自然丢弃缓存；
 * 把 NN / CFI / 2-opt 三个算法的统一输出装配为 :class:`ScheduleResult`；
-* 用 ``time.monotonic()`` 度量墙钟；
+* 用 ``time.perf_counter()`` 度量墙钟；
 * 把各算法报告的 unserved 订单 / Violation 提升到结果顶层。
 
 拒绝多车辆（AGENTS §3.6）；不允许拆单；不可行订单如实记录。
@@ -326,7 +326,7 @@ def plan_deliveries(
     )
 
     # --- 6. 调度（带计时） ---
-    t0 = time.monotonic()
+    t0 = time.perf_counter()
     if algorithm == "unified":
         # 默认路径：完整路网 Dijkstra 距离闭包 + 有界有向 TSP 搜索
         plan = unified_planner(ctx, eligible_orders)
@@ -350,7 +350,7 @@ def plan_deliveries(
     else:
         # 不可能到这里 —— 参数已校验
         raise PlanningError(f"unreachable algorithm: {algorithm}")
-    runtime_seconds = time.monotonic() - t0
+    runtime_seconds = time.perf_counter() - t0
 
     return _finalize_result(
         scenario=scenario,
@@ -393,7 +393,7 @@ def _finalize_result(
     * 计数：``cache_hits / cache_misses / dijkstra_calls / paths_evaluated`` 来自
       ``path_provider``；``feasibility_checks`` 来自 ``feasibility_counter``；
       ``iterations`` 来自 2-opt ``notes['iterations']``；``runtime_seconds`` 来自
-      ``time.monotonic()`` 差。
+      ``time.perf_counter()`` 差。
     """
     unserved = list(pre_unserved) + list(extra_unserved)
     globally_feasible = plan.is_feasible and not unserved
