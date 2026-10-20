@@ -36,6 +36,7 @@ from logiroute.algorithms.dijkstra import shortest_path
 from logiroute.config.loader import ScenarioBundle
 from logiroute.core.enums import NodeType, OrderPriority, OrderStatus
 from logiroute.core.orders import Order
+from logiroute.core.quantities import decimal_quantity, exact_sum
 from logiroute.scenario_generator.config_spec import GeneratorConfig
 from logiroute.scenario_generator.random_source import RandomSource
 
@@ -192,8 +193,8 @@ def build_backbone_and_orders(
             )
         )
 
-    total_demand = sum(o.demand for o in orders)
-    if total_demand > config.capacity + 1e-9:
+    total_demand = exact_sum(o.demand_decimal for o in orders)
+    if total_demand > decimal_quantity(config.capacity, "capacity"):
         return None
 
     return backbone, orders

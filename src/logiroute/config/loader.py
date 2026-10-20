@@ -15,6 +15,7 @@ import json
 import math
 from collections import Counter
 from dataclasses import dataclass, field
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
@@ -94,6 +95,24 @@ class ScenarioBundle:
 # ---------------------------------------------------------------------------
 
 
+def _json_numeric_views(value: Any, path: tuple = ()) -> Any:
+    """Retain raw Decimal weight tokens; other legacy fields stay ordinary numbers.
+
+    IO normalization only. Time/Space O(JSON size), excluding scalar digit costs.
+    """
+    if isinstance(value, Decimal):
+        if (len(path) == 3 and
+                ((path[0] == "orders" and path[2] == "demand")
+                 or (path[0] == "vehicles" and path[2] in ("capacity", "current_load")))):
+            return value
+        return float(value)
+    if isinstance(value, dict):
+        return {key: _json_numeric_views(item, path + (key,)) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_json_numeric_views(item, path + (index,)) for index, item in enumerate(value)]
+    return value
+
+
 def load_scenario(path: str | Path) -> ScenarioBundle:
     """从文件路径加载场景。Path 由调用方提供。"""
     p = Path(path)
@@ -103,7 +122,7 @@ def load_scenario(path: str | Path) -> ScenarioBundle:
         raw = p.read_text(encoding="utf-8")
     except OSError as exc:
         raise ConfigError(f"cannot read scenario file: {p}", path=str(p)) from exc
-    data = json.loads(raw)
+    data = _json_numeric_views(json.loads(raw, parse_float=Decimal))
     return load_scenario_from_dict(data)
 
 
@@ -258,13 +277,8 @@ def load_scenario_from_dict(data: dict[str, Any]) -> ScenarioBundle:
         seen_v_ids.add(v.id)
         vehicles.append(v)
 
-    # AGENTS.md §3.6 严格单车辆约束 —— 场景中只能有一辆实际配送车。
-    if len(vehicles) != 1:
-        raise ConfigError(
-            f"AGENTS §3.6 single-vehicle constraint: scenario must contain "
-            f"exactly 1 vehicle, got {len(vehicles)}",
-            path="vehicles",
-        )
+    if not vehicles:
+        raise ConfigError("vehicles must contain at least one vehicle", path="vehicles")
 
     # ---- couriers ----
     couriers: list[Courier] = []
@@ -272,6 +286,7 @@ def load_scenario_from_dict(data: dict[str, Any]) -> ScenarioBundle:
     if not isinstance(raw_couriers, list):
         raise ConfigError("couriers must be a list")
     seen_co_ids: set[str] = set()
+    bound_vehicle_ids: set[str] = set()
     for idx, raw in enumerate(raw_couriers):
         try:
             c = _parse_courier(raw)
@@ -288,16 +303,18 @@ def load_scenario_from_dict(data: dict[str, Any]) -> ScenarioBundle:
                 f"courier {c.id!r} references unknown vehicle {c.vehicle_id!r}",
                 path=f"couriers[{idx}].vehicle_id",
             )
+        if c.vehicle_id in bound_vehicle_ids:
+            raise ConfigError(f"duplicate courier binding for vehicle {c.vehicle_id!r}",
+                              path=f"couriers[{idx}].vehicle_id")
+        bound_vehicle_ids.add(c.vehicle_id)
         seen_co_ids.add(c.id)
         couriers.append(c)
 
-    # 单车辆 + 单配送员 —— 与 §3.6 严格单车辆约束一致。
-    if len(couriers) != 1:
-        raise ConfigError(
-            f"AGENTS §3.6 single-vehicle constraint: scenario must contain "
-            f"exactly 1 courier (one per vehicle), got {len(couriers)}",
-            path="couriers",
-        )
+    if not couriers:
+        raise ConfigError("couriers must contain at least one courier", path="couriers")
+    for vehicle in vehicles:
+        if vehicle.id not in bound_vehicle_ids:
+            raise ConfigError(f"vehicle {vehicle.id!r} has no assigned courier", path="couriers")
 
     # ---- orders ----
     orders: list[Order] = []
@@ -435,16 +452,16 @@ def _parse_vehicle(raw: Any) -> Vehicle:
         raise ValueError("vehicle must be an object")
     vid = raw.get("id")
     capacity = raw.get("capacity")
-    current_load = float(raw.get("current_load", 0.0))
+    current_load = raw.get("current_load", 0.0)
     node = raw.get("current_node_id", "")
     status_str = raw.get("status", "idle")
     if status_str not in {s.value for s in VehicleStatus}:
         raise ValueError(f"invalid vehicle status: {status_str!r}")
     return Vehicle(
         id=vid,
-        capacity=float(capacity),
+        capacity=capacity,
         current_load=current_load,
-        current_node_id=str(node),
+        current_node_id=node,
         status=VehicleStatus(status_str),
     )
 
@@ -461,7 +478,7 @@ def _parse_courier(raw: Any) -> Courier:
     return Courier(
         id=cid,
         name=name,
-        vehicle_id=str(vehicle_id),
+        vehicle_id=vehicle_id,
         status=CourierStatus(status_str),
     )
 
@@ -482,8 +499,8 @@ def _parse_order(raw: Any) -> Order:
         raise ValueError(f"invalid order status: {status_str!r}")
     return Order(
         id=oid,
-        destination_id=str(dest),
-        demand=float(demand),
+        destination_id=dest,
+        demand=demand,
         time_window_start=float(tw_start),
         time_window_end=float(tw_end),
         priority=OrderPriority(priority_str),

@@ -1,0 +1,2199 @@
+{
+  "scenario": {
+    "name": "logiroute.fleet-config.35",
+    "mode": "fixed",
+    "random_seed": 42
+  },
+  "network": {
+    "directed": true,
+    "nodes": [
+      {
+        "id": "W1",
+        "name": "主仓（北）",
+        "type": "warehouse",
+        "x": 0.0,
+        "y": 9.0,
+        "metadata": {
+          "lng": 116.485,
+          "lat": 39.92,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "W2",
+        "name": "次仓（南）",
+        "type": "warehouse",
+        "x": 9.0,
+        "y": 0.0,
+        "metadata": {
+          "lng": 116.3,
+          "lat": 39.96,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "T1",
+        "name": "中转站1",
+        "type": "transfer",
+        "x": 2.0,
+        "y": 7.0,
+        "metadata": {
+          "lng": 116.42,
+          "lat": 39.88,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "T2",
+        "name": "中转站2",
+        "type": "transfer",
+        "x": 7.0,
+        "y": 7.0,
+        "metadata": {
+          "lng": 116.55,
+          "lat": 39.86,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "T3",
+        "name": "中转站3",
+        "type": "transfer",
+        "x": 2.0,
+        "y": 2.0,
+        "metadata": {
+          "lng": 116.2,
+          "lat": 39.78,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "T4",
+        "name": "中转站4",
+        "type": "transfer",
+        "x": 7.0,
+        "y": 2.0,
+        "metadata": {
+          "lng": 116.66,
+          "lat": 39.78,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "C1",
+        "name": "客户01",
+        "type": "customer",
+        "x": 5.48,
+        "y": 1.18,
+        "metadata": {
+          "lng": 116.42558,
+          "lat": 39.901,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "C2",
+        "name": "客户02",
+        "type": "customer",
+        "x": 2.93,
+        "y": 2.56,
+        "metadata": {
+          "lng": 116.361,
+          "lat": 39.89893,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "C3",
+        "name": "客户03",
+        "type": "customer",
+        "x": 6.16,
+        "y": 5.74,
+        "metadata": {
+          "lng": 116.49946,
+          "lat": 39.93707,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "C4",
+        "name": "客户04",
+        "type": "customer",
+        "x": 7.25,
+        "y": 1.61,
+        "metadata": {
+          "lng": 116.31569,
+          "lat": 39.95348,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "C5",
+        "name": "客户05",
+        "type": "customer",
+        "x": 3.95,
+        "y": 1.21,
+        "metadata": {
+          "lng": 116.28688,
+          "lat": 39.84119,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "C6",
+        "name": "客户06",
+        "type": "customer",
+        "x": 2.53,
+        "y": 4.54,
+        "metadata": {
+          "lng": 116.20875,
+          "lat": 39.91021,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "C7",
+        "name": "客户07",
+        "type": "customer",
+        "x": 1.19,
+        "y": 2.39,
+        "metadata": {
+          "lng": 116.64106,
+          "lat": 39.89795,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "C8",
+        "name": "客户08",
+        "type": "customer",
+        "x": 5.55,
+        "y": 4.81,
+        "metadata": {
+          "lng": 116.656,
+          "lat": 40.1318,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "C9",
+        "name": "客户09",
+        "type": "customer",
+        "x": 2.54,
+        "y": 5.12,
+        "metadata": {
+          "lng": 116.21882,
+          "lat": 40.22357,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "C10",
+        "name": "客户10",
+        "type": "customer",
+        "x": 6.67,
+        "y": 1.05,
+        "metadata": {
+          "lng": 116.34238,
+          "lat": 39.71026,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "C11",
+        "name": "客户11",
+        "type": "customer",
+        "x": 6.64,
+        "y": 5.89,
+        "metadata": {
+          "lng": 115.98223,
+          "lat": 39.72793,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "C12",
+        "name": "客户12",
+        "type": "customer",
+        "x": 3.38,
+        "y": 2.09,
+        "metadata": {
+          "lng": 116.09361,
+          "lat": 39.92622,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "C13",
+        "name": "客户13",
+        "type": "customer",
+        "x": 7.7,
+        "y": 3.36,
+        "metadata": {
+          "lng": 116.43829,
+          "lat": 39.91346,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "C14",
+        "name": "客户14",
+        "type": "customer",
+        "x": 1.65,
+        "y": 1.68,
+        "metadata": {
+          "lng": 116.35371,
+          "lat": 39.89387,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "C15",
+        "name": "客户15",
+        "type": "customer",
+        "x": 6.93,
+        "y": 5.23,
+        "metadata": {
+          "lng": 116.5039,
+          "lat": 39.93415,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "C16",
+        "name": "客户16",
+        "type": "customer",
+        "x": 6.65,
+        "y": 6.11,
+        "metadata": {
+          "lng": 116.31229,
+          "lat": 39.97919,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "C17",
+        "name": "客户17",
+        "type": "customer",
+        "x": 4.75,
+        "y": 7.81,
+        "metadata": {
+          "lng": 116.29145,
+          "lat": 39.87892,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "C18",
+        "name": "客户18",
+        "type": "customer",
+        "x": 3.65,
+        "y": 4.86,
+        "metadata": {
+          "lng": 116.21514,
+          "lat": 39.91208,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "C19",
+        "name": "客户19",
+        "type": "customer",
+        "x": 6.81,
+        "y": 5.33,
+        "metadata": {
+          "lng": 116.67318,
+          "lat": 39.91474,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "C20",
+        "name": "客户20",
+        "type": "customer",
+        "x": 7.03,
+        "y": 5.04,
+        "metadata": {
+          "lng": 116.66447,
+          "lat": 40.13309,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "C21",
+        "name": "客户21",
+        "type": "customer",
+        "x": 5.93,
+        "y": 1.32,
+        "metadata": {
+          "lng": 116.23818,
+          "lat": 40.20183,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "C22",
+        "name": "客户22",
+        "type": "customer",
+        "x": 2.6,
+        "y": 3.03,
+        "metadata": {
+          "lng": 116.31912,
+          "lat": 39.72158,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "C23",
+        "name": "客户23",
+        "type": "customer",
+        "x": 1.56,
+        "y": 2.63,
+        "metadata": {
+          "lng": 115.95319,
+          "lat": 39.70931,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "C24",
+        "name": "客户24",
+        "type": "customer",
+        "x": 1.71,
+        "y": 2.95,
+        "metadata": {
+          "lng": 116.08404,
+          "lat": 39.93112,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "C25",
+        "name": "客户25",
+        "type": "customer",
+        "x": 5.45,
+        "y": 3.55,
+        "metadata": {
+          "lng": 116.42543,
+          "lat": 39.91459,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "C26",
+        "name": "客户26",
+        "type": "customer",
+        "x": 3.59,
+        "y": 2.47,
+        "metadata": {
+          "lng": 116.36481,
+          "lat": 39.89838,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "C27",
+        "name": "客户27",
+        "type": "customer",
+        "x": 2.87,
+        "y": 7.56,
+        "metadata": {
+          "lng": 116.48068,
+          "lat": 39.94747,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "C28",
+        "name": "客户28",
+        "type": "customer",
+        "x": 5.54,
+        "y": 5.26,
+        "metadata": {
+          "lng": 116.30592,
+          "lat": 39.97437,
+          "viz_source": "beijing_schematic"
+        }
+      },
+      {
+        "id": "C29",
+        "name": "客户29",
+        "type": "customer",
+        "x": 2.2,
+        "y": 6.1,
+        "metadata": {
+          "lng": 116.27685,
+          "lat": 39.86917,
+          "viz_source": "beijing_schematic"
+        }
+      }
+    ],
+    "edges": [
+      {
+        "source": "W1",
+        "target": "T1",
+        "distance": 2.998,
+        "travel_time": 6.088,
+        "cost": 3.331,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T1",
+        "target": "W1",
+        "distance": 2.703,
+        "travel_time": 10.314,
+        "cost": 5.716,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "W1",
+        "target": "T2",
+        "distance": 8.176,
+        "travel_time": 16.617,
+        "cost": 10.819,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T2",
+        "target": "W1",
+        "distance": 6.606,
+        "travel_time": 18.631,
+        "cost": 12.094,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "W1",
+        "target": "T3",
+        "distance": 6.6,
+        "travel_time": 18.328,
+        "cost": 14.304,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T3",
+        "target": "W1",
+        "distance": 7.544,
+        "travel_time": 18.658,
+        "cost": 13.377,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "W1",
+        "target": "T4",
+        "distance": 10.913,
+        "travel_time": 20.924,
+        "cost": 22.692,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T4",
+        "target": "W1",
+        "distance": 10.637,
+        "travel_time": 27.862,
+        "cost": 9.172,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "W2",
+        "target": "T1",
+        "distance": 11.279,
+        "travel_time": 27.786,
+        "cost": 7.868,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T1",
+        "target": "W2",
+        "distance": 9.149,
+        "travel_time": 38.407,
+        "cost": 18.491,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "W2",
+        "target": "T2",
+        "distance": 8.021,
+        "travel_time": 26.445,
+        "cost": 12.566,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T2",
+        "target": "W2",
+        "distance": 8.323,
+        "travel_time": 21.075,
+        "cost": 12.808,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "W2",
+        "target": "T3",
+        "distance": 8.062,
+        "travel_time": 24.744,
+        "cost": 17.542,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T3",
+        "target": "W2",
+        "distance": 7.603,
+        "travel_time": 26.06,
+        "cost": 5.069,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "W2",
+        "target": "T4",
+        "distance": 2.707,
+        "travel_time": 7.659,
+        "cost": 2.171,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T4",
+        "target": "W2",
+        "distance": 2.71,
+        "travel_time": 6.54,
+        "cost": 3.348,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T1",
+        "target": "T2",
+        "distance": 5.295,
+        "travel_time": 14.331,
+        "cost": 6.887,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T2",
+        "target": "T1",
+        "distance": 4.762,
+        "travel_time": 13.303,
+        "cost": 12.835,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T2",
+        "target": "T3",
+        "distance": 7.51,
+        "travel_time": 23.894,
+        "cost": 6.784,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T3",
+        "target": "T2",
+        "distance": 7.653,
+        "travel_time": 17.276,
+        "cost": 9.877,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T3",
+        "target": "T4",
+        "distance": 5.737,
+        "travel_time": 17.22,
+        "cost": 8.848,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T4",
+        "target": "T3",
+        "distance": 5.356,
+        "travel_time": 19.35,
+        "cost": 11.148,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T4",
+        "target": "T1",
+        "distance": 6.769,
+        "travel_time": 15.326,
+        "cost": 8.927,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T1",
+        "target": "T4",
+        "distance": 6.837,
+        "travel_time": 17.982,
+        "cost": 18.244,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T1",
+        "target": "T3",
+        "distance": 5.595,
+        "travel_time": 13.804,
+        "cost": 9.882,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T3",
+        "target": "T1",
+        "distance": 4.995,
+        "travel_time": 20.103,
+        "cost": 7.818,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T1",
+        "target": "C1",
+        "distance": 6.552,
+        "travel_time": 17.752,
+        "cost": 12.063,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C1",
+        "target": "T1",
+        "distance": 6.548,
+        "travel_time": 22.565,
+        "cost": 16.854,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T1",
+        "target": "C2",
+        "distance": 4.536,
+        "travel_time": 11.616,
+        "cost": 12.225,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C2",
+        "target": "T1",
+        "distance": 4.661,
+        "travel_time": 10.392,
+        "cost": 3.171,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T1",
+        "target": "C3",
+        "distance": 4.031,
+        "travel_time": 14.855,
+        "cost": 9.838,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C3",
+        "target": "T1",
+        "distance": 4.371,
+        "travel_time": 9.708,
+        "cost": 6.091,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T1",
+        "target": "C4",
+        "distance": 8.646,
+        "travel_time": 24.161,
+        "cost": 19.859,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C4",
+        "target": "T1",
+        "distance": 8.391,
+        "travel_time": 15.982,
+        "cost": 15.903,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T1",
+        "target": "C5",
+        "distance": 6.54,
+        "travel_time": 19.719,
+        "cost": 7.089,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C5",
+        "target": "T1",
+        "distance": 6.478,
+        "travel_time": 14.261,
+        "cost": 9.244,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T1",
+        "target": "C6",
+        "distance": 2.55,
+        "travel_time": 10.325,
+        "cost": 6.138,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C6",
+        "target": "T1",
+        "distance": 2.431,
+        "travel_time": 7.93,
+        "cost": 2.454,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T1",
+        "target": "C7",
+        "distance": 5.28,
+        "travel_time": 18.386,
+        "cost": 5.742,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C7",
+        "target": "T1",
+        "distance": 4.96,
+        "travel_time": 15.815,
+        "cost": 4.311,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T2",
+        "target": "C8",
+        "distance": 2.865,
+        "travel_time": 8.491,
+        "cost": 5.871,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C8",
+        "target": "T2",
+        "distance": 2.712,
+        "travel_time": 5.519,
+        "cost": 3.364,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T2",
+        "target": "C9",
+        "distance": 4.38,
+        "travel_time": 19.608,
+        "cost": 11.835,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C9",
+        "target": "T2",
+        "distance": 5.362,
+        "travel_time": 13.29,
+        "cost": 3.493,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T2",
+        "target": "C10",
+        "distance": 6.671,
+        "travel_time": 24.365,
+        "cost": 4.647,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C10",
+        "target": "T2",
+        "distance": 6.087,
+        "travel_time": 13.38,
+        "cost": 13.094,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T2",
+        "target": "C11",
+        "distance": 1.274,
+        "travel_time": 2.765,
+        "cost": 1.865,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C11",
+        "target": "T2",
+        "distance": 1.211,
+        "travel_time": 3.1,
+        "cost": 2.838,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T2",
+        "target": "C12",
+        "distance": 6.135,
+        "travel_time": 15.524,
+        "cost": 10.569,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C12",
+        "target": "T2",
+        "distance": 6.603,
+        "travel_time": 15.387,
+        "cost": 7.653,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T2",
+        "target": "C13",
+        "distance": 4.258,
+        "travel_time": 12.843,
+        "cost": 5.634,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C13",
+        "target": "T2",
+        "distance": 3.816,
+        "travel_time": 8.726,
+        "cost": 3.973,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T2",
+        "target": "C14",
+        "distance": 7.428,
+        "travel_time": 25.165,
+        "cost": 8.173,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C14",
+        "target": "T2",
+        "distance": 7.206,
+        "travel_time": 16.969,
+        "cost": 14.526,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T3",
+        "target": "C15",
+        "distance": 5.642,
+        "travel_time": 23.584,
+        "cost": 14.176,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C15",
+        "target": "T3",
+        "distance": 5.409,
+        "travel_time": 15.323,
+        "cost": 11.816,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T3",
+        "target": "C16",
+        "distance": 5.918,
+        "travel_time": 14.757,
+        "cost": 15.916,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C16",
+        "target": "T3",
+        "distance": 6.471,
+        "travel_time": 19.193,
+        "cost": 13.949,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T3",
+        "target": "C17",
+        "distance": 7.083,
+        "travel_time": 16.069,
+        "cost": 5.165,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C17",
+        "target": "T3",
+        "distance": 6.478,
+        "travel_time": 19.216,
+        "cost": 10.161,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T3",
+        "target": "C18",
+        "distance": 3.573,
+        "travel_time": 11.603,
+        "cost": 8.805,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C18",
+        "target": "T3",
+        "distance": 3.053,
+        "travel_time": 9.726,
+        "cost": 4.334,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T3",
+        "target": "C19",
+        "distance": 6.525,
+        "travel_time": 15.34,
+        "cost": 5.847,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C19",
+        "target": "T3",
+        "distance": 5.921,
+        "travel_time": 17.468,
+        "cost": 6.932,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T3",
+        "target": "C20",
+        "distance": 5.657,
+        "travel_time": 23.738,
+        "cost": 8.996,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C20",
+        "target": "T3",
+        "distance": 6.555,
+        "travel_time": 19.135,
+        "cost": 4.151,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T3",
+        "target": "C21",
+        "distance": 4.586,
+        "travel_time": 15.378,
+        "cost": 10.509,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C21",
+        "target": "T3",
+        "distance": 4.513,
+        "travel_time": 15.484,
+        "cost": 3.786,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T4",
+        "target": "C22",
+        "distance": 4.616,
+        "travel_time": 11.518,
+        "cost": 6.517,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C22",
+        "target": "T4",
+        "distance": 4.133,
+        "travel_time": 13.086,
+        "cost": 12.062,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T4",
+        "target": "C23",
+        "distance": 5.292,
+        "travel_time": 20.517,
+        "cost": 8.519,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C23",
+        "target": "T4",
+        "distance": 5.508,
+        "travel_time": 22.51,
+        "cost": 14.734,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T4",
+        "target": "C24",
+        "distance": 5.584,
+        "travel_time": 19.395,
+        "cost": 4.972,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C24",
+        "target": "T4",
+        "distance": 5.236,
+        "travel_time": 22.22,
+        "cost": 9.762,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T4",
+        "target": "C25",
+        "distance": 2.27,
+        "travel_time": 8.046,
+        "cost": 1.578,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C25",
+        "target": "T4",
+        "distance": 2.293,
+        "travel_time": 6.918,
+        "cost": 5.241,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T4",
+        "target": "C26",
+        "distance": 3.233,
+        "travel_time": 14.174,
+        "cost": 2.644,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C26",
+        "target": "T4",
+        "distance": 3.258,
+        "travel_time": 11.53,
+        "cost": 6.946,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T4",
+        "target": "C27",
+        "distance": 6.641,
+        "travel_time": 16.288,
+        "cost": 17.105,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C27",
+        "target": "T4",
+        "distance": 6.66,
+        "travel_time": 23.192,
+        "cost": 13.164,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T4",
+        "target": "C28",
+        "distance": 3.589,
+        "travel_time": 11.879,
+        "cost": 6.065,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C28",
+        "target": "T4",
+        "distance": 4.049,
+        "travel_time": 9.033,
+        "cost": 7.516,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "T4",
+        "target": "C29",
+        "distance": 6.058,
+        "travel_time": 18.503,
+        "cost": 12.692,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C29",
+        "target": "T4",
+        "distance": 6.155,
+        "travel_time": 17.448,
+        "cost": 13.755,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C1",
+        "target": "C21",
+        "distance": 0.433,
+        "travel_time": 1.443,
+        "cost": 1.271,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C21",
+        "target": "C1",
+        "distance": 0.542,
+        "travel_time": 1.062,
+        "cost": 0.494,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C1",
+        "target": "C10",
+        "distance": 1.157,
+        "travel_time": 4.86,
+        "cost": 2.933,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C10",
+        "target": "C1",
+        "distance": 1.341,
+        "travel_time": 3.443,
+        "cost": 1.115,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C1",
+        "target": "C5",
+        "distance": 1.696,
+        "travel_time": 5.475,
+        "cost": 2.884,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C5",
+        "target": "C1",
+        "distance": 1.755,
+        "travel_time": 5.315,
+        "cost": 0.943,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C2",
+        "target": "C22",
+        "distance": 0.634,
+        "travel_time": 1.567,
+        "cost": 1.145,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C22",
+        "target": "C2",
+        "distance": 0.652,
+        "travel_time": 1.368,
+        "cost": 0.484,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C2",
+        "target": "C12",
+        "distance": 0.603,
+        "travel_time": 2.122,
+        "cost": 0.763,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C12",
+        "target": "C2",
+        "distance": 0.684,
+        "travel_time": 2.347,
+        "cost": 0.669,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C2",
+        "target": "C26",
+        "distance": 0.705,
+        "travel_time": 1.768,
+        "cost": 1.083,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C26",
+        "target": "C2",
+        "distance": 0.75,
+        "travel_time": 2.582,
+        "cost": 0.529,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C3",
+        "target": "C11",
+        "distance": 0.506,
+        "travel_time": 1.348,
+        "cost": 0.305,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C11",
+        "target": "C3",
+        "distance": 0.55,
+        "travel_time": 1.729,
+        "cost": 0.578,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C3",
+        "target": "C16",
+        "distance": 0.666,
+        "travel_time": 2.001,
+        "cost": 0.92,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C16",
+        "target": "C3",
+        "distance": 0.554,
+        "travel_time": 1.386,
+        "cost": 1.507,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C3",
+        "target": "C19",
+        "distance": 0.865,
+        "travel_time": 2.494,
+        "cost": 1.808,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C19",
+        "target": "C3",
+        "distance": 0.804,
+        "travel_time": 1.853,
+        "cost": 0.667,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C4",
+        "target": "C10",
+        "distance": 0.788,
+        "travel_time": 3.215,
+        "cost": 1.832,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C10",
+        "target": "C4",
+        "distance": 0.899,
+        "travel_time": 3.215,
+        "cost": 0.839,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C4",
+        "target": "C21",
+        "distance": 1.301,
+        "travel_time": 3.13,
+        "cost": 3.025,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C21",
+        "target": "C4",
+        "distance": 1.515,
+        "travel_time": 3.991,
+        "cost": 2.572,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C4",
+        "target": "C13",
+        "distance": 1.696,
+        "travel_time": 7.323,
+        "cost": 4.365,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C13",
+        "target": "C4",
+        "distance": 2.067,
+        "travel_time": 6.871,
+        "cost": 4.429,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C5",
+        "target": "C12",
+        "distance": 0.95,
+        "travel_time": 3.824,
+        "cost": 1.36,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C12",
+        "target": "C5",
+        "distance": 1.188,
+        "travel_time": 3.968,
+        "cost": 2.532,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C5",
+        "target": "C26",
+        "distance": 1.445,
+        "travel_time": 3.486,
+        "cost": 2.953,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C26",
+        "target": "C5",
+        "distance": 1.215,
+        "travel_time": 5.152,
+        "cost": 3.149,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C6",
+        "target": "C9",
+        "distance": 0.554,
+        "travel_time": 2.213,
+        "cost": 0.909,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C9",
+        "target": "C6",
+        "distance": 0.566,
+        "travel_time": 2.187,
+        "cost": 0.625,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C6",
+        "target": "C18",
+        "distance": 1.055,
+        "travel_time": 2.919,
+        "cost": 1.502,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C18",
+        "target": "C6",
+        "distance": 1.3,
+        "travel_time": 4.811,
+        "cost": 1.382,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C6",
+        "target": "C22",
+        "distance": 1.603,
+        "travel_time": 4.443,
+        "cost": 4.022,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C22",
+        "target": "C6",
+        "distance": 1.563,
+        "travel_time": 6.156,
+        "cost": 1.273,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C7",
+        "target": "C23",
+        "distance": 0.504,
+        "travel_time": 1.092,
+        "cost": 1.156,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C23",
+        "target": "C7",
+        "distance": 0.426,
+        "travel_time": 1.027,
+        "cost": 0.667,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C7",
+        "target": "C24",
+        "distance": 0.827,
+        "travel_time": 2.108,
+        "cost": 1.431,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C24",
+        "target": "C7",
+        "distance": 0.785,
+        "travel_time": 2.223,
+        "cost": 1.384,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C7",
+        "target": "C14",
+        "distance": 0.815,
+        "travel_time": 3.036,
+        "cost": 0.511,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C14",
+        "target": "C7",
+        "distance": 0.957,
+        "travel_time": 2.733,
+        "cost": 1.786,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C8",
+        "target": "C28",
+        "distance": 0.489,
+        "travel_time": 1.579,
+        "cost": 0.614,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C28",
+        "target": "C8",
+        "distance": 0.413,
+        "travel_time": 1.573,
+        "cost": 0.582,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C8",
+        "target": "C3",
+        "distance": 1.088,
+        "travel_time": 4.316,
+        "cost": 2.348,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C3",
+        "target": "C8",
+        "distance": 1.084,
+        "travel_time": 3.058,
+        "cost": 1.621,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C8",
+        "target": "C25",
+        "distance": 1.265,
+        "travel_time": 3.439,
+        "cost": 1.096,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C25",
+        "target": "C8",
+        "distance": 1.27,
+        "travel_time": 5.15,
+        "cost": 2.556,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C9",
+        "target": "C29",
+        "distance": 1.168,
+        "travel_time": 3.519,
+        "cost": 1.278,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C29",
+        "target": "C9",
+        "distance": 1.076,
+        "travel_time": 2.179,
+        "cost": 1.247,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C9",
+        "target": "C18",
+        "distance": 1.149,
+        "travel_time": 3.783,
+        "cost": 2.251,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C18",
+        "target": "C9",
+        "distance": 1.159,
+        "travel_time": 3.453,
+        "cost": 1.196,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C10",
+        "target": "C21",
+        "distance": 0.802,
+        "travel_time": 3.145,
+        "cost": 1.789,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C21",
+        "target": "C10",
+        "distance": 0.742,
+        "travel_time": 1.794,
+        "cost": 1.325,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C11",
+        "target": "C16",
+        "distance": 0.233,
+        "travel_time": 0.617,
+        "cost": 0.511,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C16",
+        "target": "C11",
+        "distance": 0.24,
+        "travel_time": 0.774,
+        "cost": 0.236,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C11",
+        "target": "C19",
+        "distance": 0.556,
+        "travel_time": 1.259,
+        "cost": 0.652,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C19",
+        "target": "C11",
+        "distance": 0.596,
+        "travel_time": 2.273,
+        "cost": 0.441,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C12",
+        "target": "C26",
+        "distance": 0.436,
+        "travel_time": 1.486,
+        "cost": 0.438,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C26",
+        "target": "C12",
+        "distance": 0.466,
+        "travel_time": 1.362,
+        "cost": 0.483,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C13",
+        "target": "C20",
+        "distance": 1.924,
+        "travel_time": 3.819,
+        "cost": 3.938,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C20",
+        "target": "C13",
+        "distance": 1.976,
+        "travel_time": 4.203,
+        "cost": 2.7,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C13",
+        "target": "C15",
+        "distance": 1.909,
+        "travel_time": 8.315,
+        "cost": 3.413,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C15",
+        "target": "C13",
+        "distance": 1.845,
+        "travel_time": 5.305,
+        "cost": 4.816,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C14",
+        "target": "C23",
+        "distance": 0.968,
+        "travel_time": 3.61,
+        "cost": 1.91,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C23",
+        "target": "C14",
+        "distance": 1.095,
+        "travel_time": 3.197,
+        "cost": 2.476,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C14",
+        "target": "C24",
+        "distance": 1.428,
+        "travel_time": 4.306,
+        "cost": 2.683,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C24",
+        "target": "C14",
+        "distance": 1.305,
+        "travel_time": 4.888,
+        "cost": 2.226,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C15",
+        "target": "C19",
+        "distance": 0.176,
+        "travel_time": 0.572,
+        "cost": 0.249,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C19",
+        "target": "C15",
+        "distance": 0.151,
+        "travel_time": 0.409,
+        "cost": 0.303,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C15",
+        "target": "C20",
+        "distance": 0.234,
+        "travel_time": 0.686,
+        "cost": 0.411,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C20",
+        "target": "C15",
+        "distance": 0.208,
+        "travel_time": 0.486,
+        "cost": 0.258,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C15",
+        "target": "C11",
+        "distance": 0.698,
+        "travel_time": 1.998,
+        "cost": 1.25,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C11",
+        "target": "C15",
+        "distance": 0.674,
+        "travel_time": 1.864,
+        "cost": 1.483,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C16",
+        "target": "C19",
+        "distance": 0.857,
+        "travel_time": 1.78,
+        "cost": 1.159,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C19",
+        "target": "C16",
+        "distance": 0.825,
+        "travel_time": 2.367,
+        "cost": 0.824,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C17",
+        "target": "C27",
+        "distance": 1.906,
+        "travel_time": 7.587,
+        "cost": 3.464,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C27",
+        "target": "C17",
+        "distance": 2.037,
+        "travel_time": 7.395,
+        "cost": 4.187,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C17",
+        "target": "C3",
+        "distance": 2.492,
+        "travel_time": 5.291,
+        "cost": 3.353,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C3",
+        "target": "C17",
+        "distance": 2.726,
+        "travel_time": 9.748,
+        "cost": 6.517,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C17",
+        "target": "C16",
+        "distance": 2.562,
+        "travel_time": 9.356,
+        "cost": 4.454,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C16",
+        "target": "C17",
+        "distance": 2.679,
+        "travel_time": 6.535,
+        "cost": 2.704,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C18",
+        "target": "C8",
+        "distance": 1.918,
+        "travel_time": 4.107,
+        "cost": 2.482,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C8",
+        "target": "C18",
+        "distance": 2.033,
+        "travel_time": 5.605,
+        "cost": 1.799,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C19",
+        "target": "C20",
+        "distance": 0.37,
+        "travel_time": 0.862,
+        "cost": 0.694,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C20",
+        "target": "C19",
+        "distance": 0.33,
+        "travel_time": 1.066,
+        "cost": 0.65,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C20",
+        "target": "C11",
+        "distance": 0.848,
+        "travel_time": 3.226,
+        "cost": 0.828,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C11",
+        "target": "C20",
+        "distance": 0.95,
+        "travel_time": 2.063,
+        "cost": 1.306,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C22",
+        "target": "C24",
+        "distance": 0.852,
+        "travel_time": 2.49,
+        "cost": 1.965,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C24",
+        "target": "C22",
+        "distance": 0.889,
+        "travel_time": 3.288,
+        "cost": 2.097,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C22",
+        "target": "C23",
+        "distance": 1.073,
+        "travel_time": 2.532,
+        "cost": 0.714,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C23",
+        "target": "C22",
+        "distance": 1.153,
+        "travel_time": 4.68,
+        "cost": 1.487,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C23",
+        "target": "C24",
+        "distance": 0.376,
+        "travel_time": 1.322,
+        "cost": 0.696,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C24",
+        "target": "C23",
+        "distance": 0.385,
+        "travel_time": 1.447,
+        "cost": 0.36,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C25",
+        "target": "C28",
+        "distance": 1.55,
+        "travel_time": 4.144,
+        "cost": 1.481,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C28",
+        "target": "C25",
+        "distance": 1.828,
+        "travel_time": 5.624,
+        "cost": 1.811,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C25",
+        "target": "C26",
+        "distance": 2.312,
+        "travel_time": 7.981,
+        "cost": 2.048,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C26",
+        "target": "C25",
+        "distance": 2.262,
+        "travel_time": 7.895,
+        "cost": 1.808,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C26",
+        "target": "C22",
+        "distance": 1.257,
+        "travel_time": 4.693,
+        "cost": 0.941,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C22",
+        "target": "C26",
+        "distance": 1.031,
+        "travel_time": 3.134,
+        "cost": 2.3,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C27",
+        "target": "C29",
+        "distance": 1.831,
+        "travel_time": 4.712,
+        "cost": 3.376,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C29",
+        "target": "C27",
+        "distance": 1.476,
+        "travel_time": 5.703,
+        "cost": 3.08,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C27",
+        "target": "C9",
+        "distance": 2.279,
+        "travel_time": 9.165,
+        "cost": 5.874,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C9",
+        "target": "C27",
+        "distance": 2.586,
+        "travel_time": 5.797,
+        "cost": 6.564,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C28",
+        "target": "C3",
+        "distance": 0.859,
+        "travel_time": 2.218,
+        "cost": 1.176,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C3",
+        "target": "C28",
+        "distance": 0.778,
+        "travel_time": 2.48,
+        "cost": 1.032,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C28",
+        "target": "C11",
+        "distance": 1.41,
+        "travel_time": 4.851,
+        "cost": 1.042,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C11",
+        "target": "C28",
+        "distance": 1.445,
+        "travel_time": 4.354,
+        "cost": 2.967,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C29",
+        "target": "C6",
+        "distance": 1.717,
+        "travel_time": 4.807,
+        "cost": 3.414,
+        "traffic_status": "clear"
+      },
+      {
+        "source": "C6",
+        "target": "C29",
+        "distance": 1.82,
+        "travel_time": 4.253,
+        "cost": 3.663,
+        "traffic_status": "clear"
+      }
+    ]
+  },
+  "vehicles": [
+    {
+      "id": "V1",
+      "capacity": 100,
+      "current_load": 0,
+      "current_node_id": "W1",
+      "status": "idle"
+    },
+    {
+      "id": "V2",
+      "capacity": 120,
+      "current_load": 0,
+      "current_node_id": "W2",
+      "status": "idle"
+    }
+  ],
+  "couriers": [
+    {
+      "id": "D1",
+      "name": "D1",
+      "vehicle_id": "V1",
+      "status": "idle"
+    },
+    {
+      "id": "D2",
+      "name": "D2",
+      "vehicle_id": "V2",
+      "status": "idle"
+    }
+  ],
+  "orders": [
+    {
+      "id": "O001",
+      "destination_id": "C1",
+      "demand": 7.5,
+      "time_window_start": 517.0,
+      "time_window_end": 872.0,
+      "priority": "normal",
+      "status": "pending"
+    },
+    {
+      "id": "O002",
+      "destination_id": "C2",
+      "demand": 10.0,
+      "time_window_start": 543.7,
+      "time_window_end": 898.7,
+      "priority": "normal",
+      "status": "pending"
+    },
+    {
+      "id": "O003",
+      "destination_id": "C3",
+      "demand": 12.5,
+      "time_window_start": 426.5,
+      "time_window_end": 781.5,
+      "priority": "normal",
+      "status": "pending"
+    },
+    {
+      "id": "O004",
+      "destination_id": "C4",
+      "demand": 15.0,
+      "time_window_start": 507.9,
+      "time_window_end": 862.9,
+      "priority": "normal",
+      "status": "pending"
+    },
+    {
+      "id": "O005",
+      "destination_id": "C5",
+      "demand": 5.0,
+      "time_window_start": 527.5,
+      "time_window_end": 882.5,
+      "priority": "normal",
+      "status": "pending"
+    },
+    {
+      "id": "O006",
+      "destination_id": "C6",
+      "demand": 7.5,
+      "time_window_start": 405.6,
+      "time_window_end": 760.6,
+      "priority": "normal",
+      "status": "pending"
+    },
+    {
+      "id": "O007",
+      "destination_id": "C7",
+      "demand": 10.0,
+      "time_window_start": 563.7,
+      "time_window_end": 918.7,
+      "priority": "urgent",
+      "status": "pending"
+    },
+    {
+      "id": "O008",
+      "destination_id": "C8",
+      "demand": 12.5,
+      "time_window_start": 417.7,
+      "time_window_end": 772.7,
+      "priority": "normal",
+      "status": "pending"
+    },
+    {
+      "id": "O009",
+      "destination_id": "C9",
+      "demand": 15.0,
+      "time_window_start": 398.5,
+      "time_window_end": 753.5,
+      "priority": "normal",
+      "status": "pending"
+    },
+    {
+      "id": "O010",
+      "destination_id": "C10",
+      "demand": 5.0,
+      "time_window_start": 499.6,
+      "time_window_end": 854.6,
+      "priority": "normal",
+      "status": "pending"
+    },
+    {
+      "id": "O011",
+      "destination_id": "C11",
+      "demand": 7.5,
+      "time_window_start": 458.0,
+      "time_window_end": 813.0,
+      "priority": "normal",
+      "status": "pending"
+    },
+    {
+      "id": "O012",
+      "destination_id": "C12",
+      "demand": 10.0,
+      "time_window_start": 536.3,
+      "time_window_end": 891.3,
+      "priority": "normal",
+      "status": "pending"
+    },
+    {
+      "id": "O013",
+      "destination_id": "C13",
+      "demand": 12.5,
+      "time_window_start": 484.5,
+      "time_window_end": 839.5,
+      "priority": "normal",
+      "status": "pending"
+    },
+    {
+      "id": "O014",
+      "destination_id": "C14",
+      "demand": 15.0,
+      "time_window_start": 556.0,
+      "time_window_end": 911.0,
+      "priority": "urgent",
+      "status": "pending"
+    },
+    {
+      "id": "O015",
+      "destination_id": "C15",
+      "demand": 5.0,
+      "time_window_start": 469.7,
+      "time_window_end": 824.7,
+      "priority": "normal",
+      "status": "pending"
+    },
+    {
+      "id": "O016",
+      "destination_id": "C16",
+      "demand": 7.5,
+      "time_window_start": 452.2,
+      "time_window_end": 807.2,
+      "priority": "normal",
+      "status": "pending"
+    },
+    {
+      "id": "O017",
+      "destination_id": "C17",
+      "demand": 10.0,
+      "time_window_start": 440.0,
+      "time_window_end": 795.0,
+      "priority": "normal",
+      "status": "pending"
+    },
+    {
+      "id": "O018",
+      "destination_id": "C18",
+      "demand": 12.5,
+      "time_window_start": 390.0,
+      "time_window_end": 745.0,
+      "priority": "normal",
+      "status": "pending"
+    },
+    {
+      "id": "O019",
+      "destination_id": "C19",
+      "demand": 15.0,
+      "time_window_start": 464.3,
+      "time_window_end": 819.3,
+      "priority": "normal",
+      "status": "pending"
+    },
+    {
+      "id": "O020",
+      "destination_id": "C20",
+      "demand": 5.0,
+      "time_window_start": 475.3,
+      "time_window_end": 830.3,
+      "priority": "normal",
+      "status": "pending"
+    }
+  ],
+  "simulation": {
+    "initial_time": 540.0,
+    "traffic_update_interval": 30,
+    "congestion_threshold": 0.2,
+    "service_time": 5.0
+  },
+  "optimization": {
+    "default_objective": "distance",
+    "tsp_beam_width": 1024,
+    "weights": {
+      "distance": 1.0,
+      "travel_time": 1.0,
+      "cost": 1.0
+    },
+    "late_penalty_per_minute": 0.5,
+    "expiry_grace_minutes": 10
+  }
+}

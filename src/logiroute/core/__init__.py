@@ -22,6 +22,9 @@ from logiroute.core.vehicles import Vehicle
 from logiroute.core.order_identity import (
     OrderCoverageReport, ServiceAssignment, validate_order_coverage,
 )
+from logiroute.core.delivery_load import (
+    DeliveryLoadReport, DeliveryLoadState, check_delivery_load,
+)
 
 __all__ = [
     "Courier",
@@ -38,4 +41,7 @@ __all__ = [
     "ServiceAssignment",
     "OrderCoverageReport",
     "validate_order_coverage",
+    "DeliveryLoadReport",
+    "DeliveryLoadState",
+    "check_delivery_load",
 ]
