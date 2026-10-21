@@ -1,5 +1,13 @@
 # LogiRoute — 电商物流配送路径规划系统
 
+> **V2 Phase 3：静态多车辆全局可行插入已实现。** 新入口
+> `logiroute.scheduling.plan_fleet(scenario, objective)` 支持 distance/cost、
+> 同址多单、逐车 Decimal 载荷及独立车队验证；旧单车 API 保持兼容。
+> [设计与交付报告](docs/v2-phase3-fleet-scheduling.md) ·
+> [实际实验数据](docs/experiments/v2-phase3-fleet-results.json)。
+> 贪心不保证全覆盖或最优；生产多车场景生成、动态订单、API/UI 集成尚未实施。
+> 以下 Phase 1/2 及 V1 内容为对应阶段存档。
+
 > **V2 Phase 2：订单身份、手写队列与 Decimal 载荷。** 同址订单按 ID 保留，
 > 一次节点访问可服务多张订单；支持生命周期校验和合法多车配置加载。
 > 设计、测试、固定实例与阶段边界见 [Phase 2 报告](docs/v2-phase2-orders-and-loads.md)

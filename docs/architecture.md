@@ -1,5 +1,13 @@
 # LogiRoute 系统架构
 
+> **V2 Phase 3 更新**：新静态调用链为 `fleet_planner.plan_fleet` →
+> `fleet_paths`（精确私有快照及共享 PathProvider 单源闭包）→
+> `scheduling.algorithms.fleet_greedy / fleet_insertion`（全局候选与完整路线重演）→
+> `fleet_validator`（另一次原图重算、独立时间传播和未服务证据核验）。
+> `fleet_types` 的访问含多个订单 ID，区别于 V1 一单一站 DTO；core、图容器、
+> Dijkstra、堆、旧 API/UI 均不因此改写。计时使用高精度单调时钟。
+> [Phase 3 设计和实际复杂度](v2-phase3-fleet-scheduling.md) 为新入口依据；下文是阶段存档。
+
 > **V2 Phase 2 更新**：`core.order_identity` 负责逐 ID 分区和服务分配数据，
 > `algorithms.order_queue` 只负责待处理顺序，`core.delivery_load` 负责逐单精确货物账本；
 > `config.loader` 只验证 JSON 多车 1:1 绑定，不执行分配。依赖方向仍为算法/配置
