@@ -1,0 +1,21 @@
+{
+  "seeds": [0, 1, 42, 100, 2026],
+  "order_counts": [5, 10, 20],
+  "vehicle_counts": [2, 4],
+  "objectives": ["distance", "cost"],
+  "generator": {"name": "v2.fleet.research", "min_nodes": 40, "max_nodes": 40},
+  "vehicles": [
+    {"id": "V1", "capacity": 100, "current_node_id": "W1", "courier_id": "D1"},
+    {"id": "V2", "capacity": 120, "current_node_id": "W2", "courier_id": "D2"},
+    {"id": "V3", "capacity": 80, "current_node_id": "W1", "courier_id": "D3"},
+    {"id": "V4", "capacity": 100, "current_node_id": "W2", "courier_id": "D4"}
+  ],
+  "counterexample": {
+    "name": "capacity-greedy-counterexample",
+    "warehouse": "W", "customer": "A", "edge_weight": 1,
+    "capacity": 10, "vehicle_ids": ["V1", "V2"], "courier_ids": ["D1", "D2"],
+    "order_ids": ["O1", "O2", "O3", "O4", "O5", "O6"],
+    "demands": [6, 5, 3, 2, 2, 2], "initial_time": 0, "service_time": 1,
+    "window_start": 0, "window_end": 100
+  }
+}
