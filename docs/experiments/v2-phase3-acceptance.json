@@ -1,0 +1,312 @@
+{
+  "baseline": "b25f0d6ed63186ebdcb56de234fa85252c400845",
+  "original_failure": {
+    "tests": 674,
+    "passed": 673,
+    "errors": 1,
+    "failures": 0,
+    "seconds": 1060.724,
+    "exit_code": 1,
+    "output": "%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\anyio\\_backends\\_asyncio.py:1100: DeprecationWarning: POST /api/plan 'algorithm' field is deprecated and ignored; use 'objective' only. Unified planner runs Dijkstra + TSP search.\n\n  result = context.run(func, *args)\n\n.................%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\anyio\\_backends\\_asyncio.py:1100: DeprecationWarning: POST /api/plan 'algorithm' field is deprecated and ignored; use 'objective' only. Unified planner runs Dijkstra + TSP search.\n\n  result = context.run(func, *args)\n\n............................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................E....................................\n\n======================================================================\n\nERROR: test_seed42_is_identical_across_hash_seeds (tests.test_seed_reproducibility.TestSeed42CrossProcessReproducibility.test_seed42_is_identical_across_hash_seeds)\n\n----------------------------------------------------------------------\n\nTraceback (most recent call last):\n\n  File \"%USERPROFILE%\\Desktop\\���ݽṹ����\\tests\\test_seed_reproducibility.py\", line 78, in test_seed42_is_identical_across_hash_seeds\n\n    first = _run_with_hash_seed(\"1\")\n\n            ^^^^^^^^^^^^^^^^^^^^^^^^\n\n  File \"%USERPROFILE%\\Desktop\\���ݽṹ����\\tests\\test_seed_reproducibility.py\", line 57, in _run_with_hash_seed\n\n    completed = subprocess.run(\n\n                ^^^^^^^^^^^^^^^\n\n  File \"%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\subprocess.py\", line 550, in run\n\n    stdout, stderr = process.communicate(input, timeout=timeout)\n\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\n  File \"%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\subprocess.py\", line 1228, in communicate\n\n    sts = self.wait(timeout=self._remaining_time(endtime))\n\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\n  File \"%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\subprocess.py\", line 1264, in wait\n\n    return self._wait(timeout=timeout)\n\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\n  File \"%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\subprocess.py\", line 1593, in _wait\n\n    raise TimeoutExpired(self.args, timeout)\n\nsubprocess.TimeoutExpired: Command '['%USERPROFILE%\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe', '-c', '\\nimport json\\nfrom logiroute.api.services import ScenarioService\\nfrom logiroute.scheduling.planner import plan_deliveries\\n\\nbundle = ScenarioService().generate_random_scenario(seed=42).bundle\\ndistance = plan_deliveries(bundle, objective=\"distance\")\\ncost = plan_deliveries(bundle, objective=\"cost\")\\n\\npayload = {\\n    \"nodes\": [n.id for n in bundle.graph.nodes],\\n    \"edges\": sorted(\\n        (e.source_id, e.target_id, e.distance, e.travel_time, e.cost)\\n        for e in bundle.graph.edges\\n    ),\\n    \"orders\": [\\n        (o.id, o.destination_id, o.demand,\\n         o.time_window_start, o.time_window_end)\\n        for o in bundle.orders\\n    ],\\n    \"distance_route\": list(distance.route_plan.stop_sequence),\\n    \"distance_total\": round(distance.total_distance, 9),\\n    \"cost_route\": list(cost.route_plan.stop_sequence),\\n    \"cost_total\": round(cost.total_cost, 9),\\n}\\nprint(json.dumps(payload, sort_keys=True))\\n']' timed out after -666.25 seconds\n\n\n\n----------------------------------------------------------------------\n\nRan 674 tests in 1060.724s\n\n\n\nFAILED (errors=1)\n\n"
+  },
+  "standby_events": [
+    {
+      "provider": "Microsoft-Windows-Kernel-Power",
+      "id": 506,
+      "utc": "2026-10-20T11:30:47.5301754Z",
+      "reason": "Lid",
+      "LidOpenState": false
+    },
+    {
+      "provider": "Microsoft-Windows-Kernel-Power",
+      "id": 507,
+      "utc": "2026-10-20T11:44:41.3438687Z",
+      "reason": "Lid",
+      "LidOpenState": true,
+      "DurationInUs": 833821689
+    }
+  ],
+  "diagnostic": {
+    "executable": "%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+    "version": "3.12.10 (tags/v3.12.10:0cc8128, Apr  8 2025, 12:21:36) [MSC v.1943 64 bit (AMD64)]",
+    "subprocess_file": "%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\subprocess.py",
+    "records": [
+      {
+        "kind": "controlled_deadline_reproduction",
+        "command": [
+          "%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-c",
+          "import os,time; os.close(1); os.close(2); time.sleep(30)"
+        ],
+        "passed_timeout": 180,
+        "passed_timeout_type": "int",
+        "timeout": -666.25,
+        "cmd": [
+          "%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-c",
+          "import os,time; os.close(1); os.close(2); time.sleep(30)"
+        ],
+        "elapsed": 0.11366800000541843,
+        "traceback": "Traceback (most recent call last):\n  File \"%DIAGNOSTIC_DIR%\\diagnose.py\", line 18, in <module>\n    subprocess.run(command,capture_output=True,text=True,timeout=180)\n  File \"%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\subprocess.py\", line 550, in run\n    stdout, stderr = process.communicate(input, timeout=timeout)\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\subprocess.py\", line 1228, in communicate\n    sts = self.wait(timeout=self._remaining_time(endtime))\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\subprocess.py\", line 1264, in wait\n    return self._wait(timeout=timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\subprocess.py\", line 1593, in _wait\n    raise TimeoutExpired(self.args, timeout)\nsubprocess.TimeoutExpired: Command '['%USERPROFILE%\\\\AppData\\\\Local\\\\Programs\\\\Python\\\\Python312\\\\python.exe', '-c', 'import os,time; os.close(1); os.close(2); time.sleep(30)']' timed out after -666.25 seconds\n",
+        "note": "Controlled subprocess clock only; real child closes pipes but remains alive. Not scenario output."
+      },
+      {
+        "kind": "real_scenario",
+        "command": [
+          "%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-c",
+          "\nimport json\nfrom logiroute.api.services import ScenarioService\nfrom logiroute.scheduling.planner import plan_deliveries\n\nbundle = ScenarioService().generate_random_scenario(seed=42).bundle\ndistance = plan_deliveries(bundle, objective=\"distance\")\ncost = plan_deliveries(bundle, objective=\"cost\")\n\npayload = {\n    \"nodes\": [n.id for n in bundle.graph.nodes],\n    \"edges\": sorted(\n        (e.source_id, e.target_id, e.distance, e.travel_time, e.cost)\n        for e in bundle.graph.edges\n    ),\n    \"orders\": [\n        (o.id, o.destination_id, o.demand,\n         o.time_window_start, o.time_window_end)\n        for o in bundle.orders\n    ],\n    \"distance_route\": list(distance.route_plan.stop_sequence),\n    \"distance_total\": round(distance.total_distance, 9),\n    \"cost_route\": list(cost.route_plan.stop_sequence),\n    \"cost_total\": round(cost.total_cost, 9),\n}\nprint(json.dumps(payload, sort_keys=True))\n"
+        ],
+        "cwd": "%REPO_ROOT%",
+        "environment": {
+          "PYTHONHASHSEED": "1",
+          "PYTHONPATH": "%REPO_ROOT%\\src",
+          "PYTHONDONTWRITEBYTECODE": "1",
+          "PYTHONIOENCODING": null
+        },
+        "timeout": 180,
+        "timeout_type": "int",
+        "stage": "output_received",
+        "returncode": 0,
+        "stdout_sha256": "d552aa0e5eb285a8f8dd03a308a2371f3a9461ffd24bad36950df254cea04a37",
+        "stderr": "",
+        "elapsed": 5.491840900009265,
+        "monotonic_elapsed": 5.48499999998603
+      },
+      {
+        "kind": "real_scenario",
+        "command": [
+          "%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-c",
+          "\nimport json\nfrom logiroute.api.services import ScenarioService\nfrom logiroute.scheduling.planner import plan_deliveries\n\nbundle = ScenarioService().generate_random_scenario(seed=42).bundle\ndistance = plan_deliveries(bundle, objective=\"distance\")\ncost = plan_deliveries(bundle, objective=\"cost\")\n\npayload = {\n    \"nodes\": [n.id for n in bundle.graph.nodes],\n    \"edges\": sorted(\n        (e.source_id, e.target_id, e.distance, e.travel_time, e.cost)\n        for e in bundle.graph.edges\n    ),\n    \"orders\": [\n        (o.id, o.destination_id, o.demand,\n         o.time_window_start, o.time_window_end)\n        for o in bundle.orders\n    ],\n    \"distance_route\": list(distance.route_plan.stop_sequence),\n    \"distance_total\": round(distance.total_distance, 9),\n    \"cost_route\": list(cost.route_plan.stop_sequence),\n    \"cost_total\": round(cost.total_cost, 9),\n}\nprint(json.dumps(payload, sort_keys=True))\n"
+        ],
+        "cwd": "%REPO_ROOT%",
+        "environment": {
+          "PYTHONHASHSEED": "2",
+          "PYTHONPATH": "%REPO_ROOT%\\src",
+          "PYTHONDONTWRITEBYTECODE": "1",
+          "PYTHONIOENCODING": null
+        },
+        "timeout": 180,
+        "timeout_type": "int",
+        "stage": "output_received",
+        "returncode": 0,
+        "stdout_sha256": "d552aa0e5eb285a8f8dd03a308a2371f3a9461ffd24bad36950df254cea04a37",
+        "stderr": "",
+        "elapsed": 4.818479600013234,
+        "monotonic_elapsed": 4.828000000008615
+      },
+      {
+        "kind": "real_scenario",
+        "command": [
+          "%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-c",
+          "\nimport json\nfrom logiroute.api.services import ScenarioService\nfrom logiroute.scheduling.planner import plan_deliveries\n\nbundle = ScenarioService().generate_random_scenario(seed=42).bundle\ndistance = plan_deliveries(bundle, objective=\"distance\")\ncost = plan_deliveries(bundle, objective=\"cost\")\n\npayload = {\n    \"nodes\": [n.id for n in bundle.graph.nodes],\n    \"edges\": sorted(\n        (e.source_id, e.target_id, e.distance, e.travel_time, e.cost)\n        for e in bundle.graph.edges\n    ),\n    \"orders\": [\n        (o.id, o.destination_id, o.demand,\n         o.time_window_start, o.time_window_end)\n        for o in bundle.orders\n    ],\n    \"distance_route\": list(distance.route_plan.stop_sequence),\n    \"distance_total\": round(distance.total_distance, 9),\n    \"cost_route\": list(cost.route_plan.stop_sequence),\n    \"cost_total\": round(cost.total_cost, 9),\n}\nprint(json.dumps(payload, sort_keys=True))\n"
+        ],
+        "cwd": "%REPO_ROOT%",
+        "environment": {
+          "PYTHONHASHSEED": "1",
+          "PYTHONPATH": "%REPO_ROOT%\\src",
+          "PYTHONDONTWRITEBYTECODE": "1",
+          "PYTHONIOENCODING": null
+        },
+        "timeout": 180,
+        "timeout_type": "int",
+        "stage": "output_received",
+        "returncode": 0,
+        "stdout_sha256": "d552aa0e5eb285a8f8dd03a308a2371f3a9461ffd24bad36950df254cea04a37",
+        "stderr": "",
+        "elapsed": 4.618529300001683,
+        "monotonic_elapsed": 4.60899999999674
+      },
+      {
+        "kind": "real_scenario",
+        "command": [
+          "%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-c",
+          "\nimport json\nfrom logiroute.api.services import ScenarioService\nfrom logiroute.scheduling.planner import plan_deliveries\n\nbundle = ScenarioService().generate_random_scenario(seed=42).bundle\ndistance = plan_deliveries(bundle, objective=\"distance\")\ncost = plan_deliveries(bundle, objective=\"cost\")\n\npayload = {\n    \"nodes\": [n.id for n in bundle.graph.nodes],\n    \"edges\": sorted(\n        (e.source_id, e.target_id, e.distance, e.travel_time, e.cost)\n        for e in bundle.graph.edges\n    ),\n    \"orders\": [\n        (o.id, o.destination_id, o.demand,\n         o.time_window_start, o.time_window_end)\n        for o in bundle.orders\n    ],\n    \"distance_route\": list(distance.route_plan.stop_sequence),\n    \"distance_total\": round(distance.total_distance, 9),\n    \"cost_route\": list(cost.route_plan.stop_sequence),\n    \"cost_total\": round(cost.total_cost, 9),\n}\nprint(json.dumps(payload, sort_keys=True))\n"
+        ],
+        "cwd": "%REPO_ROOT%",
+        "environment": {
+          "PYTHONHASHSEED": "2",
+          "PYTHONPATH": "%REPO_ROOT%\\src",
+          "PYTHONDONTWRITEBYTECODE": "1",
+          "PYTHONIOENCODING": null
+        },
+        "timeout": 180,
+        "timeout_type": "int",
+        "stage": "output_received",
+        "returncode": 0,
+        "stdout_sha256": "d552aa0e5eb285a8f8dd03a308a2371f3a9461ffd24bad36950df254cea04a37",
+        "stderr": "",
+        "elapsed": 5.527066700014984,
+        "monotonic_elapsed": 5.530999999988126
+      },
+      {
+        "kind": "real_scenario",
+        "command": [
+          "%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-c",
+          "\nimport json\nfrom logiroute.api.services import ScenarioService\nfrom logiroute.scheduling.planner import plan_deliveries\n\nbundle = ScenarioService().generate_random_scenario(seed=42).bundle\ndistance = plan_deliveries(bundle, objective=\"distance\")\ncost = plan_deliveries(bundle, objective=\"cost\")\n\npayload = {\n    \"nodes\": [n.id for n in bundle.graph.nodes],\n    \"edges\": sorted(\n        (e.source_id, e.target_id, e.distance, e.travel_time, e.cost)\n        for e in bundle.graph.edges\n    ),\n    \"orders\": [\n        (o.id, o.destination_id, o.demand,\n         o.time_window_start, o.time_window_end)\n        for o in bundle.orders\n    ],\n    \"distance_route\": list(distance.route_plan.stop_sequence),\n    \"distance_total\": round(distance.total_distance, 9),\n    \"cost_route\": list(cost.route_plan.stop_sequence),\n    \"cost_total\": round(cost.total_cost, 9),\n}\nprint(json.dumps(payload, sort_keys=True))\n"
+        ],
+        "cwd": "%REPO_ROOT%",
+        "environment": {
+          "PYTHONHASHSEED": "1",
+          "PYTHONPATH": "%REPO_ROOT%\\src",
+          "PYTHONDONTWRITEBYTECODE": "1",
+          "PYTHONIOENCODING": null
+        },
+        "timeout": 180,
+        "timeout_type": "int",
+        "stage": "output_received",
+        "returncode": 0,
+        "stdout_sha256": "d552aa0e5eb285a8f8dd03a308a2371f3a9461ffd24bad36950df254cea04a37",
+        "stderr": "",
+        "elapsed": 5.155572400020901,
+        "monotonic_elapsed": 5.157000000006519
+      },
+      {
+        "kind": "real_scenario",
+        "command": [
+          "%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+          "-c",
+          "\nimport json\nfrom logiroute.api.services import ScenarioService\nfrom logiroute.scheduling.planner import plan_deliveries\n\nbundle = ScenarioService().generate_random_scenario(seed=42).bundle\ndistance = plan_deliveries(bundle, objective=\"distance\")\ncost = plan_deliveries(bundle, objective=\"cost\")\n\npayload = {\n    \"nodes\": [n.id for n in bundle.graph.nodes],\n    \"edges\": sorted(\n        (e.source_id, e.target_id, e.distance, e.travel_time, e.cost)\n        for e in bundle.graph.edges\n    ),\n    \"orders\": [\n        (o.id, o.destination_id, o.demand,\n         o.time_window_start, o.time_window_end)\n        for o in bundle.orders\n    ],\n    \"distance_route\": list(distance.route_plan.stop_sequence),\n    \"distance_total\": round(distance.total_distance, 9),\n    \"cost_route\": list(cost.route_plan.stop_sequence),\n    \"cost_total\": round(cost.total_cost, 9),\n}\nprint(json.dumps(payload, sort_keys=True))\n"
+        ],
+        "cwd": "%REPO_ROOT%",
+        "environment": {
+          "PYTHONHASHSEED": "2",
+          "PYTHONPATH": "%REPO_ROOT%\\src",
+          "PYTHONDONTWRITEBYTECODE": "1",
+          "PYTHONIOENCODING": null
+        },
+        "timeout": 180,
+        "timeout_type": "int",
+        "stage": "output_received",
+        "returncode": 0,
+        "stdout_sha256": "d552aa0e5eb285a8f8dd03a308a2371f3a9461ffd24bad36950df254cea04a37",
+        "stderr": "",
+        "elapsed": 4.821986299997661,
+        "monotonic_elapsed": 4.828000000008615
+      }
+    ]
+  },
+  "instrumented_directed": {
+    "tests": 3,
+    "seconds": 30.437,
+    "output": "test_seed42_is_identical_across_hash_seeds (tests.test_seed_reproducibility.TestSeed42CrossProcessReproducibility.test_seed42_is_identical_across_hash_seeds) ... ok\ntest_seed42_is_identical_across_hash_seeds (tests.test_seed_reproducibility.TestSeed42CrossProcessReproducibility.test_seed42_is_identical_across_hash_seeds) ... ok\ntest_seed42_is_identical_across_hash_seeds (tests.test_seed_reproducibility.TestSeed42CrossProcessReproducibility.test_seed42_is_identical_across_hash_seeds) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 30.437s\n\nOK\n"
+  },
+  "validation": [
+    {
+      "name": "direct_unittest",
+      "command": [
+        "%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "-B",
+        "-m",
+        "unittest",
+        "tests.test_seed_reproducibility"
+      ],
+      "exit_code": 0,
+      "elapsed": 9.818975999980466,
+      "tests": 1,
+      "unittest_seconds": 9.421,
+      "passed": 1,
+      "failures": 0,
+      "errors": 0,
+      "output": ".\n----------------------------------------------------------------------\nRan 1 test in 9.421s\n\nOK\n"
+    },
+    {
+      "name": "related",
+      "command": [
+        "%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "-B",
+        "-m",
+        "unittest",
+        "tests.test_scenario_generator",
+        "tests.test_scenario_generator_validator",
+        "tests.test_scenario_generator_random_source",
+        "tests.test_scenario_generator_graph_sampler",
+        "tests.test_scenario_generator_backbone_builder",
+        "tests.test_graph",
+        "tests.test_dijkstra",
+        "tests.test_scheduling_planner",
+        "tests.test_fleet_exhaustive",
+        "tests.test_fleet_reproducibility"
+      ],
+      "exit_code": 0,
+      "elapsed": 4.342214600008447,
+      "tests": 135,
+      "unittest_seconds": 3.874,
+      "passed": 135,
+      "failures": 0,
+      "errors": 0,
+      "output": ".......................................................................................................................................\n----------------------------------------------------------------------\nRan 135 tests in 3.874s\n\nOK\n"
+    },
+    {
+      "name": "full_1",
+      "command": [
+        "%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-t",
+        "."
+      ],
+      "exit_code": 0,
+      "elapsed": 186.44738629998756,
+      "tests": 674,
+      "unittest_seconds": 184.553,
+      "passed": 674,
+      "failures": 0,
+      "errors": 0,
+      "output": "%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\anyio\\_backends\\_asyncio.py:1100: DeprecationWarning: POST /api/plan 'algorithm' field is deprecated and ignored; use 'objective' only. Unified planner runs Dijkstra + TSP search.\n  result = context.run(func, *args)\n.................%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\anyio\\_backends\\_asyncio.py:1100: DeprecationWarning: POST /api/plan 'algorithm' field is deprecated and ignored; use 'objective' only. Unified planner runs Dijkstra + TSP search.\n  result = context.run(func, *args)\n.................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................\n----------------------------------------------------------------------\nRan 674 tests in 184.553s\n\nOK\n"
+    },
+    {
+      "name": "full_2",
+      "command": [
+        "%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-t",
+        "."
+      ],
+      "exit_code": 0,
+      "elapsed": 181.03432690000045,
+      "tests": 674,
+      "unittest_seconds": 179.18,
+      "passed": 674,
+      "failures": 0,
+      "errors": 0,
+      "output": "%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\anyio\\_backends\\_asyncio.py:1100: DeprecationWarning: POST /api/plan 'algorithm' field is deprecated and ignored; use 'objective' only. Unified planner runs Dijkstra + TSP search.\n  result = context.run(func, *args)\n.................%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\anyio\\_backends\\_asyncio.py:1100: DeprecationWarning: POST /api/plan 'algorithm' field is deprecated and ignored; use 'objective' only. Unified planner runs Dijkstra + TSP search.\n  result = context.run(func, *args)\n.................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................\n----------------------------------------------------------------------\nRan 674 tests in 179.180s\n\nOK\n"
+    }
+  ],
+  "audit": {
+    "matrix_runs": 60,
+    "fair_input_pairs": 30,
+    "source_hashes": 10,
+    "new_replay_matches_except_measured_times": true,
+    "original_artifacts_unchanged_before_report_finalization": true,
+    "original_test_files_modified": 0,
+    "python_files_scanned": 20,
+    "forbidden_imports_or_sorting": []
+  },
+  "original_artifact_sha256": {
+    "%REPO_ROOT%\\docs\\v2-phase3-fleet-scheduling.md": "ea286f1cbcd067ff0563fff04f03219e5b8c342741fda1141328c9b695613f98",
+    "%REPO_ROOT%\\docs\\experiments\\v2-phase3-fleet-results.json": "d87ff7044b39e56a00af700a54259a9736ae0697ceb1a48853446fb219859f1c"
+  },
+  "environment_fix": {
+    "production_code_changed": false,
+    "original_tests_changed": false,
+    "timeout_seconds": 180,
+    "temporary_system_required_request": true,
+    "restored_in_finally": true,
+    "does_not_prevent_explicit_lid_or_sleep": true
+  },
+  "path_note": "User and temporary paths replaced with placeholders; original logs remain in local diagnostic directory. Only relevant nonsecret environment values collected."
+}
