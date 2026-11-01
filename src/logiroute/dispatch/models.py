@@ -133,6 +133,7 @@ class Plan:
     accepted: tuple[str,...]
     deferred: tuple[tuple[str,str],...]
     report: Report | None = None
+    fingerprint: str = ''
 
     def to_dict(self) -> dict[str,Any]:
         """Time/Space O(plan records+digits), including actual route metrics."""
