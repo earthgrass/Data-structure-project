@@ -1,6 +1,5 @@
-import {useEffect,useRef,useState, type FormEvent} from 'react';
-import type {Snapshot,Plan} from './types';
-import {acceptSnapshot} from './sync.mjs';
+import {useState, type FormEvent} from 'react';
+import {useDispatchSession} from './hooks/useDispatchSession';
 import './dashboard.css';
 
 const colors=['#ff8a24','#26d9e8','#a48cff','#69d7a3'];
@@ -8,38 +7,13 @@ const priorities=[['critical','特急 · 同批先送'],['urgent','紧急 · 可
 const labels:Record<string,string>={load:'装货',unload:'到站卸货',deliver:'客户签收',drive:'道路行驶',wait:'等待',finish:'返抵基地',pending:'待规划',planned:'已规划',in_transit:'运输中',delivered:'已签收',cancelled:'已取消',expired:'已过期'};
 const fmt=(n:number)=>n.toFixed(2);
 
-async function request(path:string,body?:unknown):Promise<Snapshot> {
-  const response=await fetch('/api/v2'+path,body===undefined?undefined:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  const value=await response.json();
-  if(!response.ok) throw new Error(value.error?.message??`HTTP ${response.status}`);
-  return value;
-}
-
 export function DispatchDashboard() {
-  const [data,setData]=useState<Snapshot|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
+  const session=useDispatchSession();
+  const data=session.snapshot,comparison=session.comparison?.plans??[],busy=!!session.busy,error=session.error;
+  const playing=session.playing,setPlaying=session.setPlaying,command=session.command;
   const [seed,setSeed]=useState(''),[objective,setObjective]=useState('distance'),[selected,setSelected]=useState('');
-  const [playing,setPlaying]=useState(false),[comparison,setComparison]=useState<Plan[]>([]);
   const [road,setRoad]=useState(''),[traffic,setTraffic]=useState('congested');
-  const active=useRef(''),latest=useRef<Snapshot|null>(null),locked=useRef(false);
-  function receive(incoming:Snapshot) {
-    const accepted=acceptSnapshot(latest.current,incoming,active.current);
-    if(accepted){latest.current=accepted;setData(accepted);}
-  }
-  async function create() {
-    if(locked.current)return;locked.current=true;setBusy(true);setPlaying(false);setError('');
-    try {const value=await request('/sessions',seed===''?{}:{seed:Number(seed)});active.current=value.id;sessionStorage.setItem('logiroute-session',value.id);latest.current=null;receive(value);setComparison([]);setSelected(value.vehicles[0]?.id??'');setRoad('');}
-    catch(e){setError(String(e));}finally{locked.current=false;setBusy(false);}
-  }
-  async function command(command:string,fields:Record<string,unknown>={}) {
-    if(locked.current||!latest.current)return;locked.current=true;setBusy(true);setError('');
-    const id=active.current;
-    try {const value=await request(`/sessions/${id}/commands`,{revision:latest.current.revision,command,...fields});receive(value);if(value.comparison)setComparison(value.comparison);}
-    catch(e){setError(String(e));setPlaying(false);try{receive(await request(`/sessions/${id}`));}catch{/* Keep last valid snapshot and visible original error. */}}
-    finally{locked.current=false;setBusy(false);}
-  }
-  useEffect(()=>{const id=sessionStorage.getItem('logiroute-session');if(id){active.current=id;void request(`/sessions/${id}`).then(value=>{receive(value);setSelected(value.vehicles[0]?.id??'');}).catch(e=>setError(String(e)));}const timer=setInterval(()=>{if(active.current&&!locked.current){const id=active.current;void request(`/sessions/${id}`).then(receive).catch(e=>{setError(String(e));setPlaying(false);});}},2000);return()=>clearInterval(timer);},[]);
-  useEffect(()=>{if(!playing||!data?.running)return;const timer=setTimeout(()=>void command('step'),350);return()=>clearTimeout(timer);},[playing,data]);
-  useEffect(()=>{if(!data?.running)setPlaying(false);},[data?.running]);
+  async function create(){await session.create(seed);}
   const selectedCar=data?.vehicles.find(v=>v.id===selected);
   const selectedRoute=data?.plan?.routes.find(r=>r.vehicle===selected);
   const complete=data?.orders.filter(o=>o.status==='delivered').length??0;
@@ -50,7 +24,7 @@ export function DispatchDashboard() {
   const mapPoint=(id:string)=>{const n=data?.nodes.find(n=>n.id===id);if(!n||!data)return[0,0];const xs=data.nodes.map(n=>n.x),ys=data.nodes.map(n=>n.y);const minX=Math.min(...xs),minY=Math.min(...ys);return [45+(n.x-minX)/(Math.max(...xs)-minX||1)*750,40+(n.y-minY)/(Math.max(...ys)-minY||1)*470];};
   function orderSubmit(e:FormEvent<HTMLFormElement>){e.preventDefault();const f=new FormData(e.currentTarget);void command('add',{id:f.get('id'),destination:f.get('destination'),demand:f.get('demand'),earliest:Number(f.get('earliest')),deadline:Number(f.get('deadline')),priority:f.get('priority')});}
   return <div className="dispatch">
-    <header><a className="brand" href="/">➜ <b>LogiRoute</b> <em>Dispatch</em></a><span className="nav-current">车队调度</span><span className="nav-note">两级配送 · 完成截止</span><a href="/legacy">旧版单车界面 ↗</a><span className="live">● 后端状态</span></header>
+    <header><a className="brand" href="/">➜ <b>LogiRoute</b> <em>Dispatch</em></a><span className="nav-current">车队调度</span><span className="nav-note">两级配送 · 完成截止</span><a href="/legacy">旧版单车界面 ↗</a><span className="live">{({connected:'已连接',connecting:'连接中',failed:'连接失败',missing:'当前会话不存在'})[session.connection]}</span></header>
     <main>
       <div className="toolbar"><div><span className="eyebrow">OPERATIONS / LIVE WORKSPACE</span><h1>物流调度工作台</h1><p>仓库 → 中转站 → 客户 · 每次签收均保留订单身份</p></div>
         <label>场景 Seed<input aria-label="场景 Seed" type="number" value={seed} onChange={e=>setSeed(e.target.value)} placeholder="配置默认值"/></label>
