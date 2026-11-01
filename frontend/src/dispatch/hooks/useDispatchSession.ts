@@ -35,7 +35,7 @@ export function useDispatchSession(){
     setPlaying(false);
     live.current.comparison=null;setComparison(null);
     if(exception instanceof RequestError){
-      setConnection(exception.status===404?'missing':'connected');
+      setConnection(exception.status===404?'missing':exception.status>=500?'failed':'connected');
       setError(exception.status===404?'当前会话已失效，后端可能已重启。请新建场景。':exception.status===409?'状态已变化，本次操作未执行；已请求最新快照，请核对后重试。':exception.message);
     }else{setConnection('failed');setError('连接后端失败或请求超时。保留上次快照，暂停自动推进；可重新连接。');}
   },[]);
@@ -76,6 +76,7 @@ export function useDispatchSession(){
     return()=>clearTimeout(timer);
   },[playing,snapshot,busy,command]);
   useEffect(()=>{if(!snapshot?.running)setPlaying(false);},[snapshot?.running]);
+  useEffect(()=>{if(!message)return;const timer=setTimeout(()=>setMessage(''),6000);return()=>clearTimeout(timer);},[message]);
   return {snapshot,comparison,connection,busy,error,message,playing,setPlaying,create,command,
     reconnect:()=>{setConnection('connecting');void refresh();}};
 }
