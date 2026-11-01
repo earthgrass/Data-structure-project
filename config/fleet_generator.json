@@ -1,0 +1,19 @@
+{
+  "name": "v2.fleet.generated",
+  "network": {"min_nodes": 40, "max_nodes": 40},
+  "vehicles": [
+    {"id": "V1", "capacity": 24, "depot_id": "W1", "courier_id": "D1"},
+    {"id": "V2", "capacity": 18, "depot_id": "W2", "courier_id": "D2"},
+    {"id": "V3", "capacity": 12, "depot_id": "W1", "courier_id": "D3"}
+  ],
+  "orders_count": 20,
+  "order_id_prefix": "O",
+  "demand_choices": [1, 2, 3],
+  "urgent_fraction": 0.2,
+  "initial_time": 540,
+  "service_time": 5,
+  "witness_horizon": 1000000,
+  "window_early_slack": 60,
+  "window_late_slack": 1000,
+  "max_attempts": 16
+}

@@ -1,4 +1,8 @@
-"""Phase 4 — Random Scenario Generator / 可行优先随机场景生成器。
+"""V1 single-car generation and the separate V2 certified fleet entry.
+
+V2 ``generate_fleet_scenario`` constructs witnesses and certifies BOTH real
+objectives. The following historical description applies only to the unchanged
+V1 ``generate_scenario`` entry, not to the new fleet acceptance pipeline.
 
 依据 ``AGENTS.md`` §3.6 单车辆约束 + 课程题目要求：
 
@@ -31,6 +35,12 @@ from logiroute.scenario_generator.validator import (
     ScenarioValidationReport,
     validate_generated_scenario,
 )
+from logiroute.scenario_generator.fleet_config import (
+    FleetGeneratorConfig, FleetVehicleSpec, load_fleet_generator_config,
+)
+from logiroute.scenario_generator.fleet_generator import (
+    FleetGenerationError, FleetGenerationResult, GenerationAttempt, generate_fleet_scenario,
+)
 
 
 __all__ = [
@@ -47,4 +57,6 @@ __all__ = [
     "load_generator_config",
     "RoadValidationReport",
     "validate_road_network",
+    "FleetGeneratorConfig", "FleetVehicleSpec", "load_fleet_generator_config",
+    "FleetGenerationError", "FleetGenerationResult", "GenerationAttempt", "generate_fleet_scenario",
 ]
