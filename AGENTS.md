@@ -11,11 +11,11 @@
 * **测试框架**：`unittest`（标准库，**禁止**改回 pytest）
 * **包管理**：`src/` 布局，配置走 `pyproject.toml`
 * **历史 V1 阶段**：Phase 1–5 已完成。
-* **当前授权**：LogiRoute V2 Phase 5，统一动态订单入口、显式自动/手动新增、
-  仓库安全检查点重规划、实际执行状态及独立事件审计；V2 Phase 1/2/3/4 已完成。
-  Phase 5 完成后立即停止，Phase 6 API/UI 集成须另行授权。
+* **当前授权**：LogiRoute V2 Phase 6，按6A→6H完成签收完成截止、三级优先级、
+  两级中转配送、模拟拥堵、动态重规划及 FastAPI/Dashboard 集成；Phase 1–5 已完成。
+  正式契约见 `docs/v2-phase6-integration.md`，每子阶段验证后独立提交推送，完成Phase 6后停止。
   旧 §3.1–3.7 的阶段号及单车实现描述属于 V1；不得据此否定本次明确授权，
-  新车队入口与 V1 单车接口并存；本次不实施 API 或 UI 改造。
+  新版本入口与历史接口并存，保留原728项测试；旧service-start契约仅用于明确的历史兼容入口。
   Phase 2 正式约束见 `docs/v2-phase2-orders-and-loads.md`：节点访问与逐订单身份
   独立，失效队首明确拒绝，载荷全程 Decimal 无浮点中间求和或 epsilon。
   Phase 3 约束及证据见 `docs/v2-phase3-fleet-scheduling.md`：候选严格按已批准八字段

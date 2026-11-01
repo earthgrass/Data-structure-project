@@ -1,0 +1,28 @@
+{
+  "schema_version": "logiroute.v2.phase6",
+  "time_window_rule": "service_end",
+  "name": "two-echelon",
+  "session_prefix": "dispatch",
+  "default_seed": 42,
+  "graph": {"min_nodes": 35, "max_nodes": 35},
+  "warehouse_ids": ["W1"],
+  "hub_ids": ["T1", "T2", "T3"],
+  "cluster_metric": "travel_time",
+  "vehicles": [
+    {"id": "TRUNK", "courier_id": "CT", "role": "trunk", "base": "W1", "capacity": 150},
+    {"id": "H1", "courier_id": "C1", "role": "delivery", "base": "T1", "capacity": 50},
+    {"id": "H2", "courier_id": "C2", "role": "delivery", "base": "T2", "capacity": 50},
+    {"id": "H3", "courier_id": "C3", "role": "delivery", "base": "T3", "capacity": 50}
+  ],
+  "order_prefix": "O",
+  "dynamic_prefix": "DYN",
+  "orders_count": 12,
+  "demand_choices": [1, 2, 3],
+  "priority_weights": {"critical": 1, "urgent": 2, "normal": 7},
+  "timing": {"initial": 0, "window_start": 0, "window_end": 2000,
+             "service": 2, "loading": 3, "unloading": 3},
+  "traffic": {"factors": {"clear": 1, "light": 1.2, "moderate": 1.5,
+                           "congested": 2, "blocked": null}, "cost_per_delay": 0.25},
+  "automatic_window_width": 2000,
+  "max_generation_attempts": 12
+}
