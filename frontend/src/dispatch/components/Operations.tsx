@@ -27,7 +27,7 @@ export function DispatchToolbar({data,objective,setObjective,busy,connection,com
   return <section className="d-dispatch-toolbar" aria-label="调度操作"><div className="d-target"><label htmlFor="dispatch-objective">规划目标</label><select id="dispatch-objective" value={objective} onChange={e=>setObjective(e.target.value)} disabled={!!busy}><option value="distance">最短距离</option><option value="cost">最低成本</option></select></div>
     <button className="d-primary" disabled={unavailable} onClick={action}>{busy?'处理中…':primary}<Icon name="arrow" size={16}/></button>
     <button disabled={unavailable||!data.running} onClick={()=>void command('step')} title={!data.running?'后端无进行中的动作':''}>单步推进</button>
-    <button disabled={unavailable||!data.running} onClick={()=>setPlaying(!playing)} title={!data.running?'开始配送后可自动调用后端step':''}>{playing?'停止自动推进':'自动推进'}</button>
+    <button disabled={unavailable&&!playing||!data.running} onClick={()=>setPlaying(!playing)} title={!data.running?'开始配送后可自动调用后端step':''}>{playing?'暂停动画':'播放动画'}</button>
     <button className="d-quiet" onClick={onCreate} disabled={!!busy}>新建场景</button>
     <p className="d-toolbar-hint">{connection!=='connected'?'连接不可用；请先重新连接。':busy?'正在等待后端确认；请勿重复提交。':hint}</p>
   </section>;

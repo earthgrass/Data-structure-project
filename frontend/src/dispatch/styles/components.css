@@ -27,3 +27,17 @@
 .d-table-hint{display:none}.dispatch dialog{max-height:calc(100dvh - 32px);overflow:auto}
 @media(max-width:760px){.d-table-hint{display:block;padding:12px 16px;font-size:13px;background:var(--surface-elevated)}}
 .d-vehicle-next{font-size:13px;color:var(--text-secondary);margin-top:8px!important;overflow-wrap:anywhere}
+
+.d-route.active.planned{stroke-width:3;stroke-dasharray:5 5;opacity:.35}
+.d-car-halo{opacity:0;pointer-events:none}
+.d-map-car.animating .d-car-halo{opacity:.35}
+.d-map-car.animating.load .d-car-halo,.d-map-car.animating.unload .d-car-halo,.d-map-car.animating.deliver .d-car-halo{animation:d-action-pulse .7s ease-in-out infinite alternate}
+.d-map-node.served circle{stroke:var(--status-good);fill:var(--status-good-soft)}
+.d-road-toggle{display:flex!important;flex-direction:row!important;align-items:center;gap:5px!important;font-size:12px!important}
+.d-road-toggle input{width:15px;height:15px;min-height:0;padding:0;accent-color:var(--accent-primary)}
+.d-demo-playback{display:flex;align-items:center;gap:16px;padding:12px 16px;border:1px solid var(--border-default);border-radius:10px;background:white;margin-bottom:12px;flex-wrap:wrap}
+.d-demo-playback>div{flex:1;min-width:240px}.d-demo-playback strong{font-size:15px}.d-demo-playback p{font-size:12px;margin-top:4px}.d-demo-playback label{font-size:12px;flex-direction:row;align-items:center;gap:8px}.d-demo-playback select{width:75px;min-height:34px}.d-demo-playback button{min-height:36px;font-size:14px}.d-demo-note{font-size:12px;color:var(--text-muted);width:100%}
+@keyframes d-action-pulse{from{opacity:.1;stroke-width:2}to{opacity:.65;stroke-width:6}}
+@media(min-width:1101px){.d-overview-grid{height:clamp(360px,calc(100dvh - 460px),620px)}}
+@media(max-width:760px){.d-demo-playback{gap:12px}.d-demo-playback>div{min-width:0;flex-basis:100%}.d-demo-note{font-size:12px}}
+@media(prefers-reduced-motion:reduce){.d-car-halo{animation:none!important}}

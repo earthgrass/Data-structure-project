@@ -1,6 +1,7 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import type {Snapshot,Comparison,Connection} from '../types';
 import {bindComparison,reconcileSnapshot,failureFeedback} from '../sync.mjs';
+import {useConfirmedMotion} from './useConfirmedMotion';
 
 class RequestError extends Error {
   constructor(public status:number,message:string){super(message);}
@@ -25,6 +26,8 @@ export function useDispatchSession(){
   const [snapshot,setSnapshot]=useState<Snapshot|null>(null),[comparison,setComparison]=useState<Comparison|null>(null);
   const [connection,setConnection]=useState<Connection>('connecting'),[busy,setBusy]=useState(''),[error,setError]=useState(''),[message,setMessage]=useState('');
   const [playing,setPlaying]=useState(false);
+  const motion=useConfirmedMotion();
+  const setPlayback=useCallback((value:boolean)=>{setPlaying(value);if(!value)motion.stop();},[motion.stop]);
   const live=useRef<{snapshot:Snapshot|null;comparison:Comparison|null}>({snapshot:null,comparison:null});
   const active=useRef(''),epoch=useRef(0),locked=useRef(false);
   const receive=useCallback((incoming:Snapshot,ticket:number)=>{
@@ -41,10 +44,10 @@ export function useDispatchSession(){
     const feedback=failureFeedback(exception instanceof RequestError?exception.status:null,exception instanceof Error?exception.message:String(exception));
     setConnection(feedback.connection);setError(feedback.error);return feedback.refresh;
   },[]);
-  const refresh=useCallback(async(clear=true)=>{
+  const refresh=useCallback(async(clear=true,allowLocked=false)=>{
     const ticket=epoch.current,id=active.current;
-    try{if(id)receive(await request(`/sessions/${id}`),ticket);else{await request('/health',undefined,'/api');if(ticket===epoch.current)setConnection('connected');}if(clear)setError('');}
-    catch(e){failed(e,ticket);}
+    try{if(id){const incoming=await request(`/sessions/${id}`);if(locked.current&&!allowLocked)return;receive(incoming,ticket);}else{await request('/health',undefined,'/api');if(ticket===epoch.current)setConnection('connected');}if(clear)setError('');}
+    catch(e){if(!locked.current||allowLocked)failed(e,ticket);}
   },[receive,failed]);
   useEffect(()=>{
     active.current=sessionStorage.getItem('logiroute-session')??'';
@@ -67,18 +70,26 @@ export function useDispatchSession(){
     const ticket=epoch.current,id=active.current;
     locked.current=true;setBusy(kind);setError('');if(kind!=='step')setPlaying(false);
     try{
-      const incoming=await request(`/sessions/${id}/commands`,{revision:live.current.snapshot.revision,command:kind,...fields});
+      const before=live.current.snapshot;
+      const incoming=await request(`/sessions/${id}/commands`,{revision:before.revision,command:kind,...fields});
+      if(kind==='step'&&ticket===epoch.current)await motion.play(before,incoming);
       receive(incoming,ticket);setMessage(messages[kind]??'操作完成。');return true;
-    }catch(e){if(failed(e,ticket))await refresh(false);return false;}
+    }catch(e){if(failed(e,ticket))await refresh(false,true);return false;}
     finally{locked.current=false;setBusy('');}
-  },[receive,failed,refresh]);
+  },[receive,failed,refresh,motion.play]);
   useEffect(()=>{
     if(!playing||!snapshot?.running||busy)return;
-    const timer=setTimeout(()=>void command('step'),450);
+    const timer=setTimeout(()=>void command('step'),100);
     return()=>clearTimeout(timer);
   },[playing,snapshot,busy,command]);
   useEffect(()=>{if(!snapshot?.running)setPlaying(false);},[snapshot?.running]);
   useEffect(()=>{if(!message)return;const timer=setTimeout(()=>setMessage(''),6000);return()=>clearTimeout(timer);},[message]);
-  return {snapshot,comparison,connection,busy,error,message,playing,setPlaying,create,command,
+  const togglePlayback=async()=>{
+    if(playing){setPlayback(false);return;}
+    if(live.current.snapshot?.ready){if(!await command('depart'))return;}
+    setPlayback(true);
+  };
+  return {snapshot,comparison,connection,busy,error,message,playing,setPlaying:setPlayback,create,command,
+    motionClock:motion.clock,speed:motion.speed,setSpeed:motion.setSpeed,togglePlayback,
     reconnect:()=>{setConnection('connecting');void refresh();}};
 }
