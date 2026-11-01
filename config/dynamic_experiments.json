@@ -1,0 +1,10 @@
+{
+  "seeds": [0, 1, 42, 100, 2026],
+  "objectives": ["distance", "cost"],
+  "hash_seeds": ["1", "2", "73"],
+  "orders_count": 5,
+  "manual_demand": 0.1,
+  "manual_window_width": 10000,
+  "automatic_window_width_range": [1000, 2000],
+  "rollback": {"seed": 42, "capacity": 1, "demand": 1, "orders_count": 1}
+}
