@@ -1,5 +1,12 @@
 # LogiRoute — 电商物流配送路径规划系统
 
+> **V2 Phase 5：动态订单与安全重规划。** `DynamicSession` 统一处理初始、手动及
+> 带 seed 的显式自动订单；仓库检查点规划通过独立验证后原子替换，失败保留原计划。
+> 显式事件推进真实道路行驶、等待、服务和返仓，按订单 ID 保留交付历史及 Decimal 载荷。
+> [设计与验收报告](docs/v2-phase5-dynamic-orders.md) ·
+> [动态实验](docs/experiments/v2-phase5-dynamic-results.json)。
+> API 和 Dashboard 尚未接入新会话入口，留待 Phase 6。
+
 > **V2 Phase 4：可配送多车场景生成。** 新入口 `generate_fleet_scenario` 从
 > [JSON 配置](config/fleet_generator.json)构造逐车可行见证，并执行 distance/cost
 > 实际调度及独立逐订单全覆盖验证；有限重生成仍失败则明确报错，不返回部分成功。

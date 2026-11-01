@@ -1,0 +1,130 @@
+{
+  "baseline": "6ddc35c497c316fe67bf1829e730dfb145f37ac2",
+  "python_version": "3.12.10 (tags/v3.12.10:0cc8128, Apr  8 2025, 12:21:36) [MSC v.1943 64 bit (AMD64)]",
+  "environment": {
+    "PYTHONPATH": "src",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONIOENCODING": "utf-8"
+  },
+  "temporary_awake_request": true,
+  "runs": [
+    {
+      "name": "new_tests",
+      "command": [
+        "python",
+        "-B",
+        "-m",
+        "unittest",
+        "tests.test_dynamic_orders",
+        "tests.test_dynamic_queue_view",
+        "tests.test_dynamic_networks",
+        "tests.test_dynamic_config",
+        "tests.test_dynamic_reproducibility"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 5.8196167999412864,
+      "tests": 33,
+      "unittest_seconds": 5.279,
+      "output": ".................................\n----------------------------------------------------------------------\nRan 33 tests in 5.279s\n\nOK\n",
+      "passed": 33,
+      "failures": 0,
+      "errors": 0
+    },
+    {
+      "name": "related",
+      "command": [
+        "python",
+        "-B",
+        "-m",
+        "unittest",
+        "tests.test_order_queue",
+        "tests.test_order_identity",
+        "tests.test_order_lifecycle",
+        "tests.test_vehicle_load",
+        "tests.test_fleet_types",
+        "tests.test_fleet_insertion",
+        "tests.test_fleet_paths",
+        "tests.test_fleet_greedy",
+        "tests.test_fleet_validator",
+        "tests.test_scheduling_planner",
+        "tests.test_graph",
+        "tests.test_dijkstra"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 1.2526649001520127,
+      "tests": 206,
+      "unittest_seconds": 0.766,
+      "output": "..............................................................................................................................................................................................................\n----------------------------------------------------------------------\nRan 206 tests in 0.766s\n\nOK\n",
+      "passed": 206,
+      "failures": 0,
+      "errors": 0
+    },
+    {
+      "name": "full_1",
+      "command": [
+        "python",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-t",
+        "."
+      ],
+      "exit_code": 0,
+      "wall_seconds": 211.60394270019606,
+      "tests": 728,
+      "unittest_seconds": 210.363,
+      "output": "%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\anyio\\_backends\\_asyncio.py:1100: DeprecationWarning: POST /api/plan 'algorithm' field is deprecated and ignored; use 'objective' only. Unified planner runs Dijkstra + TSP search.\n  result = context.run(func, *args)\n.................%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\anyio\\_backends\\_asyncio.py:1100: DeprecationWarning: POST /api/plan 'algorithm' field is deprecated and ignored; use 'objective' only. Unified planner runs Dijkstra + TSP search.\n  result = context.run(func, *args)\n.......................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................\n----------------------------------------------------------------------\nRan 728 tests in 210.363s\n\nOK\n",
+      "passed": 728,
+      "failures": 0,
+      "errors": 0
+    },
+    {
+      "name": "full_2",
+      "command": [
+        "python",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-t",
+        "."
+      ],
+      "exit_code": 0,
+      "wall_seconds": 204.70864440011792,
+      "tests": 728,
+      "unittest_seconds": 203.06,
+      "output": "%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\anyio\\_backends\\_asyncio.py:1100: DeprecationWarning: POST /api/plan 'algorithm' field is deprecated and ignored; use 'objective' only. Unified planner runs Dijkstra + TSP search.\n  result = context.run(func, *args)\n.................%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\anyio\\_backends\\_asyncio.py:1100: DeprecationWarning: POST /api/plan 'algorithm' field is deprecated and ignored; use 'objective' only. Unified planner runs Dijkstra + TSP search.\n  result = context.run(func, *args)\n.......................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................\n----------------------------------------------------------------------\nRan 728 tests in 203.060s\n\nOK\n",
+      "passed": 728,
+      "failures": 0,
+      "errors": 0
+    }
+  ],
+  "audit": {
+    "python_files_scanned": 13,
+    "forbidden_dependencies_or_sorting": [],
+    "original_test_files_modified": 0,
+    "protected_paths_unchanged": true,
+    "queue_change": "read-only snapshot_ids only",
+    "normal_sessions": 10,
+    "normal_orders_delivered": 70,
+    "rollback_controls": 2,
+    "milestone_snapshots": 66,
+    "current_source_hashes_verified": 10,
+    "archived_measurements_same_state_routes_and_history": true,
+    "experiment_sha256": {
+      "v2-phase5-dynamic-results-initial.json": "af7c6375dd8d02ea1d368972e2143a15f0671f13046bdcc358430ca38e966e1b",
+      "v2-phase5-dynamic-results-before-shared-input.json": "621750d54c1b78c62b4aedafc5a37cad68b7c15285420834d6fd965af40f03ad",
+      "v2-phase5-dynamic-results.json": "f0bef6920a61f51e9fcc0be29d24e76f0d4c5c258a99647d29f759cc98608161"
+    },
+    "protected_refs": {
+      "main": "994414753b19c51a2b0522a4fd12a48feb1f6073",
+      "dashboard": "eb6fee0eb67fdcaaca6abcb1ca004767a36ff998",
+      "stash": "15964cc350100869942bf893ac79ff031db5b686"
+    }
+  }
+}

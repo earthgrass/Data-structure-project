@@ -1,5 +1,12 @@
 # LogiRoute 系统架构
 
+> **V2 Phase 5 更新**：`dynamic.session.DynamicSession` 持有私有订单与执行状态，
+> 入队复用手写 OrderPriorityQueue；草案通过原 `plan_fleet` 规划，再经独立验证提交。
+> `scheduling.algorithms.dynamic_execution` 将已验证路线编译为显式执行事件，
+> `dynamic.validator` 从原图及事件/装货清单另行重演状态与精确载荷，不调用会话或编译器。
+> 静态闭环 RoutePlan 契约保留，在途新任务排队至全车返仓的安全检查点。
+> [Phase 5 设计](v2-phase5-dynamic-orders.md)说明状态契约和复杂度；API/UI 仍是旧入口。
+
 > **V2 Phase 4 更新**：`fleet_config` 读取独立 JSON 精确数量；`fleet_witness`
 > 复用道路生成、手写 Dijkstra 闭包及现有路线评估构造双目标见证；`fleet_generator`
 > 用原独立验证器核验见证，再分别调用 `plan_fleet(distance/cost)` 并重新独立核验。
