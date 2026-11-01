@@ -1,6 +1,7 @@
 """Independent executed-history evidence, separate from session action application."""
 from __future__ import annotations
 from typing import TYPE_CHECKING
+import math
 from logiroute.core.quantities import exact_sum
 from logiroute.dispatch.models import Report,RANK
 if TYPE_CHECKING:
@@ -8,6 +9,13 @@ if TYPE_CHECKING:
 
 
 def audit_session(session: Session) -> Report:
+    """Malformed evidence is invalid, never evidence of success. O(A*N)."""
+    try: return _audit_session(session)
+    except (KeyError,ValueError,TypeError,AttributeError,OverflowError) as exc:
+        return Report(False,False,False,('malformed_history:'+type(exc).__name__,))
+
+
+def _audit_session(session: Session) -> Report:
     """Replay completed actions only, independently of program cursors. O(A*N), Space O(N+K)."""
     state=session.state; orders=dict(session._initial_orders); loc=dict(session._initial_locations)
     pos=dict(session._initial_positions); clock={k:0.0 for k in pos}; released={k:0.0 for k in loc}; lower={k:False for k in pos}
@@ -24,6 +32,11 @@ def audit_session(session: Session) -> Report:
             orders[event['id']]=replace(orders[event['id']],priority=event['priority'])
         elif kind=='action':
             a=event['action']; car=state.vehicles[a.vehicle]; key=car.id
+            if a.kind not in ('drive','wait','load','unload','deliver','finish'): errors.append('history_unknown_action')
+            if not all(math.isfinite(float(x)) and x>=0 for x in (a.start,a.end,a.distance,a.travel_time,a.cost,event['time'])) or event['time']!=a.end: errors.append('history_nonfinite_time_metrics')
+            if a.kind!='drive' and (a.source!=a.target or a.distance!=0 or a.travel_time!=0 or a.cost!=0): errors.append('history_nontravel_metrics')
+            if a.kind in ('wait','finish') and a.ids: errors.append('history_idle_manifest')
+            if a.kind=='finish' and a.end!=a.start: errors.append('history_finish_duration')
             if a.source!=pos[key] or a.start<clock[key] or a.end<a.start: errors.append('history_time_position')
             if a.kind=='drive':
                 if not session.network.validate_entered_edge(a): errors.append('history_road')

@@ -56,8 +56,12 @@ def make_state(seed: int,config: dict[str,Any] | None = None) -> State:
     if isinstance(c['orders_count'],bool) or not isinstance(c['orders_count'],int) or c['orders_count']<1: raise ValueError('invalid order count')
     for key,value in c['timing'].items():
         from logiroute.scheduling.fleet_paths import finite_time
-        finite_time(value,key,nonnegative=True); c['timing'][key]=float(value)
+        if isinstance(value,bool) or not isinstance(value,(int,float,Decimal)): raise ValueError('invalid timing scalar')
+        finite_time(float(value),key,nonnegative=True); c['timing'][key]=float(value)
     graph=sample_logistics_graph(GeneratorConfig(**c['graph']),RandomSource(seed))
+    for field,expected in (('warehouse_ids',NodeType.WAREHOUSE),('hub_ids',NodeType.TRANSFER)):
+        if not c[field] or len(c[field])!=len(set(c[field])): raise ValueError('duplicate/empty configured bases')
+        if any(k not in graph.node_ids or graph.get_node(k).node_type is not expected for k in c[field]): raise ValueError('invalid configured base references')
     vehicles={}
     for row in c['vehicles']:
         car=VehicleSpec(**row)

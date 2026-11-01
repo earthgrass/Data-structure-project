@@ -1,7 +1,7 @@
 """Versioned transactional adapter. No algorithms or physical state in the UI."""
 from __future__ import annotations
 from copy import deepcopy
-from decimal import Decimal
+from decimal import Decimal,InvalidOperation
 import json
 import math
 from threading import RLock
@@ -50,7 +50,7 @@ def number(value: Any) -> float:
 
 
 @router.post('/sessions')
-async def create(request: Request):
+async def create(request: Request) -> Any:
     try:
         data=await body(request)
         if set(data)-{'seed'}: raise ValueError('unknown create fields')
@@ -65,7 +65,7 @@ async def create(request: Request):
 
 
 @router.get('/sessions/{key}')
-def read(key: str,request: Request):
+def read(key: str,request: Request) -> Any:
     service=request.app.state.dispatch_service
     with service.lock:
         if key not in service.sessions: return failure(404,'not_found','unknown session')
@@ -73,7 +73,7 @@ def read(key: str,request: Request):
 
 
 @router.post('/sessions/{key}/commands')
-async def command(key: str,request: Request):
+async def command(key: str,request: Request) -> Any:
     try:
         data=await body(request); service=request.app.state.dispatch_service
         with service.lock:
@@ -106,4 +106,4 @@ async def command(key: str,request: Request):
             service.sessions[key]=session
             return snapshot
     except ConflictError as exc: return failure(409,'conflict',str(exc))
-    except (ValueError,TypeError,KeyError,GraphError,OverflowError) as exc: return failure(422,'invalid_input',str(exc))
+    except (ValueError,TypeError,KeyError,GraphError,OverflowError,InvalidOperation) as exc: return failure(422,'invalid_input',str(exc))

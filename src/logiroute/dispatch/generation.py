@@ -14,6 +14,7 @@ class GenerationError(ValueError):
 
 def generate_state(seed: int,config: dict[str,Any] | None = None) -> tuple[State,list[dict[str,Any]]]:
     """Return only after both real plans independently pass. O(attempts*planner)."""
+    if isinstance(seed,bool) or not isinstance(seed,int): raise ValueError('integer seed required')
     c=load_config() if config is None else config; attempts=[]
     limit=c['max_generation_attempts']
     if isinstance(limit,bool) or not isinstance(limit,int) or limit<1: raise ValueError('positive attempt limit required')

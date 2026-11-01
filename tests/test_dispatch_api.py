@@ -5,6 +5,13 @@ from logiroute.api import create_app
 
 
 class TestDispatchAPI(unittest.TestCase):
+    def test_malformed_decimal_and_boolean_seed_rejected(self) -> None:
+        first=self.snapshot['orders'][0]
+        response=self.command('add',id='invalid-decimal',destination=first['destination'],demand='broken',earliest=0,deadline=2000,priority='urgent')
+        self.assertEqual(response.status_code,422)
+        response=self.client.post('/api/v2/sessions',json={'seed':True})
+        self.assertEqual(response.status_code,422)
+
     def setUp(self) -> None:
         self.context=TestClient(create_app()); self.client=self.context.__enter__()
         self.addCleanup(self.context.__exit__,None,None,None)

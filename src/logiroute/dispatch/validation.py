@@ -15,6 +15,8 @@ def validate_plan(state: State,plan: Plan) -> Report:
     The caller-supplied report is ignored. Action lists retain per-car causal order.
     """
     errors=[]; active={k for k,o in state.orders.items() if o.status not in ('delivered','cancelled','expired')}
+    if any(k!=o.id for k,o in state.orders.items()) or len({o.id for o in state.orders.values()})!=len(state.orders): errors.append('input_order_identity')
+    if set(state.locations)!=set(state.orders): errors.append('input_inventory_partition')
     assigned=dict(plan.assignments); accepted=set(plan.accepted); deferred=dict(plan.deferred)
     if plan.objective not in ('distance','cost'): errors.append('objective')
     if (plan.revision,plan.traffic_version,plan.fingerprint)!=(state.revision,state.traffic_version,state.fingerprint()): errors.append('stale_input')

@@ -5,7 +5,7 @@ from decimal import Decimal
 from typing import Any
 from logiroute.core.enums import NodeType
 from logiroute.core.quantities import exact_sum
-from logiroute.dispatch.models import Parcel,Plan,Action,json_value,SCHEMA
+from logiroute.dispatch.models import Parcel,Plan,Action,Report,json_value,SCHEMA
 from logiroute.dispatch.scenario import State
 from logiroute.dispatch.planner import plan_dispatch
 from logiroute.dispatch.traffic import Network
@@ -75,7 +75,14 @@ class Session:
     def step(self) -> None:
         """Complete earliest entered atomic action, then enter its successor. O(K+N)."""
         if not self.running: raise ConflictError('no active action')
-        key=min((k for k,a in self.current.items() if a is not None),key=lambda k:(self.current[k].end,k))
+        earliest=min(a.end for a in self.current.values() if a is not None)
+        eligible=[]
+        for k,a in self.current.items():
+            if a is None or a.end!=earliest: continue
+            car=self.state.vehicles[k]; source=('warehouse' if car.role=='trunk' else 'hub',car.base)
+            if a.kind!='load' or all(self.state.locations[o]==source for o in a.ids): eligible.append(k)
+        if not eligible: raise ConflictError('no causal action can release inventory at this timestamp')
+        key=min(eligible)
         a=self.current[key]; self.state.now=max(self.state.now,a.end)
         if a.kind=='drive':
             if not self.network.validate_entered_edge(a): raise ValueError('entered edge evidence mismatch')
@@ -99,6 +106,7 @@ class Session:
     def add_order(self,key: str,destination: str,demand: Decimal | int | float,earliest: float,deadline: float,priority: str) -> None:
         if key in self.state.orders: raise ValueError('order ID already used')
         if self.state.graph.get_node(destination).node_type is not NodeType.CUSTOMER: raise ValueError('customer destination required')
+        if any(isinstance(x,bool) or not isinstance(x,(int,float,Decimal)) for x in (earliest,deadline)): raise ValueError('numeric times required')
         order=Parcel(key,destination,demand,float(earliest),float(deadline),priority)
         if deadline<=self.state.now: raise ValueError('deadline is not in the future')
         self.state.orders[key]=order; location=('warehouse',self.state.config['warehouse_ids'][0]); self.state.locations[key]=location
@@ -108,6 +116,7 @@ class Session:
         from logiroute.scenario_generator.random_source import RandomSource
         from logiroute.algorithms.ordering import ordered_strings
         if isinstance(count,bool) or not isinstance(count,int) or count<1: raise ValueError('positive count required')
+        if isinstance(seed,bool) or not isinstance(seed,int): raise ValueError('integer seed required')
         rng=RandomSource(seed); customers=ordered_strings(n.id for n in self.state.graph.nodes if n.node_type is NodeType.CUSTOMER)
         # Validate before mutations; generated IDs never reuse cancelled identities.
         if priority not in ('critical','urgent','normal'): raise ValueError('invalid priority')
@@ -134,7 +143,7 @@ class Session:
         self.network.update(source,target,status); self.state.graph=self.network.snapshot(); self.state.traffic_version=self.network.version; self.pause()
         self.events.append({'kind':'traffic','time':self.state.now,'source':source,'target':target,'status':status,'version':self.network.version})
 
-    def audit(self):
+    def audit(self) -> Report:
         from logiroute.dispatch.audit import audit_session
         return audit_session(self)
 

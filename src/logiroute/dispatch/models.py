@@ -53,7 +53,7 @@ class Parcel:
     def __post_init__(self) -> None:
         identifier(self.id); identifier(self.destination)
         object.__setattr__(self,'demand',decimal_quantity(self.demand))
-        finite_time(self.earliest,'earliest'); finite_time(self.deadline,'deadline')
+        finite_time(self.earliest,'earliest',nonnegative=True); finite_time(self.deadline,'deadline',nonnegative=True)
         if self.earliest>=self.deadline or self.priority not in RANK: raise ValueError('invalid order window/priority')
         if self.status not in ('pending','planned','in_transit','delivered','cancelled','expired'):
             raise ValueError('invalid order status')
