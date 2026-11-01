@@ -3,6 +3,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { App } from './App';
+import { DispatchDashboard } from './dispatch/Dashboard';
 import { ErrorBoundary } from './components/shared/ErrorBoundary';
 
 // Phase 5 —— design tokens + 全局 reset + 组件布局
@@ -15,7 +16,7 @@ import { ErrorBoundary } from './components/shared/ErrorBoundary';
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ErrorBoundary>
-      <App />
+      {window.location.pathname === '/legacy' ? <App /> : <DispatchDashboard />}
     </ErrorBoundary>
   </React.StrictMode>,
 );

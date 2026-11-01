@@ -33,6 +33,10 @@ class TestDispatchAPI(unittest.TestCase):
         self.assertEqual(response.status_code,200,response.text)
         order=next(o for o in response.json()['orders'] if o['id']=='precise')
         self.assertEqual(order['demand'],'0.10000000000000000000000000001')
+        self.snapshot=response.json()
+        response=self.command('add',id='string-quantity',destination=dest,demand='0.20000000000000000000000000001',earliest=0,deadline=2000,priority='urgent')
+        self.assertEqual(response.status_code,200,response.text)
+        self.assertEqual(next(o for o in response.json()['orders'] if o['id']=='string-quantity')['demand'],'0.20000000000000000000000000001')
         stale=self.client.post(f'/api/v2/sessions/{self.key}/commands',json={'revision':rev,'command':'plan'})
         self.assertEqual(stale.status_code,409)
 

@@ -96,7 +96,7 @@ async def command(key: str,request: Request):
             elif kind=='depart': session.depart()
             elif kind=='step': session.step()
             elif kind=='pause': session.pause()
-            elif kind=='add': session.add_order(data['id'],data['destination'],data['demand'],number(data['earliest']),number(data['deadline']),data['priority'])
+            elif kind=='add': session.add_order(data['id'],data['destination'],Decimal(data['demand']) if isinstance(data['demand'],str) else data['demand'],number(data['earliest']),number(data['deadline']),data['priority'])
             elif kind=='automatic': session.automatic(data['count'],data['seed'],data.get('priority','normal'))
             elif kind in ('cancel','expire'): session.cancel(data['id'],expired=kind=='expire')
             elif kind=='priority': session.priority(data['id'],data['priority'])
