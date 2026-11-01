@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 from logiroute.core.quantities import exact_sum
 from logiroute.core.enums import NodeType,TrafficStatus
-from logiroute.graph import GraphError
+from logiroute.graph.logistics_graph import GraphError
 from logiroute.dispatch.models import Plan,Report,RANK
 from logiroute.dispatch.scenario import State
 
