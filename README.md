@@ -324,6 +324,7 @@ node_ids, m_time     = bundle.graph.get_adjacency_matrix(metric="travel_time")
 
 ## 文档导航
 
+* [`docs/local-roads-animation.md`](docs/local-roads-animation.md) — 稀疏近邻路网、真实配送动画与本轮验收数据
 * [`docs/algorithms-tsp.md`](docs/algorithms-tsp.md) — 当前 Dijkstra 距离矩阵与有向 TSP 算法、伪代码和复杂度
 * [`docs/scheduling-algorithm-audit.md`](docs/scheduling-algorithm-audit.md) — 历史 NN / CFI / 2-opt 调度审查记录（已被 TSP 默认流程替代）
 * [`docs/dashboard-ui-round2.md`](docs/dashboard-ui-round2.md) — Dashboard 第二轮 UI / UX 重构、工程审计与浏览器验证记录
