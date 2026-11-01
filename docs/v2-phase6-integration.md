@@ -61,3 +61,8 @@ cost_per_delay*(effective_time-base_time)。blocked 从所有指标的候选道�
 ### 6A 验证
 配置契约测试1项通过（0.001秒），`git diff --check`通过。基线、干净工作区、
 车辆/配送员ID唯一、站点绑定、规则标签已核验；未修改任何历史核心或测试断言。
+
+### 6B 验证
+完成截止、critical同批硬顺序、urgent软优先、不可行critical不阻塞、精确容量、
+实际返程及双目标测试新增8项；连同相关历史回归共36项通过。新规则位于独立dispatch包，
+不修改旧OrderPriority或旧service-start调度入口。
