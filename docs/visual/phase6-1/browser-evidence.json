@@ -129,5 +129,6 @@
   "transportCoverage": "409 refresh feedback: dedicated frontend assertions + unchanged Python API regression; real external pause was received by polling before a stale click, no 409 toast screenshot claimed",
   "mapControls": "Zoom, reset, focus, mouse click and keyboard selection; no drag implementation",
   "motionCoverage": "prefers-reduced-motion CSS reviewed; OS preference not changed",
-  "capturedAt": "2026-11-01T08:37:58.969Z"
+  "capturedAt": "2026-11-01T08:37:58.969Z",
+  "screenshotFormat": "JPEG; viewport screenshots recaptured with explicit clip to enforce raster dimensions; baseline raw capture retained, 1650 CSS viewport / 1635x892 raster"
 }

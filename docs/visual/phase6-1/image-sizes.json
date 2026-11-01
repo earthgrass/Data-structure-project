@@ -1,0 +1,102 @@
+{
+  "before-1650.jpg": {
+    "format": "JPEG",
+    "width": 1635,
+    "height": 892
+  },
+  "comparison.jpg": {
+    "format": "JPEG",
+    "width": 1650,
+    "height": 900
+  },
+  "connection-failed.jpg": {
+    "format": "JPEG",
+    "width": 1635,
+    "height": 892
+  },
+  "critical-order.jpg": {
+    "format": "JPEG",
+    "width": 1635,
+    "height": 892
+  },
+  "delivery-complete.jpg": {
+    "format": "JPEG",
+    "width": 1635,
+    "height": 892
+  },
+  "empty-state.jpg": {
+    "format": "JPEG",
+    "width": 1280,
+    "height": 720
+  },
+  "hub-inventory.jpg": {
+    "format": "JPEG",
+    "width": 1635,
+    "height": 892
+  },
+  "legacy.jpg": {
+    "format": "JPEG",
+    "width": 1265,
+    "height": 712
+  },
+  "mobile-full.jpg": {
+    "format": "JPEG",
+    "width": 375,
+    "height": 2143
+  },
+  "order-error-localized.jpg": {
+    "format": "JPEG",
+    "width": 375,
+    "height": 811
+  },
+  "order-management.jpg": {
+    "format": "JPEG",
+    "width": 1635,
+    "height": 892
+  },
+  "order-validation-error.jpg": {
+    "format": "JPEG",
+    "width": 1635,
+    "height": 892
+  },
+  "overview-1366.jpg": {
+    "format": "JPEG",
+    "width": 1366,
+    "height": 768
+  },
+  "overview-1650-host-cropped.jpg": {
+    "format": "JPEG",
+    "width": 643,
+    "height": 818
+  },
+  "overview-1650.jpg": {
+    "format": "JPEG",
+    "width": 1650,
+    "height": 900
+  },
+  "overview-1920.jpg": {
+    "format": "JPEG",
+    "width": 1920,
+    "height": 1080
+  },
+  "overview-390.jpg": {
+    "format": "JPEG",
+    "width": 390,
+    "height": 844
+  },
+  "session-missing.jpg": {
+    "format": "JPEG",
+    "width": 1635,
+    "height": 892
+  },
+  "traffic-paused.jpg": {
+    "format": "JPEG",
+    "width": 1635,
+    "height": 892
+  },
+  "trunk-inspector.jpg": {
+    "format": "JPEG",
+    "width": 1500,
+    "height": 818
+  }
+}
