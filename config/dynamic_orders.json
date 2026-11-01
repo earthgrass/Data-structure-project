@@ -1,0 +1,12 @@
+{
+  "name": "v2.dynamic",
+  "default_objective": "distance",
+  "order_id_prefix": "DYN",
+  "automatic": {
+    "destination_ids": [],
+    "demand_choices": [0.1, 0.2, 0.3],
+    "urgent_fraction": 0.2,
+    "window_delay_range": [0, 5],
+    "window_width_range": [100, 200]
+  }
+}

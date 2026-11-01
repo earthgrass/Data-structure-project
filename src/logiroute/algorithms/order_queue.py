@@ -88,6 +88,14 @@ class OrderPriorityQueue:
         """Membership by recorded ID. Time O(1) average; Space O(1)."""
         return order_id in self._by_id
 
+    def snapshot_ids(self) -> tuple[str, ...]:
+        """Observe recorded IDs in dispatch order without dispatching. O(K) time/space.
+
+        Invalidated entries remain visible under their original IDs; this does
+        not validate, remove or silently repair a stale queue head.
+        """
+        return tuple(self._items[index].key[2] for index in range(len(self._items)-1,-1,-1))
+
     def get(self, order_id: str) -> Order:
         """Inspect a stored order, including invalidated records; not a dispatch.
 
