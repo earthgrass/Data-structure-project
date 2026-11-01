@@ -4,7 +4,7 @@
   "name": "two-echelon",
   "session_prefix": "dispatch",
   "default_seed": 42,
-  "graph": {"min_nodes": 35, "max_nodes": 35},
+  "graph": {"min_nodes": 35, "max_nodes": 35, "topology": "local", "nearest_neighbor_count": 3},
   "warehouse_ids": ["W1"],
   "hub_ids": ["T1", "T2", "T3"],
   "cluster_metric": "travel_time",

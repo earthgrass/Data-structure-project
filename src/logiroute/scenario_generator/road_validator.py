@@ -139,13 +139,25 @@ def validate_road_network(
         violations.append("not all nodes are reachable and returnable")
     physical = len(pairs)
     try:
-        expected_physical, expected_two_way = config.road_quota(len(nodes))
+        expected_physical, expected_two_way = config.road_quota(len(nodes),observed_physical_count=physical if config.topology=='local' else None)
         if (physical, two_way) != (expected_physical, expected_two_way):
             violations.append("physical road count or integer direction quota differs from config")
     except ValueError as exc:
         violations.append(str(exc))
     if not config.min_nodes <= len(nodes) <= config.max_nodes:
         violations.append("node count outside configured range")
+    if config.topology=='local':
+        # Independently recount endpoint neighbor ranks, without generation helpers.
+        def nearby(a: str,b: str) -> bool:
+            start=graph.get_node(a); end=graph.get_node(b)
+            d=(start.x-end.x)**2+(start.y-end.y)**2; closer=0
+            for key in nodes:
+                if key==a: continue
+                other=graph.get_node(key); candidate=(start.x-other.x)**2+(start.y-other.y)**2
+                if candidate<d or candidate==d and key<b: closer+=1
+            return closer<config.nearest_neighbor_count
+        for (a,b),directions in pairs.items():
+            if not directions[0].metadata.get('skeleton') and not nearby(a,b) and not nearby(b,a): violations.append(f'nonlocal additional road: {a}->{b}')
     if not config.min_edges <= len(edges) <= config.max_edges:
         violations.append("directed edge count outside configured budget")
     ratio = two_way / physical if physical else 0.0

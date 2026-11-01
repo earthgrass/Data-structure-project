@@ -91,6 +91,8 @@ class GeneratorConfig:
     node_prefixes: dict[str, str] = field(
         default_factory=lambda: dict(ROAD_DEFAULTS["node_prefixes"])
     )
+    topology: str = ROAD_DEFAULTS["topology"]
+    nearest_neighbor_count: int | None = ROAD_DEFAULTS["nearest_neighbor_count"]
 
     def conservative_h_upper_bound(
         self, tau_max: float, n_vertices: int, n_orders: int,
@@ -114,6 +116,11 @@ class GeneratorConfig:
             + n_orders * self.service_time
 
     def __post_init__(self) -> None:
+        if self.topology not in ('random','local'): raise ValueError('unknown road topology')
+        k=self.nearest_neighbor_count
+        if self.topology=='local':
+            if isinstance(k,bool) or not isinstance(k,int) or not 1<=k<self.min_nodes: raise ValueError('local topology requires 1 <= nearest_neighbor_count < min_nodes')
+        elif k is not None: raise ValueError('nearest_neighbor_count requires local topology')
         prefixes = self.node_prefixes
         if (not isinstance(prefixes, dict)
                 or set(prefixes) != {"warehouse", "customer", "transfer"}
@@ -203,7 +210,7 @@ class GeneratorConfig:
         self.road_quota(self.min_nodes)
         self.road_quota(self.max_nodes)
 
-    def road_quota(self, node_count: int) -> tuple[int, int]:
+    def road_quota(self, node_count: int, *, observed_physical_count: int | None = None) -> tuple[int, int]:
         """Return (physical connections, bidirectional connections), never trim a tree.
 
         Quota uses nearest integer, ties rounded upward. Explicit physical count
@@ -217,7 +224,11 @@ class GeneratorConfig:
             target = self.max_edges
         best: tuple[int, int] | None = None
         best_delta: int | None = None
-        if self.physical_road_count is not None:
+        if self.topology=='local' and observed_physical_count is not None:
+            if self.physical_road_count is not None and self.physical_road_count!=observed_physical_count:
+                raise ValueError('local nearest-neighbor connections conflict with explicit physical_road_count')
+            candidates = (observed_physical_count,)
+        elif self.physical_road_count is not None:
             candidates = (self.physical_road_count,)
         else:
             candidates = range(node_count - 1, min(pair_limit, self.max_edges) + 1)

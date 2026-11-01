@@ -9,6 +9,8 @@
   "physical_road_count": null,
   "target_directed_edge_count": null,
   "bidirectional_ratio": 0.95,
+  "topology": "random",
+  "nearest_neighbor_count": null,
   "coordinate_range": [0.0, 100.0],
   "longitude_range": [115.7, 117.2],
   "latitude_range": [39.5, 40.7],

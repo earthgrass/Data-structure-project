@@ -111,22 +111,27 @@ def sample_logistics_graph(
     """
     specs = _make_node_specs(config, rng)
     n = len(specs)
-    physical, bidirectional = config.road_quota(n)
-    order = list(range(n))
-    rng.shuffle(order)
-    tree: list[tuple[int, int]] = []
-    tree_pairs: set[tuple[int, int]] = set()
-    for pos in range(1, n):
-        left, right = order[pos], order[rng.randint(0, pos - 1)]
-        pair = (left, right) if left < right else (right, left)
-        tree.append(pair)
-        tree_pairs.add(pair)
-    candidates = [
-        (left, right) for left in range(n) for right in range(left + 1, n)
-        if (left, right) not in tree_pairs
-    ]
-    rng.shuffle(candidates)
-    roads = tree + candidates[:physical - len(tree)]
+    if config.topology=='local':
+        from logiroute.algorithms.spatial_roads import local_road_pairs
+        roads=local_road_pairs([(p.node_id,p.x,p.y) for p in specs],config.nearest_neighbor_count)
+        physical,bidirectional=config.road_quota(n,observed_physical_count=len(roads))
+    else:
+        physical, bidirectional = config.road_quota(n)
+        order = list(range(n))
+        rng.shuffle(order)
+        tree: list[tuple[int, int]] = []
+        tree_pairs: set[tuple[int, int]] = set()
+        for pos in range(1, n):
+            left, right = order[pos], order[rng.randint(0, pos - 1)]
+            pair = (left, right) if left < right else (right, left)
+            tree.append(pair)
+            tree_pairs.add(pair)
+        candidates = [
+            (left, right) for left in range(n) for right in range(left + 1, n)
+            if (left, right) not in tree_pairs
+        ]
+        rng.shuffle(candidates)
+        roads = tree + candidates[:physical - len(tree)]
     graph = LogisticsGraph()
     for spec in specs:
         graph.add_node(Node(
