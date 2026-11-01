@@ -11,15 +11,18 @@
 * **测试框架**：`unittest`（标准库，**禁止**改回 pytest）
 * **包管理**：`src/` 布局，配置走 `pyproject.toml`
 * **历史 V1 阶段**：Phase 1–5 已完成。
-* **当前授权**：LogiRoute V2 Phase 3，静态多车辆全局可行插入、共享路径闭包、
-  独立验证与实验；V2 Phase 1/2 已完成。Phase 3 完成后立即停止，Phase 4+ 须另行授权。
+* **当前授权**：LogiRoute V2 Phase 4，构造多车可行见证、独立验证、distance/cost
+  实际调度验收及有限确定性重生成；V2 Phase 1/2/3 已完成。
+  Phase 4 完成后立即停止，Phase 5+ 须另行授权。
   旧 §3.1–3.7 的阶段号及单车实现描述属于 V1；不得据此否定本次明确授权，
-  新车队入口与 V1 单车接口并存；不得提前实现生产可行场景闭环、动态订单、API 或 UI 改造。
+  新车队入口与 V1 单车接口并存；本次只新增生产可行场景入口，不实施动态订单、API 或 UI 改造。
   Phase 2 正式约束见 `docs/v2-phase2-orders-and-loads.md`：节点访问与逐订单身份
   独立，失效队首明确拒绝，载荷全程 Decimal 无浮点中间求和或 epsilon。
   Phase 3 约束及证据见 `docs/v2-phase3-fleet-scheduling.md`：候选严格按已批准八字段
   比较，逐车使用 Decimal，窗口限制服务开始；只接纳 IDLE 空车及 IDLE 绑定配送员，
   各车回本仓；独立验证不得调用候选评估或贪心内部的时间重演函数。
+  Phase 4 约束见 `docs/v2-phase4-feasible-generation.md`：逐订单身份、逐车精确装载，
+  两种目标均独立全覆盖验证后才返回；失败保留全部尝试，耗尽时明确拒绝。
 
 ## 2. 强约束 —— 教师要求
 

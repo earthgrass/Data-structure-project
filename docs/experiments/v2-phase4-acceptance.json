@@ -1,0 +1,117 @@
+{
+  "baseline": "c428ac2f513c2046bded7b331c1600d69ec5400b",
+  "python_version": "3.12.10 (tags/v3.12.10:0cc8128, Apr  8 2025, 12:21:36) [MSC v.1943 64 bit (AMD64)]",
+  "environment": {
+    "PYTHONPATH": "src",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONIOENCODING": "utf-8"
+  },
+  "temporary_awake_request": true,
+  "history_note": "A prior run reported 695 passing in 184.627s; its follow-up was interrupted at user request. Earlier temporary logs are unavailable; the fresh complete runs below are the final gate.",
+  "runs": [
+    {
+      "name": "new_tests",
+      "command": [
+        "python",
+        "-B",
+        "-m",
+        "unittest",
+        "tests.test_fleet_generation",
+        "tests.test_fleet_generation_reproducibility"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 11.600904199993238,
+      "tests": 21,
+      "unittest_seconds": 11.03,
+      "output": ".....................\n----------------------------------------------------------------------\nRan 21 tests in 11.030s\n\nOK\n",
+      "passed": 21,
+      "failures": 0,
+      "errors": 0
+    },
+    {
+      "name": "related",
+      "command": [
+        "python",
+        "-B",
+        "-m",
+        "unittest",
+        "tests.test_scenario_generator",
+        "tests.test_scenario_generator_validator",
+        "tests.test_scenario_generator_random_source",
+        "tests.test_scenario_generator_graph_sampler",
+        "tests.test_scenario_generator_backbone_builder",
+        "tests.test_graph",
+        "tests.test_dijkstra",
+        "tests.test_scheduling_planner",
+        "tests.test_fleet_greedy",
+        "tests.test_fleet_validator"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 2.45531989983283,
+      "tests": 164,
+      "unittest_seconds": 2.011,
+      "output": "....................................................................................................................................................................\n----------------------------------------------------------------------\nRan 164 tests in 2.011s\n\nOK\n",
+      "passed": 164,
+      "failures": 0,
+      "errors": 0
+    },
+    {
+      "name": "full_1",
+      "command": [
+        "python",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-t",
+        "."
+      ],
+      "exit_code": 0,
+      "wall_seconds": 194.82710139988922,
+      "tests": 695,
+      "unittest_seconds": 192.932,
+      "output": "%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\anyio\\_backends\\_asyncio.py:1100: DeprecationWarning: POST /api/plan 'algorithm' field is deprecated and ignored; use 'objective' only. Unified planner runs Dijkstra + TSP search.\n  result = context.run(func, *args)\n.................%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\anyio\\_backends\\_asyncio.py:1100: DeprecationWarning: POST /api/plan 'algorithm' field is deprecated and ignored; use 'objective' only. Unified planner runs Dijkstra + TSP search.\n  result = context.run(func, *args)\n......................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................\n----------------------------------------------------------------------\nRan 695 tests in 192.932s\n\nOK\n",
+      "passed": 695,
+      "failures": 0,
+      "errors": 0
+    },
+    {
+      "name": "full_2",
+      "command": [
+        "python",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-t",
+        "."
+      ],
+      "exit_code": 0,
+      "wall_seconds": 200.05802419991232,
+      "tests": 695,
+      "unittest_seconds": 198.624,
+      "output": "%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\anyio\\_backends\\_asyncio.py:1100: DeprecationWarning: POST /api/plan 'algorithm' field is deprecated and ignored; use 'objective' only. Unified planner runs Dijkstra + TSP search.\n  result = context.run(func, *args)\n.................%USERPROFILE%\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\anyio\\_backends\\_asyncio.py:1100: DeprecationWarning: POST /api/plan 'algorithm' field is deprecated and ignored; use 'objective' only. Unified planner runs Dijkstra + TSP search.\n  result = context.run(func, *args)\n......................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................\n----------------------------------------------------------------------\nRan 695 tests in 198.624s\n\nOK\n",
+      "passed": 695,
+      "failures": 0,
+      "errors": 0
+    }
+  ],
+  "audit": {
+    "python_files_scanned": 7,
+    "forbidden_dependencies_or_sorting": [],
+    "original_tests_unchanged": true,
+    "protected_paths_unchanged": true,
+    "complete_experiment_replay_matches_except_measured_durations": true,
+    "original_experiment_sha256": "9dbe4503d00db8061dc8b41c8254845c8e63c0db54e7945c985bfbbbcca51814",
+    "source_and_config_hashes_verified": 12,
+    "protected_refs": {
+      "main": "994414753b19c51a2b0522a4fd12a48feb1f6073",
+      "dashboard": "eb6fee0eb67fdcaaca6abcb1ca004767a36ff998",
+      "stash": "15964cc350100869942bf893ac79ff031db5b686"
+    }
+  }
+}

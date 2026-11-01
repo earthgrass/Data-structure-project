@@ -1,5 +1,12 @@
 # LogiRoute 系统架构
 
+> **V2 Phase 4 更新**：`fleet_config` 读取独立 JSON 精确数量；`fleet_witness`
+> 复用道路生成、手写 Dijkstra 闭包及现有路线评估构造双目标见证；`fleet_generator`
+> 用原独立验证器核验见证，再分别调用 `plan_fleet(distance/cost)` 并重新独立核验。
+> 只有两种模式都合法且逐订单全覆盖才发布场景；部分结果有限重生成，非法结果立即失败。
+> 原单车生成、API/UI 与调度算法均保持原接口。
+> [Phase 4 设计与复杂度](v2-phase4-feasible-generation.md)说明证书边界及失败证据。
+
 > **V2 Phase 3 更新**：新静态调用链为 `fleet_planner.plan_fleet` →
 > `fleet_paths`（精确私有快照及共享 PathProvider 单源闭包）→
 > `scheduling.algorithms.fleet_greedy / fleet_insertion`（全局候选与完整路线重演）→
