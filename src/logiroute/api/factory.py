@@ -26,12 +26,14 @@ from logiroute.api.routes import (
     scenarios_router,
 )
 from logiroute.api.services import ScenarioService
+from logiroute.api.routes.dispatch import router as dispatch_router,DispatchService
 
 
 @asynccontextmanager
 async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     """初始化 ``app.state.scenario_service``。"""
     app.state.scenario_service = ScenarioService()
+    app.state.dispatch_service = DispatchService()
     yield
     # 关闭期：单进程状态，无需持久化
 
@@ -84,6 +86,7 @@ def create_app() -> FastAPI:
     app.include_router(health_router)
     app.include_router(scenarios_router)
     app.include_router(planning_router)
+    app.include_router(dispatch_router)
 
     return app
 
