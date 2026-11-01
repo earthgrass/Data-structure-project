@@ -1,5 +1,13 @@
 # LogiRoute 系统架构
 
+> **V2 Phase 6 更新**：`dispatch.scenario`读取独立JSON与精确需求；
+> `dispatch.planner/algorithms`用原Dijkstra、共享闭包、最近可行中转站和手写可行插入构造双层闭环；
+> `dispatch.validation`独立重演计划库存和实际道路，`dispatch.audit`独立重演已执行历史。
+> `dispatch.traffic.Network`保存方向性版本快照，`dispatch.session.Session`推进原子动作并在检查点重规划；
+> FastAPI `/api/v2`以锁和会话副本实现revision事务，默认Dashboard观察同一后端状态。
+> 旧API、单车UI `/legacy`与Phase 3/5入口保持兼容；新协议窗口约束签收完成，旧入口仍约束开始。
+> [Phase 6契约、复杂度与证据](v2-phase6-integration.md)。
+
 > **V2 Phase 5 更新**：`dynamic.session.DynamicSession` 持有私有订单与执行状态，
 > 入队复用手写 OrderPriorityQueue；草案通过原 `plan_fleet` 规划，再经独立验证提交。
 > `scheduling.algorithms.dynamic_execution` 将已验证路线编译为显式执行事件，

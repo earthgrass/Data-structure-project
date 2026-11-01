@@ -1,0 +1,38 @@
+{
+  "original_test_files_unchanged": 57,
+  "original_test_count": 728,
+  "new_test_count": 39,
+  "forbidden_violations": [],
+  "source_sha256": {
+    "src/logiroute/dispatch/audit.py": "f477467d7503b2ce0a67c0ff8e912fe99458a884024829ee097ae6e89af5cbd0",
+    "src/logiroute/dispatch/generation.py": "0c8ea0ff604f1188f43ee8b08ac7d98a709bc524f588202a18d2df036ed1c314",
+    "src/logiroute/dispatch/models.py": "d35f59c18dfe88319f6cf67ed03776678b9f89fae184795611fb497db2af7888",
+    "src/logiroute/dispatch/planner.py": "36f5871fd1416e41e7b9aa7735cd1e1f15edc8c3d44ab65e9d3e6955c328236d",
+    "src/logiroute/dispatch/scenario.py": "4e747add1da8037598adcbd6c4ee1a9b35973b79e7116fbc091edb4bac88e8b4",
+    "src/logiroute/dispatch/session.py": "b06f51491cf2eb3d17eca959c111cddb811a16533799069f3ba3c3b7312c8600",
+    "src/logiroute/dispatch/traffic.py": "8f92acbb15d15b87e88307c51ee6c45f34f7502a9f3de44f07c26ce15fe35931",
+    "src/logiroute/dispatch/validation.py": "aec89e08a98b26805f15afb1c3e0c61aef4902c45ba94e5a5a0b99433f27b24e",
+    "src/logiroute/dispatch/__init__.py": "ef48258c2ec0e3da660bd3e04b329f09f24f2baa633e23b8bf8ad050e3385b83",
+    "src/logiroute/dispatch/algorithms/planning.py": "7675379e227cb50a5b43a3f73f8561fb79f7d3db27a2f8cd9fbbfe75940b3dee",
+    "src/logiroute/dispatch/algorithms/__init__.py": "c97a2534bdab622a2c5e19c98fc8beb43e48ac33fb40281d48523db4862c63b3",
+    "src/logiroute/api/routes/dispatch.py": "0248779773921185306a0f550b8cd19dd4673fbd6f3e92c674892f3a10822351",
+    "tests/test_dispatch_acceptance.py": "1d9806f1b57cba6f5a7d673acdcc06e8e6d2e992785393670c04f4daededd6f4",
+    "tests/test_dispatch_api.py": "9e9e14ff0c382ed5d57c3fdd36f9e28d4de2173721880f883a2cc4cb6704b3c5",
+    "tests/test_dispatch_contract.py": "9244ef2b6d27c92a32aed0699b51b0eb7fc148484ced50d740f1b140d3c9bfde",
+    "tests/test_dispatch_echelons.py": "fed53623f8fed7f59e4feb6b284d4844f1acd501597830b43caeb2ab59b76abd",
+    "tests/test_dispatch_reproducibility.py": "18a9fd838344ebad4c1ddf3e9f298e0dde754c40294617be70456290a2d40a33",
+    "tests/test_dispatch_rules.py": "3646bf345d57b0d27ae7e5de6197e4b9a2c865db969e8d4e5ed6cbe314b72ac9",
+    "tests/test_dispatch_session.py": "e847238219e1f56710961a6dbd661de6713c5dd4f62c8e9da559304311e2cc87",
+    "tests/test_dispatch_traffic.py": "97ba91538d73dcc1025e5816e509c6d051310805cf8d586d775ca487dd51ce9f",
+    "scripts/accept_phase6.py": "40e6abdbe995679b59acb7d00033578a602a0f9f0019c83476232977e99a5666",
+    "scripts/experiment_v2_dispatch.py": "97080d5132ddc68ed8f0cacb2f129443559db3fc5bb4830348c3432962d4cf40",
+    "scripts/audit_phase6.py": "3ea85bb708dc2177537ed1c00645b39951a963180a39de2301866b4af5c67c0b"
+  },
+  "protected_refs": {
+    "main": "994414753b19c51a2b0522a4fd12a48feb1f6073",
+    "feat/dashboard-ui-redesign": "eb6fee0eb67fdcaaca6abcb1ca004767a36ff998",
+    "refs/stash": "15964cc350100869942bf893ac79ff031db5b686"
+  },
+  "matrix_replayed_identically": 30,
+  "dynamic_replayed_identically": 5
+}
