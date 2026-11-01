@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { bindComparison, reconcileSnapshot, actionPhase } from '../src/dispatch/sync.mjs';
+import { bindComparison, reconcileSnapshot, actionPhase, failureFeedback } from '../src/dispatch/sync.mjs';
 const plan={fingerprint:'same-input',revision:7,traffic_version:2};
 const s={id:'a',revision:7,traffic_version:2,plan,events:[],vehicles:[],ready:true};
 const comparison=bindComparison(s,[plan,plan]);
@@ -22,4 +22,12 @@ assert.equal(actionPhase({...s,events:[{kind:'plan'},event]},action),'completed'
 assert.equal(actionPhase({...s,vehicles:[{id:'truck',current:action}]},action),'current');
 assert.equal(actionPhase({...s,needs_replan:true},action),'paused');
 assert.equal(actionPhase({...s,ready:false},action),'unknown');
-console.log('27 comparison/snapshot/timeline assertions passed');
+const conflict=failureFeedback(409,'stale');
+assert.equal(conflict.refresh,true);
+assert.equal(conflict.connection,'connected');
+assert.match(conflict.error,/本次操作未执行/);
+assert.equal(failureFeedback(404,'missing').connection,'missing');
+assert.equal(failureFeedback(500,'server').connection,'failed');
+assert.equal(failureFeedback(null,'network').connection,'failed');
+assert.equal(failureFeedback(422,'invalid input').error,'invalid input');
+console.log('34 comparison/snapshot/timeline/transport assertions passed');

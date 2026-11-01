@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import type {Snapshot,Comparison,Connection} from '../types';
-import {bindComparison,reconcileSnapshot} from '../sync.mjs';
+import {bindComparison,reconcileSnapshot,failureFeedback} from '../sync.mjs';
 
 class RequestError extends Error {
   constructor(public status:number,message:string){super(message);}
@@ -11,7 +11,11 @@ async function request(path:string,payload?:unknown,base='/api/v2'):Promise<Snap
   try{
     const response=await fetch(base+path,{signal:controller.signal,...(payload===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})});
     const value=await response.json();
-    if(!response.ok)throw new RequestError(response.status,value.error?.message??`请求失败（${response.status}）`);
+    if(!response.ok){
+      const original=value.error?.message??`请求失败（${response.status}）`;
+      const translated:Record<string,string>={'order ID already used':'订单 ID 已存在，请使用新的唯一 ID。','integer seed required':'Seed 必须是整数。','deadline is not in the future':'签收截止必须晚于当前模拟时刻。'};
+      throw new RequestError(response.status,translated[original]??original);
+    }
     return value;
   }finally{clearTimeout(timer);}
 }
@@ -31,13 +35,11 @@ export function useDispatchSession(){
     live.current=next;setSnapshot(next.snapshot);setComparison(next.comparison);setConnection('connected');
   },[]);
   const failed=useCallback((exception:unknown,ticket:number)=>{
-    if(ticket!==epoch.current)return;
+    if(ticket!==epoch.current)return false;
     setPlaying(false);
     live.current.comparison=null;setComparison(null);
-    if(exception instanceof RequestError){
-      setConnection(exception.status===404?'missing':exception.status>=500?'failed':'connected');
-      setError(exception.status===404?'当前会话已失效，后端可能已重启。请新建场景。':exception.status===409?'状态已变化，本次操作未执行；已请求最新快照，请核对后重试。':exception.message);
-    }else{setConnection('failed');setError('连接后端失败或请求超时。保留上次快照，暂停自动推进；可重新连接。');}
+    const feedback=failureFeedback(exception instanceof RequestError?exception.status:null,exception instanceof Error?exception.message:String(exception));
+    setConnection(feedback.connection);setError(feedback.error);return feedback.refresh;
   },[]);
   const refresh=useCallback(async(clear=true)=>{
     const ticket=epoch.current,id=active.current;
@@ -67,7 +69,7 @@ export function useDispatchSession(){
     try{
       const incoming=await request(`/sessions/${id}/commands`,{revision:live.current.snapshot.revision,command:kind,...fields});
       receive(incoming,ticket);setMessage(messages[kind]??'操作完成。');return true;
-    }catch(e){failed(e,ticket);if(e instanceof RequestError&&e.status===409)await refresh(false);return false;}
+    }catch(e){if(failed(e,ticket))await refresh(false);return false;}
     finally{locked.current=false;setBusy('');}
   },[receive,failed,refresh]);
   useEffect(()=>{

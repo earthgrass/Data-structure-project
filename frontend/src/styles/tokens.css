@@ -148,4 +148,19 @@
   --vehicle-2: #0c8291;
   --vehicle-3: #8355c5;
   --vehicle-4: #258456;
+  --status-good: #24724c;
+  --status-good-soft: #e5f4ec;
+  --status-info: #265fae;
+  --status-info-soft: #e9f1ff;
+  --status-warn: #96601a;
+  --status-warn-soft: #fff3dd;
+  --status-critical: #ad3544;
+  --status-critical-soft: #fdebed;
+  --identity-warehouse: #c66a27;
+  --identity-warehouse-soft: #fff1e6;
+  --identity-transfer: #267e8d;
+  --identity-transfer-soft: #e7f3f6;
+  --identity-customer: #8a9fb5;
+  --identity-route-edge: #cdd8e4;
+  --traffic-congested: #c38635;
 }

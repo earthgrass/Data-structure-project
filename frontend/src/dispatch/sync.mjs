@@ -36,3 +36,11 @@ export function actionPhase(snapshot, action) {
   if (snapshot.needs_replan) return 'paused';
   return snapshot.ready || snapshot.running ? 'pending' : 'unknown';
 }
+
+/** Transport feedback is separate from logistics state. 409 requests a refresh. */
+export function failureFeedback(status,message){
+  if(status===null)return {connection:'failed',error:'连接后端失败或请求超时。保留上次快照，暂停自动推进；可重新连接。',refresh:false};
+  return {connection:status===404?'missing':status>=500?'failed':'connected',
+    error:status===404?'当前会话已失效，后端可能已重启。请新建场景。':status===409?'状态已变化，本次操作未执行；已请求最新快照，请核对后重试。':message,
+    refresh:status===409};
+}

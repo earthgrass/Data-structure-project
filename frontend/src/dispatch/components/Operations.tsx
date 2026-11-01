@@ -20,6 +20,7 @@ export function DispatchToolbar({data,objective,setObjective,busy,connection,com
   let action:()=>void=()=>void command('plan',{objective});
   if(data.running){primary=data.needs_replan?'推进至检查点':'下一节点暂停';action=()=>void command(data.needs_replan?'step':'pause');hint=data.needs_replan?'进行中的原子动作完成后即可重新规划。':'车辆位置和载货由后端逐动作更新。';}
   else if(data.needs_replan){primary='重新规划';hint='保留真实位置和载货，在当前检查点构造续程。';}
+  else if(data.plan&&data.orders.some(o=>o.status==='pending'&&!data.plan!.accepted.includes(o.id)&&!data.plan!.deferred.some(([id])=>id===o.id))){primary='规划待处理订单';hint='存在上次计划尚未考虑的新订单；旧计划保留，请先规划。';}
   else if(data.ready){primary='开始配送';action=()=>void command('depart');hint='计划已验证，签收将在真实服务动作完成后增加。';}
   else if(data.audit.complete_all){primary='查看结果';action=onResults;hint='客户已全部签收，查看历史审计和结果。';}
   else if(data.plan){primary='规划待处理订单';hint='旧计划保留为执行依据，可重新规划剩余订单。';}
