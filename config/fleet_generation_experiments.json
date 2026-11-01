@@ -1,0 +1,15 @@
+{
+  "seeds": [0, 1, 42, 100, 2026],
+  "order_counts": [5, 10, 20],
+  "vehicle_counts": [2, 3],
+  "hash_seeds": ["1", "2", "73"],
+  "profiles": [
+    {"name": "tight-time-retry", "seed": 2, "orders_count": 8, "vehicle_count": 2,
+     "capacity": 12, "demand_choices": [1, 2, 3], "window_early_slack": 1,
+     "window_late_slack": 0, "max_attempts": 6},
+    {"name": "impossible-single-car-demand", "seed": 42, "orders_count": 2,
+     "vehicle_count": 2, "capacity": 1, "demand_choices": [2], "max_attempts": 3},
+    {"name": "insufficient-time-horizon", "seed": 42, "orders_count": 5,
+     "vehicle_count": 2, "witness_horizon": 540.001, "max_attempts": 3}
+  ]
+}
