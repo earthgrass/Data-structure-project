@@ -26,3 +26,4 @@
 
 .d-table-hint{display:none}.dispatch dialog{max-height:calc(100dvh - 32px);overflow:auto}
 @media(max-width:760px){.d-table-hint{display:block;padding:12px 16px;font-size:13px;background:var(--surface-elevated)}}
+.d-vehicle-next{font-size:13px;color:var(--text-secondary);margin-top:8px!important;overflow-wrap:anywhere}

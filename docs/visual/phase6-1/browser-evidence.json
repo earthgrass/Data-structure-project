@@ -1,0 +1,133 @@
+{
+  "viewports": [
+    {
+      "height": 900,
+      "inspector": {
+        "bottom": 878,
+        "height": 520,
+        "left": 1271.111083984375,
+        "right": 1607.111083984375,
+        "top": 358,
+        "width": 336,
+        "x": 1271.111083984375,
+        "y": 358
+      },
+      "network": {
+        "bottom": 878,
+        "height": 520,
+        "left": 260,
+        "right": 1251.1111450195312,
+        "top": 358,
+        "width": 991.1111450195312,
+        "x": 260,
+        "y": 358
+      },
+      "nodes": 35,
+      "nodesWithinFrame": true,
+      "scrollWidth": 1635,
+      "width": 1650
+    },
+    {
+      "height": 768,
+      "inspector": {
+        "bottom": 754,
+        "height": 400,
+        "left": 1015.1111450195312,
+        "right": 1327.1111450195312,
+        "top": 354,
+        "width": 312,
+        "x": 1015.1111450195312,
+        "y": 354
+      },
+      "network": {
+        "bottom": 754,
+        "height": 400,
+        "left": 244,
+        "right": 995.1111450195312,
+        "top": 354,
+        "width": 751.1111450195312,
+        "x": 244,
+        "y": 354
+      },
+      "nodes": 35,
+      "nodesWithinFrame": true,
+      "scrollWidth": 1351,
+      "width": 1366
+    },
+    {
+      "height": 1080,
+      "inspector": {
+        "bottom": 978,
+        "height": 620,
+        "left": 1540.888916015625,
+        "right": 1876.888916015625,
+        "top": 358,
+        "width": 336,
+        "x": 1540.888916015625,
+        "y": 358
+      },
+      "network": {
+        "bottom": 978,
+        "height": 620,
+        "left": 260,
+        "right": 1520.888916015625,
+        "top": 358,
+        "width": 1260.888916015625,
+        "x": 260,
+        "y": 358
+      },
+      "nodes": 35,
+      "nodesWithinFrame": true,
+      "scrollWidth": 1905,
+      "width": 1920
+    },
+    {
+      "height": 844,
+      "inspector": {
+        "bottom": 1836.8472900390625,
+        "height": 620,
+        "left": 16,
+        "right": 359.1111145019531,
+        "top": 1216.8472900390625,
+        "width": 343.1111145019531,
+        "x": 16,
+        "y": 1216.8472900390625
+      },
+      "network": {
+        "bottom": 1196.8472290039062,
+        "height": 480,
+        "left": 16,
+        "right": 359.1111145019531,
+        "top": 716.8472290039062,
+        "width": 343.1111145019531,
+        "x": 16,
+        "y": 716.8472290039062
+      },
+      "nodes": 35,
+      "nodesWithinFrame": true,
+      "scrollWidth": 375,
+      "width": 390
+    }
+  ],
+  "interactions": [
+    "map zoom 100→125→100; keyboard W1 details; H2/TRUNK map+inspector+timeline selection",
+    "same-input distance/cost comparison; exact Decimal critical order queued; stale comparison removed; plan retained by backend",
+    "13 orders admitted; exact trunk load; entered W1→C21 blocked and frozen; checkpoint retains C21 position and cargo; replan succeeds at traffic v1",
+    "trunk unload creates real hub inventory; in-transit filter retains individual customer IDs; automatic backend step execution started",
+    "13/13 customer signoffs, zero active vehicles, 672.97 simulated minutes after blocked-road replan",
+    "real stopped service: connection failed, last snapshot retained, writes disabled, retry visible",
+    "404 after genuine backend restart: stale snapshot warning, new scene confirmation, revision reset accepted without old response pollution",
+    "seeded automatic intake; critical priority update confirmation; warehouse cancellation and explicit expiry confirmations preserve terminal IDs",
+    "duplicate order ID rejected by real API; form stays open, error visible, no fabricated success",
+    "Space/Enter map vehicle selection and preserved keyboard focus",
+    "390px order filtering, contained horizontal table, duplicate ID localized modal, keyboard navigation and visible focus",
+    "/legacy rendered 50 nodes/220 directed edges/20 orders/1 vehicle, original blue tokens, no new dispatch ancestor",
+    "new-tab empty state, create and plan; fresh final-source console has no errors"
+  ],
+  "freshConsoleErrors": [],
+  "finalConsoleErrors": [],
+  "transportCoverage": "409 refresh feedback: dedicated frontend assertions + unchanged Python API regression; real external pause was received by polling before a stale click, no 409 toast screenshot claimed",
+  "mapControls": "Zoom, reset, focus, mouse click and keyboard selection; no drag implementation",
+  "motionCoverage": "prefers-reduced-motion CSS reviewed; OS preference not changed",
+  "capturedAt": "2026-11-01T08:37:58.969Z"
+}
