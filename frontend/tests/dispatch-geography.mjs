@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {mapProjection,polylinePoint,polylinePrefix,pathData} from '../src/dispatch/geography.mjs';
+import {vehiclePoint} from '../src/dispatch/motion.mjs';
+const project=mapProjection([0,0,100,100],1000,600);
+assert.deepEqual(project([50,50]),[500,300]);
+assert.equal(project([100,50])[0]-500,project([50,100])[1]-300);
+const line=[[0,0],[0,30],[40,30]];
+assert.deepEqual(polylinePoint(line,0),[0,0]);assert.deepEqual(polylinePoint(line,1),[40,30]);
+assert.deepEqual(polylinePoint(line,.5),[5,30]);
+assert.deepEqual(polylinePoint(line,-1),[0,0]);assert.deepEqual(polylinePoint(line,2),[40,30]);
+assert.deepEqual(polylinePoint([[1,1],[1,1]],.5),[1,1]);
+assert.deepEqual(polylinePrefix(line,.5),[[0,0],[0,30],[5,30]]);
+assert.equal(pathData(line),'M0,0 L0,30 L40,30');
+assert.deepEqual(vehiclePoint({position:'A',current:{kind:'drive',source:'A',target:'B',start:0,end:10}},5,new Map([['A',[0,0]],['B',[40,30]]]),line),[5,30]);
+console.log('11 geographic fit and curved-road animation assertions passed');

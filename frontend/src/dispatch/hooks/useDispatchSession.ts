@@ -60,7 +60,7 @@ export function useDispatchSession(){
     locked.current=true;setBusy('create');setPlaying(false);setError('');setMessage('');setConnection('connecting');
     const ticket=++epoch.current;
     try{
-      const incoming=await request('/sessions',seed===''?{}:{seed:Number(seed)});
+      const incoming=await request('/sessions',{profile:'bjut',...(seed===''?{}:{seed:Number(seed)})});
       active.current=incoming.id;sessionStorage.setItem('logiroute-session',incoming.id);
       live.current={snapshot:null,comparison:null};receive(incoming,ticket);setMessage('新场景已创建，等待规划。');return true;
     }catch(e){failed(e,ticket);return false;}finally{locked.current=false;setBusy('');}
