@@ -106,6 +106,7 @@ class Session:
     def add_order(self,key: str,destination: str,demand: Decimal | int | float,earliest: float,deadline: float,priority: str) -> None:
         if key in self.state.orders: raise ValueError('order ID already used')
         if self.state.graph.get_node(destination).node_type is not NodeType.CUSTOMER: raise ValueError('customer destination required')
+        if 'candidate_ids' in self.state.config and destination not in self.state.config['candidate_ids']: raise ValueError('destination must be a candidate stop')
         if any(isinstance(x,bool) or not isinstance(x,(int,float,Decimal)) for x in (earliest,deadline)): raise ValueError('numeric times required')
         order=Parcel(key,destination,demand,float(earliest),float(deadline),priority)
         if deadline<=self.state.now: raise ValueError('deadline is not in the future')
@@ -117,7 +118,7 @@ class Session:
         from logiroute.algorithms.ordering import ordered_strings
         if isinstance(count,bool) or not isinstance(count,int) or count<1: raise ValueError('positive count required')
         if isinstance(seed,bool) or not isinstance(seed,int): raise ValueError('integer seed required')
-        rng=RandomSource(seed); customers=ordered_strings(n.id for n in self.state.graph.nodes if n.node_type is NodeType.CUSTOMER)
+        rng=RandomSource(seed); customers=ordered_strings(self.state.config.get('candidate_ids',[n.id for n in self.state.graph.nodes if n.node_type is NodeType.CUSTOMER]))
         # Validate before mutations; generated IDs never reuse cancelled identities.
         if priority not in ('critical','urgent','normal'): raise ValueError('invalid priority')
         for _ in range(count):
@@ -150,8 +151,8 @@ class Session:
     def snapshot(self) -> dict[str,Any]:
         """Versioned JSON boundary; quantities serialized only here. O(V+E+A+N)."""
         state=self.state
-        nodes=[{'id':n.id,'type':n.node_type.value,'x':n.x,'y':n.y} for n in state.graph.nodes]
-        edges=[{'source':e.source_id,'target':e.target_id,'distance':e.distance,'travel_time':e.travel_time,'cost':e.cost,'status':e.traffic_status.value} for e in state.graph.edges]
+        nodes=[{'id':n.id,'type':'junction' if n.metadata.get('routing_only') else n.node_type.value,'x':n.x,'y':n.y,'name':n.name,**n.metadata} for n in state.graph.nodes]
+        edges=[{'source':e.source_id,'target':e.target_id,'distance':e.distance,'travel_time':e.travel_time,'cost':e.cost,'status':e.traffic_status.value,**e.metadata} for e in state.graph.edges]
         cars=[]
         for k,v in state.vehicles.items():
             cargo=[oid for oid,loc in state.locations.items() if loc==('vehicle',k)]
@@ -160,4 +161,5 @@ class Session:
                 'running':self.running,'ready':self._ready,'needs_replan':self._pausing,'nodes':nodes,'edges':edges,'vehicles':cars,
                 'orders':[{**json_value(o),'location':list(state.locations[k])} for k,o in state.orders.items()],
                 'events':json_value(self.events),'plan':None if self.plan is None else self.plan.to_dict(),
-                'audit':json_value(self.audit()),'settings':{'automatic_window_width':float(state.config['automatic_window_width'])}}
+                'audit':json_value(self.audit()),'settings':{'automatic_window_width':float(state.config['automatic_window_width'])},
+                **({'map':state.config['map']} if 'map' in state.config else {})}

@@ -1,0 +1,16 @@
+{
+  "bbox": [116.465, 39.865, 116.495, 39.885],
+  "source_url": "https://api.openstreetmap.org/api/0.6/map?bbox=116.465,39.865,116.495,39.885",
+  "download_date": "2026-11-08",
+  "earth_radius_m": 6378137,
+  "candidate_count": 30,
+  "cost_per_km": 2,
+  "speed_kmh": {"primary": 35, "primary_link": 25, "secondary": 30, "secondary_link": 20, "tertiary": 25, "tertiary_link": 20, "unclassified": 20, "residential": 20, "service": 15, "living_street": 10},
+  "bases": [
+    {"id":"W1", "type":"warehouse", "name":"北工大西侧模拟仓", "lon":116.473, "lat":39.874},
+    {"id":"W2", "type":"warehouse", "name":"东侧备用模拟仓", "lon":116.489, "lat":39.874},
+    {"id":"T1", "type":"transfer", "name":"北区模拟中转站", "lon":116.478, "lat":39.882},
+    {"id":"T2", "type":"transfer", "name":"南区模拟中转站", "lon":116.478, "lat":39.869},
+    {"id":"T3", "type":"transfer", "name":"东区模拟中转站", "lon":116.486, "lat":39.877}
+  ]
+}

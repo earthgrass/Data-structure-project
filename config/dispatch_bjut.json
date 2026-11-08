@@ -1,0 +1,7 @@
+{
+  "name": "北京工业大学 · 周边道路配送演示",
+  "road_dataset": "data/bjut/network.json",
+  "orders_count": 8,
+  "session_prefix": "bjut",
+  "sample_unique_destinations": true
+}

@@ -53,8 +53,14 @@ def number(value: Any) -> float:
 async def create(request: Request) -> Any:
     try:
         data=await body(request)
-        if set(data)-{'seed'}: raise ValueError('unknown create fields')
-        config=load_config(); seed=data.get('seed',config['default_seed']); state,attempts=generate_state(seed,config)
+        if set(data)-{'seed','profile'}: raise ValueError('unknown create fields')
+        profile=data.get('profile','random')
+        if profile not in ('random','bjut'): raise ValueError('unknown map profile')
+        if profile=='bjut':
+            from logiroute.dispatch.real_map import map_config
+            config=map_config()
+        else: config=load_config()
+        seed=data.get('seed',config['default_seed']); state,attempts=generate_state(seed,config)
         service=request.app.state.dispatch_service
         with service.lock:
             service.counter+=1; key=config['session_prefix']+str(service.counter); session=Session(state)

@@ -58,7 +58,11 @@ def make_state(seed: int,config: dict[str,Any] | None = None) -> State:
         from logiroute.scheduling.fleet_paths import finite_time
         if isinstance(value,bool) or not isinstance(value,(int,float,Decimal)): raise ValueError('invalid timing scalar')
         finite_time(float(value),key,nonnegative=True); c['timing'][key]=float(value)
-    graph=sample_logistics_graph(GeneratorConfig(**c['graph']),RandomSource(seed))
+    if c.get('road_dataset'):
+        from logiroute.dispatch.real_map import load_road_graph
+        graph=load_road_graph(c)
+    else:
+        graph=sample_logistics_graph(GeneratorConfig(**c['graph']),RandomSource(seed))
     for field,expected in (('warehouse_ids',NodeType.WAREHOUSE),('hub_ids',NodeType.TRANSFER)):
         if not c[field] or len(c[field])!=len(set(c[field])): raise ValueError('duplicate/empty configured bases')
         if any(k not in graph.node_ids or graph.get_node(k).node_type is not expected for k in c[field]): raise ValueError('invalid configured base references')
@@ -73,7 +77,8 @@ def make_state(seed: int,config: dict[str,Any] | None = None) -> State:
     if len(set(c['hub_ids']))!=len(c['hub_ids']) or {v.base for v in vehicles.values() if v.role=='delivery'}!=set(c['hub_ids']): raise ValueError('hub bindings required')
     if len([v for v in vehicles.values() if v.role=='delivery'])!=len(c['hub_ids']): raise ValueError('one vehicle per hub required')
     if any(v.base not in c['warehouse_ids'] for v in vehicles.values() if v.role=='trunk'): raise ValueError('warehouse binding required')
-    rng=RandomSource(seed); customers=ordered_strings(n.id for n in graph.nodes if n.node_type is NodeType.CUSTOMER)
+    rng=RandomSource(seed); customers=ordered_strings(c.get('candidate_ids',[n.id for n in graph.nodes if n.node_type is NodeType.CUSTOMER]))
+    if c.get('sample_unique_destinations') and c['orders_count']>len(customers): raise ValueError('order count exceeds unique candidate pool')
     orders={}; locations={}; t=c['timing']
     for i in range(c['orders_count']):
         draw=rng.randint(1,sum(c['priority_weights'].values())); priority='normal'
@@ -81,6 +86,8 @@ def make_state(seed: int,config: dict[str,Any] | None = None) -> State:
             draw-=c['priority_weights'][p]
             if draw<=0: priority=p; break
         key=c['order_prefix']+str(i+1)
-        orders[key]=Parcel(key,rng.choice(customers),rng.choice(c['demand_choices']),t['window_start'],t['window_end'],priority)
+        destination=rng.choice(customers)
+        if c.get('sample_unique_destinations'): customers.remove(destination)
+        orders[key]=Parcel(key,destination,rng.choice(c['demand_choices']),t['window_start'],t['window_end'],priority)
         locations[key]=('warehouse',c['warehouse_ids'][0])
     return State(graph,c,orders,locations,vehicles,{k:v.base for k,v in vehicles.items()},t['initial'])
