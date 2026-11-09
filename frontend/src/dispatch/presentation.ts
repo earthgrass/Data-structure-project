@@ -3,4 +3,4 @@ export const labels:Record<string,string>={load:'装货',unload:'到站卸货',d
 export const priorities=[['critical','特急'],['urgent','紧急'],['normal','普通']];
 export const trafficLabels:Record<string,string>={clear:'畅通',light:'轻微拥堵',moderate:'一般拥堵',congested:'严重拥堵',blocked:'封路'};
 export const fmt=(value:number)=>value.toLocaleString('zh-CN',{maximumFractionDigits:2,minimumFractionDigits:2});
-export const vehicleColor=(s:Snapshot,id:string)=>`var(--vehicle-${s.vehicles.findIndex(v=>v.id===id)%4+1})`;
+export const vehicleColor=(s:Snapshot,id:string)=>`var(--vehicle-${s.vehicles.findIndex(v=>v.id===id)%6+1})`;

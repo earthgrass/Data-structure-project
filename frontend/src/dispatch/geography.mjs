@@ -21,3 +21,18 @@ export function polylinePrefix(line,fraction){
   result.push(endpoint);return result;
 }
 export function pathData(line){return line.map((p,i)=>`${i?'L':'M'}${p[0]},${p[1]}`).join(' ');}
+
+/** Greedy screen-space label placement; Time O(N²), Space O(N), stable input order. */
+export function layoutMapLabels(items){
+  const occupied=[],result=new Map();
+  for(const item of items){
+    let width=0;for(const ch of item.text)width+=ch.codePointAt(0)>255?11:7;
+    for(const [x,y,anchor] of [[0,-27,'middle'],[20,4,'start'],[-20,4,'end'],[0,34,'middle']]){
+      const left=item.point[0]+x-(anchor==='middle'?width/2:anchor==='end'?width:0);
+      const box={left:left-5,right:left+width+5,top:item.point[1]+y-15,bottom:item.point[1]+y+5};
+      if(occupied.some(b=>box.left<b.right&&box.right>b.left&&box.top<b.bottom&&box.bottom>b.top))continue;
+      occupied.push(box);result.set(item.id,{x,y,anchor,text:item.text,box});break;
+    }
+  }
+  return result;
+}

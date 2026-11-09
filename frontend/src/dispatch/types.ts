@@ -9,9 +9,9 @@ export type Vehicle=Snapshot['vehicles'][number];
 export type Road=Snapshot['edges'][number];
 export type Snapshot = {
   id:string;revision:number;traffic_version:number;now:number;running:boolean;ready:boolean;needs_replan:boolean;
-  nodes:{id:string;type:string;x:number;y:number;name?:string;lon?:number;lat?:number}[];
+  nodes:{id:string;type:string;x:number;y:number;name?:string;lon?:number;lat?:number;zone?:string;display_name?:string;approximate?:boolean;location_note?:string;snap_distance_m?:number}[];
   edges:{source:string;target:string;distance:number;travel_time:number;cost:number;status:string;geometry?:[number,number][];name?:string;osm_way?:string}[];
-  map?:{source:string;title:string;download_date:string;license:string;bounds:number[];candidate_count:number;features:{kind:string;name:string;geometry:[number,number][]}[];background_roads:{name:string;kind:string;geometry:[number,number][]}[]};
+  map?:{source:string;title:string;download_date:string;license:string;bounds:number[];candidate_count:number;campus_profile?:boolean;campus_candidate_count?:number;initial_campus_orders?:number;initial_orders?:number;outline?:[number,number][];location_note?:string;features:{kind:string;name:string;geometry:[number,number][]}[];background_roads:{name:string;kind:string;geometry:[number,number][]}[]};
   vehicles:{id:string;courier_id:string;role:string;base:string;capacity:string;position:string;current:Action|null;cargo:string[];load:string}[];
   orders:{id:string;destination:string;demand:string;earliest:number;deadline:number;priority:string;status:string;hub:string;location:[string,string]}[];
   plan:Plan|null;audit:Report;comparison?:Plan[];

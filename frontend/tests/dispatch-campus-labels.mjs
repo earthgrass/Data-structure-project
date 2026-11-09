@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {layoutMapLabels} from '../src/dispatch/geography.mjs';
+const inputs=[{id:'hub',point:[100,100],text:'校内快递站'},{id:'dorm1',point:[100,105],text:'1号宿舍'},{id:'dorm2',point:[115,100],text:'2号宿舍'}];
+const labels=layoutMapLabels(inputs),again=layoutMapLabels(inputs);
+assert.equal(labels.size,3);
+assert.deepEqual(labels,again);
+const boxes=[...labels.values()].map(l=>l.box);
+assert.ok(boxes.every((a,i)=>boxes.every((b,j)=>i===j||a.right<=b.left||a.left>=b.right||a.bottom<=b.top||a.top>=b.bottom)));
+assert.deepEqual(inputs[0].point,[100,100]);
+console.log('4 campus label separation, stability and immutable-point assertions passed');

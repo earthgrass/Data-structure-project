@@ -4,7 +4,7 @@ import {projectNodes} from '../viewport.mjs';
 import {mapProjection} from '../geography.mjs';
 
 /** One O(V) projection per graph/size change; edges use O(1) lookups. UI geometry only. */
-export function useNetworkViewport(nodes:Snapshot['nodes'],bounds?:number[]){
+export function useNetworkViewport(nodes:Snapshot['nodes'],bounds?:number[],mobileZoom=1.7){
   const frame=useRef<HTMLDivElement>(null);
   const [size,setSize]=useState({width:800,height:450}),[zoom,setZoom]=useState(1);
   const [center,setCenter]=useState<[number,number]|null>(null);
@@ -13,7 +13,7 @@ export function useNetworkViewport(nodes:Snapshot['nodes'],bounds?:number[]){
     const observer=new ResizeObserver(([entry])=>{const {width,height}=entry.contentRect;if(width&&height)setSize({width,height});});
     observer.observe(element);return()=>observer.disconnect();
   },[]);
-  useEffect(()=>{setZoom(bounds&&size.width<760?1.7:1);setCenter(null);},[nodes.length,size.width,size.height,!!bounds]);
+  useEffect(()=>{setZoom(bounds&&size.width<760?mobileZoom:1);setCenter(null);},[nodes.length,size.width,size.height,!!bounds,mobileZoom]);
   const project=useMemo(()=>bounds?mapProjection(bounds,size.width,size.height,size.width<760?32:100):null,[bounds,size]);
   const points=useMemo(()=>project?new Map(nodes.map(n=>[n.id,project([n.x,n.y])])):projectNodes(nodes,size.width,size.height),[nodes,size,project]);
   const [cx,cy]=center??[size.width/2,size.height/2];
