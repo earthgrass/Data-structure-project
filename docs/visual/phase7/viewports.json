@@ -1,0 +1,94 @@
+[
+  {
+    "requested": {
+      "width": 1650,
+      "height": 900
+    },
+    "observed": {
+      "height": 900,
+      "hintVisible": "block",
+      "pageWidth": 1650,
+      "primary": {
+        "bottom": 871.1111450195312,
+        "height": 44,
+        "left": 478,
+        "right": 583.7777786254883,
+        "top": 827.1111450195312,
+        "width": 105.77777862548828,
+        "x": 478,
+        "y": 827.1111450195312
+      },
+      "svgPaths": 2789,
+      "width": 1650
+    }
+  },
+  {
+    "requested": {
+      "width": 1366,
+      "height": 768
+    },
+    "observed": {
+      "height": 768,
+      "hintVisible": "block",
+      "pageWidth": 1366,
+      "primary": {
+        "bottom": 739.1111450195312,
+        "height": 44,
+        "left": 336,
+        "right": 441.7777786254883,
+        "top": 695.1111450195312,
+        "width": 105.77777862548828,
+        "x": 336,
+        "y": 695.1111450195312
+      },
+      "svgPaths": 2789,
+      "width": 1366
+    }
+  },
+  {
+    "requested": {
+      "width": 1920,
+      "height": 1080
+    },
+    "observed": {
+      "height": 1080,
+      "hintVisible": "block",
+      "pageWidth": 1920,
+      "primary": {
+        "bottom": 1051.1111450195312,
+        "height": 44,
+        "left": 612.888916015625,
+        "right": 718.6666946411133,
+        "top": 1007.1111450195312,
+        "width": 105.77777862548828,
+        "x": 612.888916015625,
+        "y": 1007.1111450195312
+      },
+      "svgPaths": 2789,
+      "width": 1920
+    }
+  },
+  {
+    "requested": {
+      "width": 390,
+      "height": 844
+    },
+    "observed": {
+      "height": 844,
+      "hintVisible": "block",
+      "pageWidth": 390,
+      "primary": {
+        "bottom": 777.1111450195312,
+        "height": 44,
+        "left": 207.7777862548828,
+        "right": 297.5555648803711,
+        "top": 733.1111450195312,
+        "width": 89.77777862548828,
+        "x": 207.7777862548828,
+        "y": 733.1111450195312
+      },
+      "svgPaths": 2789,
+      "width": 390
+    }
+  }
+]

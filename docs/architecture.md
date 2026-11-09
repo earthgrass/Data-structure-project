@@ -1,5 +1,26 @@
 # LogiRoute 系统架构
 
+## 当前产品调用链（Phase 7核验）
+
+```mermaid
+flowchart TD
+  U[dispatch/Dashboard + useDispatchSession] --> R[api/routes/dispatch]
+  R --> T[revision校验 + 锁 + deepcopy事务]
+  T --> S[dispatch/session: State + Network + Action]
+  S --> P[dispatch/algorithms/planning.plan_dispatch]
+  P --> C[最近可行中转站 / 完整两级试排]
+  C --> I[dispatch/algorithms.build_route]
+  I --> D[Paths单次缓存 / algorithms.dijkstra / MinHeap]
+  P --> V[dispatch/validation独立核验]
+  V --> X[Session.apply / depart / step]
+  X --> A[dispatch/audit独立历史审计]
+  X --> U
+```
+
+`real_map`加载固定校园路网，`window_calibration`构造初始输入，`generation`分别正式运行两目标并独立接受；生成见证不代替后续生产规划。当前两级规划与历史`scheduling/fleet_planner.plan_fleet`八字段全局车队插入不是同一入口。受控教学实验位于`dispatch/controlled_demo`与`algorithms/demo_reference`，API独立GET不写校园会话。
+
+部署仍为单进程内存会话；事件不是数据库持久化，重启不恢复、多worker不共享。完整对象职责、复杂度及历史入口区分见[当前答辩材料](final-delivery/defense.md)。以下按时间逆序保留历史架构描述。
+
 > **V2 Phase 6 更新**：`dispatch.scenario`读取独立JSON与精确需求；
 > `dispatch.planner/algorithms`用原Dijkstra、共享闭包、最近可行中转站和手写可行插入构造双层闭环；
 > `dispatch.validation`独立重演计划库存和实际道路，`dispatch.audit`独立重演已执行历史。

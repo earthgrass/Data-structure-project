@@ -2,6 +2,7 @@
 from __future__ import annotations
 import hashlib
 import json
+import sys
 from pathlib import Path
 from logiroute.dispatch.real_map import map_config,load_road_graph
 from logiroute.dispatch.scenario import make_state
@@ -9,7 +10,7 @@ from logiroute.dispatch.scenario import make_state
 
 def main() -> None:
     """Time O(seeds*(V+E+sampling)); preserve sources and old evidence."""
-    root=Path(__file__).resolve().parents[1];target=root/'docs/experiments/phase7-map.json'
+    root=Path(__file__).resolve().parents[1];target=root/'docs/experiments'/('phase7-map.json' if len(sys.argv)==1 else sys.argv[1])
     if target.exists():raise ValueError('existing evidence preserved')
     c=map_config('bjut-campus');g=load_road_graph(c);g.validate()
     for e in g.edges:

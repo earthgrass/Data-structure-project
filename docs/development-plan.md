@@ -1,5 +1,7 @@
 # LogiRoute 后续开发阶段规划
 
+> **V2 Phase 7 当前授权**：独立分支完成最终审计、Dashboard交互完善、双目标受控实验、严格窗A–G、地图/性能核验及课程交付。见[问题登记](phase7-audit.md)与[最终交付包](final-delivery/README.md)。完成后停止，不自动合并main。下文Phase编号与永久单车描述均为历史口径，不能覆盖当前明确的多车授权。
+
 > **V2 Phase 6**：已按用户6A→6H授权推进三级优先级、签收完成截止、两级中转、模拟拥堵、
 > 动态剩余重规划及FastAPI/Dashboard集成。当前进展与最终验收以
 > [Phase 6交付报告](v2-phase6-integration.md)为准。下文V1单车规划为历史存档。

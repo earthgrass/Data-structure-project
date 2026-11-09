@@ -3,6 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 from decimal import Decimal
 import json
+import sys
 from pathlib import Path
 from time import perf_counter
 from typing import Any,Callable
@@ -22,7 +23,7 @@ def measure(fn: Callable[[],Any]) -> tuple[Any,float]:
 
 def main() -> None:
     """Time dominated by real planners. Space O(states+raw plans+events)."""
-    root=Path(__file__).resolve().parents[1];target=root/'docs/experiments/phase7-performance.json'
+    root=Path(__file__).resolve().parents[1];target=root/'docs/experiments'/('phase7-performance.json' if len(sys.argv)==1 else sys.argv[1])
     if target.exists():raise ValueError('existing evidence preserved')
     policy=json.loads((root/'config/phase7-experiments.json').read_text(encoding='utf-8'));rows=[]
     for count in policy['performance_counts']:

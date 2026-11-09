@@ -31,3 +31,9 @@ React Dashboard / useDispatchSession → FastAPI routes/dispatch.py → 加锁�
 - 7G：README、架构、复杂度、5–8 分钟脚本及统一交付索引。最终真实全量回归、Node断言、类型/构建、禁用依赖、diff、四尺寸浏览器截图，核验远端与保护引用。
 
 原 794 项 unittest 和原 100 个前端断言保持完整；新增测试只验证本轮新增或实际修复行为。每逻辑阶段验证后提交推送；最终结果以新生成数据为准。
+
+## 验收补充发现
+
+实际浏览器进入库存页复现P1：`InventoryPanel`以type!='customer'过滤，因而将junction也列为中转站。先新增inventoryNodes回归观察缺少实现失败，再以显式warehouse/transfer过滤；浏览器确认仅五中转点和两仓库七卡，设施名称与ID同时保留。修复前inventory.jpg与修复后inventory-final.jpg均保存，未更改后端库存模型。
+
+最终Python801/801通过（新增7项）；前端109个断言通过（新增9个）。未发现本轮新增且尚未解决的P0。正式结果、性能限制及已分类历史辅助排序见[最终报告](final-delivery/report.md)。
