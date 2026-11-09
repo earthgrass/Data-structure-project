@@ -324,6 +324,7 @@ node_ids, m_time     = bundle.graph.get_adjacency_matrix(metric="travel_time")
 
 ## 文档导航
 
+* [`docs/strict-time-windows.md`](docs/strict-time-windows.md) — 严格签收预约窗、真实路线变化、逐单对照与验收数据
 * [`docs/bjut-campus-delivery.md`](docs/bjut-campus-delivery.md) — 校内快递站、四门外卖柜、楼栋候选点与校内订单配额
 * [`docs/bjut-map-workbench.md`](docs/bjut-map-workbench.md) — 北工大全屏真实地图、固定候选池、动态订单与验收数据
 * [`docs/local-roads-animation.md`](docs/local-roads-animation.md) — 稀疏近邻路网、真实配送动画与本轮验收数据
