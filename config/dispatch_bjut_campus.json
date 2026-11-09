@@ -4,6 +4,7 @@
   "orders_count": 24,
   "session_prefix": "campus",
   "sample_unique_destinations": true,
+  "time_window_policy_file": "config/campus_time_windows.json",
   "destination_quotas": {"campus": 20, "surrounding": 4},
   "hub_ids": ["T_CENTER", "T_EAST", "T_WEST", "T_NORTH", "T_SOUTH"],
   "vehicles": [

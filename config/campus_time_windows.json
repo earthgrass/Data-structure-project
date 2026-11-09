@@ -1,0 +1,10 @@
+{
+  "default_mode": "strict",
+  "modes": ["strict", "relaxed"],
+  "deadline_advance_minutes": 5,
+  "max_probe_orders": 6,
+  "appointment_slack_minutes": [2, 4, 6, 8, 12],
+  "max_window_width_minutes": 30,
+  "latest_deadline_minutes": 90,
+  "automatic_window_width_minutes": 20
+}

@@ -162,4 +162,5 @@ class Session:
                 'orders':[{**json_value(o),'location':list(state.locations[k])} for k,o in state.orders.items()],
                 'events':json_value(self.events),'plan':None if self.plan is None else self.plan.to_dict(),
                 'audit':json_value(self.audit()),'settings':{'automatic_window_width':float(state.config['automatic_window_width'])},
+                **({'time_windows':state.config['window_evidence']} if 'window_evidence' in state.config else {}),
                 **({'map':state.config['map']} if 'map' in state.config else {})}
