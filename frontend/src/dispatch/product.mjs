@@ -9,3 +9,5 @@ export function locationText(order,nodes){
   const name=nodes.find(n=>n.id===id)?.name;
   return `${label} · ${name?`${name} (${id})`:id}`;
 }
+/** Junctions are routing geometry, not warehouses or inventory transfer sites. O(nodes). */
+export function inventoryNodes(nodes){return nodes.filter(n=>n.type==='warehouse'||n.type==='transfer');}

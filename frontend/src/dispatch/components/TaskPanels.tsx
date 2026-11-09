@@ -2,12 +2,13 @@ import {useState} from 'react';
 import type {Snapshot,Command,Comparison} from '../types';
 import {Badge,Icon,type Confirmation} from './Common';
 import {fmt,labels,trafficLabels} from '../presentation';
+import {inventoryNodes} from '../product.mjs';
 
 export function InventoryPanel({data}:{data:Snapshot}){
-  return <><div className="d-section-note"><Icon name="inventory"/><p>到站卸货仅改变库存位置。只有客户签收动作完成，订单才记为已送达。数量按原始十进制字符串展示。</p></div><div className="d-inventory-grid">{data.nodes.filter(n=>n.type!=='customer').map(n=>{
+  return <><div className="d-section-note"><Icon name="inventory"/><p>到站卸货仅改变库存位置。只有客户签收动作完成，订单才记为已送达。数量按原始十进制字符串展示。</p></div><div className="d-inventory-grid">{inventoryNodes(data.nodes).map(n=>{
     const orders=data.orders.filter(o=>o.location[1]===n.id&&o.location[0]===(n.type==='warehouse'?'warehouse':'hub'));
     const car=data.vehicles.find(v=>v.base===n.id);
-    return <section className="d-card" key={n.id}><div className="d-card-head"><div><h2>{n.id} <small>{n.type==='warehouse'?'仓库':'中转站'}</small></h2><p>{car?`${car.id} · ${car.role==='trunk'?'干线补货':'末端配送'}`:'无绑定配送车辆'}</p></div><Badge>{orders.length} 张在库订单</Badge></div><div className="d-stock-list">{orders.map(o=><div key={o.id}><span><b>{o.id}</b><small>{o.destination} · {labels[o.status]}</small></span><span className="d-mono">{o.demand}</span></div>)}{!orders.length&&<p className="d-muted">暂无此位置的订单库存。</p>}</div></section>;
+    return <section className="d-card" key={n.id}><div className="d-card-head"><div><h2>{n.name??n.id} <small>{n.type==='warehouse'?'仓库':'中转站'}</small></h2><p>{n.id} · {car?`${car.id} · ${car.role==='trunk'?'干线补货':'末端配送'}`:'无绑定配送车辆'}</p></div><Badge>{orders.length} 张在库订单</Badge></div><div className="d-stock-list">{orders.map(o=><div key={o.id}><span><b>{o.id}</b><small>{o.destination} · {labels[o.status]}</small></span><span className="d-mono">{o.demand}</span></div>)}{!orders.length&&<p className="d-muted">暂无此位置的订单库存。</p>}</div></section>;
   })}</div></>;
 }
 export function TrafficPanel({data,road,setRoad,busy,command,confirm}:{data:Snapshot;road:string;setRoad:(v:string)=>void;busy:boolean;command:Command;confirm:(v:Confirmation)=>void}){
