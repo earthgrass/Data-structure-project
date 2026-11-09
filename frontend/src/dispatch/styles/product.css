@@ -1,0 +1,21 @@
+/* Final product polish: state guidance stays visible; viewport remains a map. */
+.d-map-title strong{font-size:18px}.d-map-title small{font-size:13px}
+.d-map-top-actions button,.d-map-fleet-switch button{min-height:44px}
+.d-map-drawer-head button{width:44px;min-height:44px}
+.d-map-playback-dock .d-dispatch-toolbar button,.d-map-playback-dock .d-target select{min-height:44px;font-size:14px}
+.d-map-playback-dock .d-toolbar-hint{display:block;flex-basis:100%;margin:4px 0 0;font-size:13px;line-height:1.5;color:#536c61}
+.d-map-playback-dock .d-dispatch-toolbar{flex-wrap:wrap}
+.d-map-playback-dock .d-demo-playback p{font-size:13px}
+.d-map-playback-dock .d-demo-playback button,.d-map-playback-dock .d-demo-playback select{min-height:44px}
+.d-map-drawer{bottom:205px}.d-map-world .d-map-legend{bottom:205px}
+.d-window-panel p,.d-window-toggle{font-size:14px!important}.d-window-table td,.d-window-table th{font-size:13px}
+.d-window-facts small{font-size:13px}.d-map-settings p,.d-map-panel-note{font-size:14px}
+@media(max-width:760px){
+ .d-map-topbar{padding:8px}.d-map-title strong{font-size:13px}.d-map-top-actions{gap:4px}
+ .d-map-top-actions button{min-height:44px;padding:6px;font-size:12px}
+ .d-map-summary{top:132px}.d-map-fleet-switch{top:177px}.d-map-fleet-switch button{min-height:44px}
+ .d-map-world .d-map-tools{top:230px}.d-map-drawer,.d-map-drawer.orders{top:132px;bottom:245px}
+ .d-map-world .d-map-legend{bottom:245px}.d-map-playback-dock .d-toolbar-hint{font-size:12px}
+ .d-map-playback-dock .d-dispatch-toolbar{flex-wrap:wrap}.d-map-playback-dock .d-target{flex:1}
+ .d-map-playback-dock .d-dispatch-toolbar button{font-size:12px;padding:6px 8px}
+}

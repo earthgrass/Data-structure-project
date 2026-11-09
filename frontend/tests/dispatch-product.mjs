@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {matchesOrder,locationText} from '../src/dispatch/product.mjs';
+const nodes=[{id:'P1',name:'第二教学楼'},{id:'T1',name:'西门外卖柜'}];
+const o={id:'O1',destination:'P1',hub:'T1',location:['hub','T1']};
+assert.equal(matchesOrder(o,nodes,'第二教学楼'),true);
+assert.equal(matchesOrder(o,nodes,'西门'),true);
+assert.equal(matchesOrder(o,nodes,'o1'),true);
+assert.equal(matchesOrder(o,nodes,'不存在'),false);
+assert.equal(locationText(o,nodes),'中转站 · 西门外卖柜 (T1)');
+assert.equal(locationText({...o,location:['vehicle','WEST']},nodes),'车辆载货 · WEST');
+assert.equal(locationText({...o,location:['delivered','O1']},nodes),'已签收 · O1');
+console.log('7 product search and inventory-label assertions passed');
