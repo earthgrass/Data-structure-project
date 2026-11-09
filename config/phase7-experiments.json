@@ -1,0 +1,8 @@
+{
+  "seed":42,
+  "tiny_deadline":1,
+  "delayed_earliest":30,"delayed_deadline":32,"same_site_deadline":34,
+  "competition_deadline":13,"competition_id":"COMPETE","competition_demand":"0.1",
+  "performance_counts":[12,24,36],
+  "dynamic_id":"DEFENSE-CRITICAL","dynamic_demand":"0.1","dynamic_window_minutes":120
+}
