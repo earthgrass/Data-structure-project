@@ -11,6 +11,7 @@ import {DemoPlayback} from './components/DemoPlayback';
 import {OrderTable,AddOrder} from './components/OrderTable';
 import {MapWorkbench} from './components/MapWorkbench';
 import {TimeWindowPanel} from './components/TimeWindows';
+import {ControlledExperiment} from './components/ControlledExperiment';
 import {InventoryPanel,TrafficPanel,ObjectiveComparison,EventHistory} from './components/TaskPanels';
 import './dashboard.css';
 
@@ -54,7 +55,7 @@ export function DispatchDashboard(){
       {workspace==='orders'&&<OrderTable seed={seed} data={data} busy={disabled} command={session.command} confirm={setConfirmation} error={session.error}/>}
       {workspace==='inventory'&&<InventoryPanel data={data}/>}
       {workspace==='traffic'&&<><div className="d-traffic-workspace">{map}<TrafficPanel data={data} road={road} setRoad={setRoad} busy={disabled} command={session.command} confirm={setConfirmation}/></div><div className="d-lower-toolbar"><DispatchToolbar data={data} objective={objective} setObjective={setObjective} busy={session.busy} connection={session.connection} command={session.command} onCreate={create} onResults={()=>navigate('audit')} playing={session.playing} setPlaying={session.setPlaying}/></div></>}
-      {workspace==='audit'&&<div className="d-audit-workspace"><ObjectiveComparison data={data} comparison={session.connection==='connected'?session.comparison:null} busy={disabled} command={session.command}/><EventHistory data={data}/></div>}
+      {workspace==='audit'&&<div className="d-audit-workspace"><ControlledExperiment/><ObjectiveComparison data={data} comparison={session.connection==='connected'?session.comparison:null} busy={disabled} command={session.command}/><EventHistory data={data}/></div>}
     </>}
     {session.message&&!session.error&&<div className="d-toast" role="status"><span>✓</span>{session.message}</div>}
     <ConfirmDialog value={confirmation} close={()=>setConfirmation(null)}/>

@@ -1,0 +1,17 @@
+{
+  "title": "受控双目标：短距离高服务成本与长距离低服务成本",
+  "cost_note": "全部为教学模拟参数，不是真实道路收费。直达通道8元/km，普通通道1元/km；距离与时间均为模拟量。",
+  "warehouse": "W", "hub": "H",
+  "nodes": [["W","warehouse"],["H","transfer"],["A","customer"],["X","customer"]],
+  "roads": [
+    ["W","H",1,1,1],["H","W",1,1,1],
+    ["H","A",1,1,8],["A","H",1,1,8],
+    ["H","X",1,1,1],["X","H",1,1,1],
+    ["X","A",1,1,1],["A","X",1,1,1]
+  ],
+  "vehicles": [
+    {"id":"TRUNK","courier_id":"CT","role":"trunk","base":"W","capacity":"10"},
+    {"id":"LAST","courier_id":"CL","role":"delivery","base":"H","capacity":"10"}
+  ],
+  "orders": [{"id":"DEMO1","destination":"A","demand":"1","earliest":0,"deadline":100,"priority":"normal"}]
+}

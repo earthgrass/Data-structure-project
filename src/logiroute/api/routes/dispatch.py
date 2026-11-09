@@ -26,6 +26,13 @@ class DispatchService:
 router=APIRouter(prefix='/api/v2')
 
 
+@router.get('/experiments/objective-demo')
+def controlled_objective_demo() -> dict[str,Any]:
+    """Read-only isolated small experiment; never writes session state."""
+    from logiroute.dispatch.controlled_demo import objective_demo
+    return objective_demo()
+
+
 def failure(status: int,kind: str,message: str,**details: Any) -> JSONResponse:
     return JSONResponse(status_code=status,content={'error':{'kind':kind,'message':message,**details}})
 

@@ -1,0 +1,545 @@
+{
+  "title": "受控双目标：短距离高服务成本与长距离低服务成本",
+  "simulated_costs": true,
+  "cost_note": "全部为教学模拟参数，不是真实道路收费。直达通道8元/km，普通通道1元/km；距离与时间均为模拟量。",
+  "runs": [
+    {
+      "objective": "distance",
+      "input_fingerprint": "6b593e4b5c5635c66d264f74ff7f89981a1893fb89373547cef9c078e20cf83f",
+      "plan": {
+        "objective": "distance",
+        "revision": 0,
+        "traffic_version": 0,
+        "assignments": [
+          [
+            "DEMO1",
+            "H"
+          ]
+        ],
+        "routes": [
+          {
+            "vehicle": "LAST",
+            "start_node": "H",
+            "end_node": "H",
+            "actions": [
+              {
+                "vehicle": "LAST",
+                "kind": "wait",
+                "start": 0,
+                "end": 7.0,
+                "source": "H",
+                "target": "H",
+                "ids": [],
+                "distance": 0.0,
+                "travel_time": 0.0,
+                "cost": 0.0,
+                "traffic_version": 0,
+                "batch": 1
+              },
+              {
+                "vehicle": "LAST",
+                "kind": "load",
+                "start": 7.0,
+                "end": 10.0,
+                "source": "H",
+                "target": "H",
+                "ids": [
+                  "DEMO1"
+                ],
+                "distance": 0.0,
+                "travel_time": 0.0,
+                "cost": 0.0,
+                "traffic_version": 0,
+                "batch": 1
+              },
+              {
+                "vehicle": "LAST",
+                "kind": "drive",
+                "start": 10.0,
+                "end": 11.0,
+                "source": "H",
+                "target": "A",
+                "ids": [],
+                "distance": 1,
+                "travel_time": 1.0,
+                "cost": 8.0,
+                "traffic_version": 0,
+                "batch": 1
+              },
+              {
+                "vehicle": "LAST",
+                "kind": "deliver",
+                "start": 11.0,
+                "end": 13.0,
+                "source": "A",
+                "target": "A",
+                "ids": [
+                  "DEMO1"
+                ],
+                "distance": 0.0,
+                "travel_time": 0.0,
+                "cost": 0.0,
+                "traffic_version": 0,
+                "batch": 1
+              },
+              {
+                "vehicle": "LAST",
+                "kind": "drive",
+                "start": 13.0,
+                "end": 14.0,
+                "source": "A",
+                "target": "H",
+                "ids": [],
+                "distance": 1,
+                "travel_time": 1.0,
+                "cost": 8.0,
+                "traffic_version": 0,
+                "batch": 1
+              },
+              {
+                "vehicle": "LAST",
+                "kind": "finish",
+                "start": 14.0,
+                "end": 14.0,
+                "source": "H",
+                "target": "H",
+                "ids": [],
+                "distance": 0.0,
+                "travel_time": 0.0,
+                "cost": 0.0,
+                "traffic_version": 0,
+                "batch": 1
+              }
+            ],
+            "total_distance": 2.0,
+            "total_cost": 16.0,
+            "end_time": 14.0
+          },
+          {
+            "vehicle": "TRUNK",
+            "start_node": "W",
+            "end_node": "W",
+            "actions": [
+              {
+                "vehicle": "TRUNK",
+                "kind": "load",
+                "start": 0,
+                "end": 3,
+                "source": "W",
+                "target": "W",
+                "ids": [
+                  "DEMO1"
+                ],
+                "distance": 0.0,
+                "travel_time": 0.0,
+                "cost": 0.0,
+                "traffic_version": 0,
+                "batch": 1
+              },
+              {
+                "vehicle": "TRUNK",
+                "kind": "drive",
+                "start": 3,
+                "end": 4.0,
+                "source": "W",
+                "target": "H",
+                "ids": [],
+                "distance": 1,
+                "travel_time": 1.0,
+                "cost": 1.0,
+                "traffic_version": 0,
+                "batch": 1
+              },
+              {
+                "vehicle": "TRUNK",
+                "kind": "unload",
+                "start": 4.0,
+                "end": 7.0,
+                "source": "H",
+                "target": "H",
+                "ids": [
+                  "DEMO1"
+                ],
+                "distance": 0.0,
+                "travel_time": 0.0,
+                "cost": 0.0,
+                "traffic_version": 0,
+                "batch": 1
+              },
+              {
+                "vehicle": "TRUNK",
+                "kind": "drive",
+                "start": 7.0,
+                "end": 8.0,
+                "source": "H",
+                "target": "W",
+                "ids": [],
+                "distance": 1,
+                "travel_time": 1.0,
+                "cost": 1.0,
+                "traffic_version": 0,
+                "batch": 1
+              },
+              {
+                "vehicle": "TRUNK",
+                "kind": "finish",
+                "start": 8.0,
+                "end": 8.0,
+                "source": "W",
+                "target": "W",
+                "ids": [],
+                "distance": 0.0,
+                "travel_time": 0.0,
+                "cost": 0.0,
+                "traffic_version": 0,
+                "batch": 1
+              }
+            ],
+            "total_distance": 2.0,
+            "total_cost": 2.0,
+            "end_time": 8.0
+          }
+        ],
+        "accepted": [
+          "DEMO1"
+        ],
+        "deferred": [],
+        "report": {
+          "valid": true,
+          "complete_all": true,
+          "safe_to_apply": true,
+          "violations": []
+        },
+        "fingerprint": "bb842037e743f63fb85a3e084107cef375f964cee9fa44d5517477c7c898e739",
+        "total_distance": 4.0,
+        "total_cost": 18.0
+      },
+      "distance": 4.0,
+      "cost": 18.0,
+      "travel_time": 4.0,
+      "final_return": 14.0,
+      "planning_seconds": 0.0016719999257475138,
+      "audit": {
+        "valid": true,
+        "complete_all": true,
+        "safe_to_apply": true,
+        "violations": []
+      }
+    },
+    {
+      "objective": "cost",
+      "input_fingerprint": "6b593e4b5c5635c66d264f74ff7f89981a1893fb89373547cef9c078e20cf83f",
+      "plan": {
+        "objective": "cost",
+        "revision": 0,
+        "traffic_version": 0,
+        "assignments": [
+          [
+            "DEMO1",
+            "H"
+          ]
+        ],
+        "routes": [
+          {
+            "vehicle": "LAST",
+            "start_node": "H",
+            "end_node": "H",
+            "actions": [
+              {
+                "vehicle": "LAST",
+                "kind": "wait",
+                "start": 0,
+                "end": 7.0,
+                "source": "H",
+                "target": "H",
+                "ids": [],
+                "distance": 0.0,
+                "travel_time": 0.0,
+                "cost": 0.0,
+                "traffic_version": 0,
+                "batch": 1
+              },
+              {
+                "vehicle": "LAST",
+                "kind": "load",
+                "start": 7.0,
+                "end": 10.0,
+                "source": "H",
+                "target": "H",
+                "ids": [
+                  "DEMO1"
+                ],
+                "distance": 0.0,
+                "travel_time": 0.0,
+                "cost": 0.0,
+                "traffic_version": 0,
+                "batch": 1
+              },
+              {
+                "vehicle": "LAST",
+                "kind": "drive",
+                "start": 10.0,
+                "end": 11.0,
+                "source": "H",
+                "target": "X",
+                "ids": [],
+                "distance": 1,
+                "travel_time": 1.0,
+                "cost": 1.0,
+                "traffic_version": 0,
+                "batch": 1
+              },
+              {
+                "vehicle": "LAST",
+                "kind": "drive",
+                "start": 11.0,
+                "end": 12.0,
+                "source": "X",
+                "target": "A",
+                "ids": [],
+                "distance": 1,
+                "travel_time": 1.0,
+                "cost": 1.0,
+                "traffic_version": 0,
+                "batch": 1
+              },
+              {
+                "vehicle": "LAST",
+                "kind": "deliver",
+                "start": 12.0,
+                "end": 14.0,
+                "source": "A",
+                "target": "A",
+                "ids": [
+                  "DEMO1"
+                ],
+                "distance": 0.0,
+                "travel_time": 0.0,
+                "cost": 0.0,
+                "traffic_version": 0,
+                "batch": 1
+              },
+              {
+                "vehicle": "LAST",
+                "kind": "drive",
+                "start": 14.0,
+                "end": 15.0,
+                "source": "A",
+                "target": "X",
+                "ids": [],
+                "distance": 1,
+                "travel_time": 1.0,
+                "cost": 1.0,
+                "traffic_version": 0,
+                "batch": 1
+              },
+              {
+                "vehicle": "LAST",
+                "kind": "drive",
+                "start": 15.0,
+                "end": 16.0,
+                "source": "X",
+                "target": "H",
+                "ids": [],
+                "distance": 1,
+                "travel_time": 1.0,
+                "cost": 1.0,
+                "traffic_version": 0,
+                "batch": 1
+              },
+              {
+                "vehicle": "LAST",
+                "kind": "finish",
+                "start": 16.0,
+                "end": 16.0,
+                "source": "H",
+                "target": "H",
+                "ids": [],
+                "distance": 0.0,
+                "travel_time": 0.0,
+                "cost": 0.0,
+                "traffic_version": 0,
+                "batch": 1
+              }
+            ],
+            "total_distance": 4.0,
+            "total_cost": 4.0,
+            "end_time": 16.0
+          },
+          {
+            "vehicle": "TRUNK",
+            "start_node": "W",
+            "end_node": "W",
+            "actions": [
+              {
+                "vehicle": "TRUNK",
+                "kind": "load",
+                "start": 0,
+                "end": 3,
+                "source": "W",
+                "target": "W",
+                "ids": [
+                  "DEMO1"
+                ],
+                "distance": 0.0,
+                "travel_time": 0.0,
+                "cost": 0.0,
+                "traffic_version": 0,
+                "batch": 1
+              },
+              {
+                "vehicle": "TRUNK",
+                "kind": "drive",
+                "start": 3,
+                "end": 4.0,
+                "source": "W",
+                "target": "H",
+                "ids": [],
+                "distance": 1,
+                "travel_time": 1.0,
+                "cost": 1.0,
+                "traffic_version": 0,
+                "batch": 1
+              },
+              {
+                "vehicle": "TRUNK",
+                "kind": "unload",
+                "start": 4.0,
+                "end": 7.0,
+                "source": "H",
+                "target": "H",
+                "ids": [
+                  "DEMO1"
+                ],
+                "distance": 0.0,
+                "travel_time": 0.0,
+                "cost": 0.0,
+                "traffic_version": 0,
+                "batch": 1
+              },
+              {
+                "vehicle": "TRUNK",
+                "kind": "drive",
+                "start": 7.0,
+                "end": 8.0,
+                "source": "H",
+                "target": "W",
+                "ids": [],
+                "distance": 1,
+                "travel_time": 1.0,
+                "cost": 1.0,
+                "traffic_version": 0,
+                "batch": 1
+              },
+              {
+                "vehicle": "TRUNK",
+                "kind": "finish",
+                "start": 8.0,
+                "end": 8.0,
+                "source": "W",
+                "target": "W",
+                "ids": [],
+                "distance": 0.0,
+                "travel_time": 0.0,
+                "cost": 0.0,
+                "traffic_version": 0,
+                "batch": 1
+              }
+            ],
+            "total_distance": 2.0,
+            "total_cost": 2.0,
+            "end_time": 8.0
+          }
+        ],
+        "accepted": [
+          "DEMO1"
+        ],
+        "deferred": [],
+        "report": {
+          "valid": true,
+          "complete_all": true,
+          "safe_to_apply": true,
+          "violations": []
+        },
+        "fingerprint": "bb842037e743f63fb85a3e084107cef375f964cee9fa44d5517477c7c898e739",
+        "total_distance": 6.0,
+        "total_cost": 6.0
+      },
+      "distance": 6.0,
+      "cost": 6.0,
+      "travel_time": 6.0,
+      "final_return": 16.0,
+      "planning_seconds": 0.0016795999836176634,
+      "audit": {
+        "valid": true,
+        "complete_all": true,
+        "safe_to_apply": true,
+        "violations": []
+      }
+    }
+  ],
+  "reference": {
+    "scope": "one order, one hub, fixed trunk shuttle, positive weights; no general fleet optimum claim",
+    "enumerated_closed_routes": 4,
+    "minimum_distance": 4,
+    "minimum_cost": 6,
+    "routes": [
+      {
+        "out": [
+          "H",
+          "A"
+        ],
+        "back": [
+          "A",
+          "H"
+        ],
+        "distance": 4,
+        "travel_time": 4,
+        "cost": 18
+      },
+      {
+        "out": [
+          "H",
+          "A"
+        ],
+        "back": [
+          "A",
+          "X",
+          "H"
+        ],
+        "distance": 5,
+        "travel_time": 5,
+        "cost": 12
+      },
+      {
+        "out": [
+          "H",
+          "X",
+          "A"
+        ],
+        "back": [
+          "A",
+          "H"
+        ],
+        "distance": 5,
+        "travel_time": 5,
+        "cost": 12
+      },
+      {
+        "out": [
+          "H",
+          "X",
+          "A"
+        ],
+        "back": [
+          "A",
+          "X",
+          "H"
+        ],
+        "distance": 6,
+        "travel_time": 6,
+        "cost": 6
+      }
+    ]
+  }
+}
