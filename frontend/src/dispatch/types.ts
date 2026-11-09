@@ -4,11 +4,14 @@ export type Plan = {objective:string;revision:number;traffic_version:number;fing
 export type Comparison={sessionId:string;revision:number;trafficVersion:number;fingerprint:string;plans:Plan[]};
 export type Workspace='overview'|'fleet'|'orders'|'inventory'|'traffic'|'audit';
 export type Connection='connecting'|'connected'|'failed'|'missing';
+export type WindowMode='strict'|'relaxed';
+export type WindowEvidence={mode:WindowMode;initial_only:boolean;initial_time:number;initial_traffic_version:number;comparison_objective?:string;changed_vehicles:string[];baseline_late_orders:{order_id:string;baseline_end:number;deadline:number}[];window_min_minutes:number;window_max_minutes:number;minimum_completion_slack_minutes?:number;probe_order_id?:string;probe_old_end?:number;probe_deadline?:number;relaxed_routes?:{vehicle:string;edges:{source:string;target:string}[];service_order:string[]}[];orders?:{id:string;destination:string;demand:string;priority:string;earliest:number;deadline:number;baseline_end:number;strict_end:number}[]};
 export type Command=(command:string,fields?:Record<string,unknown>)=>Promise<boolean>;
 export type Vehicle=Snapshot['vehicles'][number];
 export type Road=Snapshot['edges'][number];
 export type Snapshot = {
   id:string;revision:number;traffic_version:number;now:number;running:boolean;ready:boolean;needs_replan:boolean;
+  time_windows?:WindowEvidence;
   nodes:{id:string;type:string;x:number;y:number;name?:string;lon?:number;lat?:number;zone?:string;display_name?:string;approximate?:boolean;location_note?:string;snap_distance_m?:number}[];
   edges:{source:string;target:string;distance:number;travel_time:number;cost:number;status:string;geometry?:[number,number][];name?:string;osm_way?:string}[];
   map?:{source:string;title:string;download_date:string;license:string;bounds:number[];candidate_count:number;campus_profile?:boolean;campus_candidate_count?:number;initial_campus_orders?:number;initial_orders?:number;outline?:[number,number][];location_note?:string;features:{kind:string;name:string;geometry:[number,number][]}[];background_roads:{name:string;kind:string;geometry:[number,number][]}[]};

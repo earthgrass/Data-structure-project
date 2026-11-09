@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {windowEvidenceCurrent} from '../src/dispatch/windows.mjs';
+const order={id:'one',destination:'P1',demand:'0.1',priority:'normal',earliest:10,deadline:16,status:'pending',location:['warehouse','W1']};
+const data={now:0,running:false,traffic_version:0,orders:[order],time_windows:{mode:'strict',initial_time:0,initial_traffic_version:0,comparison_objective:'distance',orders:[{...order}]}};
+assert.equal(windowEvidenceCurrent(data),true);
+assert.equal(windowEvidenceCurrent({...data,now:1}),false);
+assert.equal(windowEvidenceCurrent({...data,running:true}),false);
+assert.equal(windowEvidenceCurrent({...data,traffic_version:1}),false);
+assert.equal(windowEvidenceCurrent({...data,orders:[{...order,deadline:17}]}),false);
+assert.equal(windowEvidenceCurrent({...data,orders:[{...order,priority:'urgent'}]}),false);
+assert.equal(windowEvidenceCurrent({...data,orders:[order,{...order,id:'two'}]}),false);
+assert.equal(windowEvidenceCurrent({...data,plan:{objective:'cost'}}),false);
+assert.equal(windowEvidenceCurrent({...data,orders:[{...order,status:'cancelled'}]}),false);
+assert.equal(windowEvidenceCurrent(null),false);
+console.log('10 strict-window counterfactual binding and stale-evidence assertions passed');

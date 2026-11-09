@@ -1,5 +1,6 @@
 import {useEffect,useState} from 'react';
-import type {Workspace} from './types';
+import type {Workspace,WindowMode} from './types';
+import {windowEvidenceCurrent} from './windows.mjs';
 import {useDispatchSession} from './hooks/useDispatchSession';
 import {AppShell,workspaces} from './components/AppShell';
 import {ConfirmDialog,Empty,type Confirmation} from './components/Common';
@@ -9,6 +10,7 @@ import {FleetList,VehicleInspector} from './components/Fleet';
 import {DemoPlayback} from './components/DemoPlayback';
 import {OrderTable,AddOrder} from './components/OrderTable';
 import {MapWorkbench} from './components/MapWorkbench';
+import {TimeWindowPanel} from './components/TimeWindows';
 import {InventoryPanel,TrafficPanel,ObjectiveComparison,EventHistory} from './components/TaskPanels';
 import './dashboard.css';
 
@@ -17,6 +19,8 @@ export function DispatchDashboard(){
   const [workspace,setWorkspace]=useState<Workspace>('overview'),[seed,setSeed]=useState(''),[objective,setObjective]=useState('distance');
   const [selected,setSelected]=useState(''),[road,setRoad]=useState(''),[confirmation,setConfirmation]=useState<Confirmation|null>(null);
   const [destination,setDestination]=useState('');
+  const [windowMode,setWindowMode]=useState<WindowMode>('strict'),[showRelaxed,setShowRelaxed]=useState(false);
+  useEffect(()=>setShowRelaxed(false),[data?.id]);
   useEffect(()=>{
     const read=()=>{const value=window.location.hash.slice(1);if(workspaces.some(w=>w.id===value))setWorkspace(value as Workspace);};
     read();window.addEventListener('hashchange',read);return()=>window.removeEventListener('hashchange',read);
@@ -24,16 +28,17 @@ export function DispatchDashboard(){
   useEffect(()=>{if(data&&!data.vehicles.some(v=>v.id===selected))setSelected(data.vehicles[0]?.id??'');},[data,selected]);
   function navigate(value:Workspace){setWorkspace(value);window.history.replaceState(null,'','#'+value);}
   function create(){
-    const run=()=>{void session.create(seed).then(success=>{if(success){navigate('overview');setRoad('');}});};
+    const run=()=>{void session.create(seed,windowMode).then(success=>{if(success){navigate('overview');setRoad('');}});};
     if(!data)run();else setConfirmation({title:'切换到新场景？',description:'当前工作区将切换到新会话，自动推进会停止。当前会话在后端的物理记录不会被改写。',confirm:'创建并切换',action:run});
   }
   const disabled=!!session.busy||session.connection!=='connected';
   const createDisabled=!!session.busy||session.connection==='failed'||session.connection==='connecting';
   const car=data?.vehicles.find(v=>v.id===selected)??data?.vehicles[0];
-  const map=data&&car?<NetworkCanvas key={data.id} data={data} selected={car.id} clock={session.motionClock} onVehicle={setSelected} onCandidate={id=>{session.setPlaying(false);setDestination(id);}} onRoad={r=>setRoad(r.source+'|'+r.target)}/>:null;
+  const map=data&&car?<NetworkCanvas key={data.id} data={data} selected={car.id} clock={session.motionClock} showRelaxed={showRelaxed&&windowEvidenceCurrent(data)} onVehicle={setSelected} onCandidate={id=>{session.setPlaying(false);setDestination(id);}} onRoad={r=>setRoad(r.source+'|'+r.target)}/>:null;
   const playback=data?<DemoPlayback data={data} playing={session.playing} busy={session.busy} clock={session.motionClock} speed={session.speed} setSpeed={session.setSpeed} toggle={session.togglePlayback}/>:null;
   const inspector=data&&car?<VehicleInspector data={data} car={car}/>:null;
   if(workspace==='overview'&&data)return <><MapWorkbench data={data} map={map} playback={playback}
+    windows={<TimeWindowPanel data={data} showRelaxed={showRelaxed} setShowRelaxed={setShowRelaxed} onVehicle={setSelected} selected={car?.id??''}/>} windowMode={windowMode} setWindowMode={setWindowMode}
     toolbar={<DispatchToolbar data={data} objective={objective} setObjective={setObjective} busy={session.busy} connection={session.connection} command={session.command} onCreate={create} onResults={()=>navigate('audit')} playing={session.playing} setPlaying={session.setPlaying}/>}
     orders={<OrderTable seed={seed} data={data} busy={disabled} command={session.command} confirm={setConfirmation} error={session.error}/>}
     fleet={<FleetList data={data} selected={car?.id??''} onSelect={setSelected} compact/>} inspector={inspector}

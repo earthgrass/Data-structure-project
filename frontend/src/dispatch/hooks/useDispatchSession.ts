@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
-import type {Snapshot,Comparison,Connection} from '../types';
+import type {Snapshot,Comparison,Connection,WindowMode} from '../types';
 import {bindComparison,reconcileSnapshot,failureFeedback} from '../sync.mjs';
 import {useConfirmedMotion} from './useConfirmedMotion';
 
@@ -55,12 +55,12 @@ export function useDispatchSession(){
     const timer=setInterval(()=>{if(!locked.current)void refresh(false);},2000);
     return()=>clearInterval(timer);
   },[refresh]);
-  const create=useCallback(async(seed:string)=>{
+  const create=useCallback(async(seed:string,windowMode:WindowMode='strict')=>{
     if(locked.current)return false;
     locked.current=true;setBusy('create');setPlaying(false);setError('');setMessage('');setConnection('connecting');
     const ticket=++epoch.current;
     try{
-      const incoming=await request('/sessions',{profile:'bjut-campus',...(seed===''?{}:{seed:Number(seed)})});
+      const incoming=await request('/sessions',{profile:'bjut-campus',window_mode:windowMode,...(seed===''?{}:{seed:Number(seed)})});
       active.current=incoming.id;sessionStorage.setItem('logiroute-session',incoming.id);
       live.current={snapshot:null,comparison:null};receive(incoming,ticket);setMessage('新场景已创建，等待规划。');return true;
     }catch(e){failed(e,ticket);return false;}finally{locked.current=false;setBusy('');}
