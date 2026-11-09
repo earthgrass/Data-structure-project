@@ -35,7 +35,10 @@ def largest_component(adjacency: dict[str,list[str]]) -> list[str]:
 
 
 def compile_roads(nodes: dict[str,dict[str,Any]],ways: list[dict[str,Any]],settings: dict[str,Any]) -> dict[str,Any]:
-    """Split ways at intersections, keep geometry/direction, retain SCC; O(V²+E+P*V).
+    """Split ways at intersections, preserve geometry/direction, retain SCC.
+
+    Time O(V²+E+G+(P+L)*V*B), Space O(V+E+G). G counts geometry points,
+    P candidates, L configured landmarks, B campus boundary size (1 without campus).
 
     No invented reverse edges. Parallel endpoint pairs retain the shortest actual
     directed chain; discarded alternatives are counted, never merged geometrically.
@@ -65,7 +68,11 @@ def compile_roads(nodes: dict[str,dict[str,Any]],ways: list[dict[str,Any]],setti
             if oneway not in ('yes','1','true'): adjacency[b].append(a)
             if oneway!='-1': adjacency[a].append(b)
     component=set(largest_component(adjacency))
-    anchors=set()
+    landmarks={}; campus=None
+    if settings.get('campus'):
+        from logiroute.algorithms.campus_locations import place_landmarks
+        landmarks,campus=place_landmarks(nodes,ways,settings,component)
+    anchors=set(landmarks)
     for w in valid:
         refs=w['nodes']
         for i,k in enumerate(refs):
@@ -100,7 +107,8 @@ def compile_roads(nodes: dict[str,dict[str,Any]],ways: list[dict[str,Any]],setti
         edges[key]=e
     adjacency={k:[] for k in ordered_strings(anchors)}
     for a,b in edges: adjacency[a].append(b)
-    kept=largest_component(adjacency); allowed=set(kept); selected={}; reserved=set()
+    kept=largest_component(adjacency); allowed=set(kept); selected=dict(landmarks); reserved=set(selected)
+    if any(k not in allowed for k in selected): raise ValueError('configured landmark lost during road compression')
     def nearest(lon: float,lat: float) -> str:
         p=point(lon,lat); best=None; score=math.inf
         for k in kept:
@@ -109,16 +117,23 @@ def compile_roads(nodes: dict[str,dict[str,Any]],ways: list[dict[str,Any]],setti
             if d<score: score=d; best=k
         if best is None: raise ValueError('not enough distinct real road locations')
         return best
-    for base in settings['bases']:
+    for base in ([] if landmarks else settings['bases']):
         k=nearest(base['lon'],base['lat']); reserved.add(k); selected[k]=base
     # Farthest-first spatial coverage over actual road anchors, stable ID tie order.
     distances={k:min((nodes[k]['lon']-nodes[b]['lon'])**2*math.cos(math.radians(nodes[k]['lat']))**2+(nodes[k]['lat']-nodes[b]['lat'])**2 for b in reserved) for k in kept}
-    for i in range(settings['candidate_count']):
+    initial_candidates=sum(r['type']=='customer' for r in selected.values())
+    if initial_candidates>settings['candidate_count']: raise ValueError('named pool exceeds configured candidate count')
+    for i in range(initial_candidates,settings['candidate_count']):
         best=None; score=-1
         for k in kept:
+            if campus:
+                from logiroute.algorithms.campus_locations import in_polygon
+                p=nodes[k]; w,s,e,n=campus['outside_bounds']
+                if not w<=p['lon']<=e or not s<=p['lat']<=n or in_polygon(p['lon'],p['lat'],campus['polygon']): continue
             if k not in reserved and distances[k]>score: best=k; score=distances[k]
         if best is None: raise ValueError('candidate pool exceeds road anchors')
         reserved.add(best); selected[best]={'id':f'P{i+1:02}','type':'customer','name':names.get(best,'道路')+' · 候选点 '+str(i+1)}
+        if campus: selected[best]['metadata']={'zone':'surrounding','location_source':'osm_road_anchor','approximate':True}
         for k in kept:
             d=(nodes[k]['lon']-nodes[best]['lon'])**2*math.cos(math.radians(nodes[k]['lat']))**2+(nodes[k]['lat']-nodes[best]['lat'])**2
             distances[k]=min(distances[k],d)
@@ -127,7 +142,13 @@ def compile_roads(nodes: dict[str,dict[str,Any]],ways: list[dict[str,Any]],setti
     for k in kept:
         n=nodes[k]; role=selected.get(k,{'type':'customer','name':names.get(k,'道路')})
         output_nodes.append({'id':ids[k],'type':role['type'],'name':role['name'],'x':point(n['lon'],n['lat'])[0],'y':point(n['lon'],n['lat'])[1],
-                             'metadata':{'osm_id':k,'lon':n['lon'],'lat':n['lat'],'routing_only':k not in selected}})
-    return {'nodes':output_nodes,'edges':[{**e,'source':ids[e['source']],'target':ids[e['target']]} for e in edges.values() if e['source'] in allowed and e['target'] in allowed],
+                             'metadata':{'osm_id':k,'lon':n['lon'],'lat':n['lat'],'routing_only':k not in selected,**role.get('metadata',{})}})
+    output={'nodes':output_nodes,'edges':[{**e,'source':ids[e['source']],'target':ids[e['target']]} for e in edges.values() if e['source'] in allowed and e['target'] in allowed],
             'features':features,'background_roads':background,'bounds':[0,0,*point(east,south)],'candidate_ids':[r['id'] for r in selected.values() if r['type']=='customer'],
             'discarded_parallel_directions':duplicates,'discarded_road_nodes':len(adjacency)-len(kept)}
+    if campus:
+        outline=[point(*p) for p in campus['polygon']]; pad=campus['map_padding_m']/math.cos(math.radians((south+north)/2))
+        output['bounds']=[min(p[0] for p in outline)-pad,min(p[1] for p in outline)-pad,max(p[0] for p in outline)+pad,max(p[1] for p in outline)+pad]
+        output['campus']={'outline':outline,'campus_profile':True,'location_note':'快递站与外卖柜按用户描述近似定位，可依据实际柜位进一步校准'}
+        output['candidate_groups']={zone:[r['id'] for r in selected.values() if r['type']=='customer' and r['metadata']['zone']==zone] for zone in ('campus','surrounding')}
+    return output

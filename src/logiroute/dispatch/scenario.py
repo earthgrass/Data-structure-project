@@ -79,6 +79,11 @@ def make_state(seed: int,config: dict[str,Any] | None = None) -> State:
     if any(v.base not in c['warehouse_ids'] for v in vehicles.values() if v.role=='trunk'): raise ValueError('warehouse binding required')
     rng=RandomSource(seed); customers=ordered_strings(c.get('candidate_ids',[n.id for n in graph.nodes if n.node_type is NodeType.CUSTOMER]))
     if c.get('sample_unique_destinations') and c['orders_count']>len(customers): raise ValueError('order count exceeds unique candidate pool')
+    regional=None
+    if 'destination_quotas' in c:
+        from logiroute.algorithms.regional_sampling import sample_regions
+        if not c.get('sample_unique_destinations'): raise ValueError('regional initial sampling requires unique destinations')
+        regional=sample_regions(c['candidate_groups'],c['destination_quotas'],c['orders_count'],rng)
     orders={}; locations={}; t=c['timing']
     for i in range(c['orders_count']):
         draw=rng.randint(1,sum(c['priority_weights'].values())); priority='normal'
@@ -86,7 +91,7 @@ def make_state(seed: int,config: dict[str,Any] | None = None) -> State:
             draw-=c['priority_weights'][p]
             if draw<=0: priority=p; break
         key=c['order_prefix']+str(i+1)
-        destination=rng.choice(customers)
+        destination=regional[i] if regional is not None else rng.choice(customers)
         if c.get('sample_unique_destinations'): customers.remove(destination)
         orders[key]=Parcel(key,destination,rng.choice(c['demand_choices']),t['window_start'],t['window_end'],priority)
         locations[key]=('warehouse',c['warehouse_ids'][0])

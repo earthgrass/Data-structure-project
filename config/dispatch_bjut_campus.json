@@ -1,0 +1,17 @@
+{
+  "name": "北京工业大学 · 校内快递站与四门外卖柜",
+  "road_dataset": "data/bjut/campus-network.json",
+  "orders_count": 24,
+  "session_prefix": "campus",
+  "sample_unique_destinations": true,
+  "destination_quotas": {"campus": 20, "surrounding": 4},
+  "hub_ids": ["T_CENTER", "T_EAST", "T_WEST", "T_NORTH", "T_SOUTH"],
+  "vehicles": [
+    {"id":"TRUNK","courier_id":"CT","role":"trunk","base":"W1","capacity":150},
+    {"id":"CENTER","courier_id":"CC","role":"delivery","base":"T_CENTER","capacity":50},
+    {"id":"EAST","courier_id":"CE","role":"delivery","base":"T_EAST","capacity":50},
+    {"id":"WEST","courier_id":"CW","role":"delivery","base":"T_WEST","capacity":50},
+    {"id":"NORTH","courier_id":"CN","role":"delivery","base":"T_NORTH","capacity":50},
+    {"id":"SOUTH","courier_id":"CS","role":"delivery","base":"T_SOUTH","capacity":50}
+  ]
+}

@@ -1,0 +1,333 @@
+{
+  "bbox": [
+    116.465,
+    39.865,
+    116.495,
+    39.885
+  ],
+  "source_url": "https://api.openstreetmap.org/api/0.6/map?bbox=116.465,39.865,116.495,39.885",
+  "download_date": "2026-11-08",
+  "earth_radius_m": 6378137,
+  "candidate_count": 30,
+  "cost_per_km": 2,
+  "speed_kmh": {
+    "primary": 35,
+    "primary_link": 25,
+    "secondary": 30,
+    "secondary_link": 20,
+    "tertiary": 25,
+    "tertiary_link": 20,
+    "unclassified": 20,
+    "residential": 20,
+    "service": 15,
+    "living_street": 10
+  },
+  "bases": [
+    {
+      "id": "W1",
+      "type": "warehouse",
+      "name": "西侧集配仓（模拟）",
+      "lon": 116.4709,
+      "lat": 39.8759,
+      "location_source": "simulation"
+    },
+    {
+      "id": "W2",
+      "type": "warehouse",
+      "name": "南侧备用仓（模拟）",
+      "lon": 116.4775,
+      "lat": 39.8697,
+      "location_source": "simulation"
+    },
+    {
+      "id": "T_CENTER",
+      "type": "transfer",
+      "name": "校内快递站（游泳馆北侧）",
+      "reference": {
+        "osm_way": "543815680",
+        "anchor": "north",
+        "north_offset_m": 20
+      },
+      "location_source": "user_description",
+      "location_note": "用户确认在游泳馆稍北侧；此处以建筑北缘向北20米作为近似参考，再匹配真实道路服务点"
+    },
+    {
+      "id": "T_EAST",
+      "type": "transfer",
+      "name": "东门外卖柜",
+      "reference": {
+        "osm_node": "1808717152",
+        "east_offset_m": 12
+      },
+      "location_source": "user_confirmed_gate_locker",
+      "location_note": "用户确认该门外有外卖柜；校门外12米为参考点，柜位未实测，服务位置锚定附近真实道路"
+    },
+    {
+      "id": "T_WEST",
+      "type": "transfer",
+      "name": "西门外卖柜",
+      "reference": {
+        "osm_node": "1808717192",
+        "east_offset_m": -12
+      },
+      "location_source": "user_confirmed_gate_locker",
+      "location_note": "用户确认该门外有外卖柜；校门外12米为参考点，柜位未实测，服务位置锚定附近真实道路"
+    },
+    {
+      "id": "T_NORTH",
+      "type": "transfer",
+      "name": "北门外卖柜",
+      "reference": {
+        "osm_node": "1808717251",
+        "north_offset_m": 12
+      },
+      "location_source": "user_confirmed_gate_locker",
+      "location_note": "用户确认该门外有外卖柜；校门外12米为参考点，柜位未实测，服务位置锚定附近真实道路"
+    },
+    {
+      "id": "T_SOUTH",
+      "type": "transfer",
+      "name": "南门外卖柜",
+      "reference": {
+        "osm_node": "1808717402",
+        "north_offset_m": -12
+      },
+      "location_source": "user_confirmed_gate_locker",
+      "location_note": "用户确认该门外有外卖柜；校门外12米为参考点，柜位未实测，服务位置锚定附近真实道路"
+    }
+  ],
+  "output_file": "campus-network.json",
+  "campus": {
+    "boundary_way": "33617299",
+    "max_snap_distance_m": 100,
+    "map_padding_m": 140,
+    "outside_bounds": [
+      116.4705,
+      39.8695,
+      116.4812,
+      39.879
+    ],
+    "candidate_landmarks": [
+      {
+        "id": "P01",
+        "type": "customer",
+        "name": "1号宿舍配送点",
+        "reference": {
+          "osm_way": "1047352421"
+        },
+        "zone": "campus",
+        "location_source": "osm_building"
+      },
+      {
+        "id": "P02",
+        "type": "customer",
+        "name": "2号宿舍配送点",
+        "reference": {
+          "osm_way": "839812060"
+        },
+        "zone": "campus",
+        "location_source": "osm_building"
+      },
+      {
+        "id": "P03",
+        "type": "customer",
+        "name": "3号宿舍配送点",
+        "reference": {
+          "osm_way": "543940618"
+        },
+        "zone": "campus",
+        "location_source": "osm_building"
+      },
+      {
+        "id": "P04",
+        "type": "customer",
+        "name": "4号宿舍配送点",
+        "reference": {
+          "osm_way": "543940619"
+        },
+        "zone": "campus",
+        "location_source": "osm_building"
+      },
+      {
+        "id": "P05",
+        "type": "customer",
+        "name": "5号宿舍配送点",
+        "reference": {
+          "osm_way": "442376453"
+        },
+        "zone": "campus",
+        "location_source": "osm_building"
+      },
+      {
+        "id": "P06",
+        "type": "customer",
+        "name": "6号宿舍配送点",
+        "reference": {
+          "osm_way": "442376443"
+        },
+        "zone": "campus",
+        "location_source": "osm_building"
+      },
+      {
+        "id": "P07",
+        "type": "customer",
+        "name": "7号宿舍配送点",
+        "reference": {
+          "osm_way": "442376439"
+        },
+        "zone": "campus",
+        "location_source": "osm_building"
+      },
+      {
+        "id": "P08",
+        "type": "customer",
+        "name": "8号宿舍配送点",
+        "reference": {
+          "osm_way": "442376445"
+        },
+        "zone": "campus",
+        "location_source": "osm_building"
+      },
+      {
+        "id": "P09",
+        "type": "customer",
+        "name": "9号宿舍配送点",
+        "reference": {
+          "osm_way": "442376455"
+        },
+        "zone": "campus",
+        "location_source": "osm_building"
+      },
+      {
+        "id": "P10",
+        "type": "customer",
+        "name": "10/11号宿舍配送点",
+        "reference": {
+          "osm_way": "543940615"
+        },
+        "zone": "campus",
+        "location_source": "osm_building"
+      },
+      {
+        "id": "P11",
+        "type": "customer",
+        "name": "12号宿舍配送点",
+        "reference": {
+          "osm_way": "442376457"
+        },
+        "zone": "campus",
+        "location_source": "osm_building"
+      },
+      {
+        "id": "P12",
+        "type": "customer",
+        "name": "13号宿舍配送点",
+        "reference": {
+          "osm_way": "852324685"
+        },
+        "zone": "campus",
+        "location_source": "osm_building"
+      },
+      {
+        "id": "P13",
+        "type": "customer",
+        "name": "14号宿舍配送点",
+        "reference": {
+          "osm_way": "852324686"
+        },
+        "zone": "campus",
+        "location_source": "osm_building"
+      },
+      {
+        "id": "P14",
+        "type": "customer",
+        "name": "第一教学楼配送点",
+        "reference": {
+          "osm_way": "543815688"
+        },
+        "zone": "campus",
+        "location_source": "osm_building"
+      },
+      {
+        "id": "P15",
+        "type": "customer",
+        "name": "第二教学楼配送点",
+        "reference": {
+          "osm_way": "543815689"
+        },
+        "zone": "campus",
+        "location_source": "osm_building"
+      },
+      {
+        "id": "P16",
+        "type": "customer",
+        "name": "第三教学楼配送点",
+        "reference": {
+          "osm_way": "442376447"
+        },
+        "zone": "campus",
+        "location_source": "osm_building"
+      },
+      {
+        "id": "P17",
+        "type": "customer",
+        "name": "第四教学楼配送点",
+        "reference": {
+          "osm_way": "442376594"
+        },
+        "zone": "campus",
+        "location_source": "osm_building"
+      },
+      {
+        "id": "P18",
+        "type": "customer",
+        "name": "逸夫图书馆配送点",
+        "reference": {
+          "osm_way": "839812059"
+        },
+        "zone": "campus",
+        "location_source": "osm_building"
+      },
+      {
+        "id": "P19",
+        "type": "customer",
+        "name": "北图书馆配送点",
+        "reference": {
+          "osm_way": "543815679"
+        },
+        "zone": "campus",
+        "location_source": "osm_building"
+      },
+      {
+        "id": "P20",
+        "type": "customer",
+        "name": "信息楼配送点",
+        "reference": {
+          "osm_way": "442376462"
+        },
+        "zone": "campus",
+        "location_source": "osm_building"
+      },
+      {
+        "id": "P21",
+        "type": "customer",
+        "name": "知新园配送点",
+        "reference": {
+          "osm_way": "442376433"
+        },
+        "zone": "campus",
+        "location_source": "osm_building"
+      },
+      {
+        "id": "P22",
+        "type": "customer",
+        "name": "科学楼配送点",
+        "reference": {
+          "osm_way": "320605372"
+        },
+        "zone": "campus",
+        "location_source": "osm_building"
+      }
+    ]
+  }
+}
