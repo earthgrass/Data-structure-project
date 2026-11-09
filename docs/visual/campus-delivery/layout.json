@@ -1,0 +1,17 @@
+{
+  "fleetDirection": "row",
+  "horizontalOverflow": false,
+  "map": {
+    "height": 767.2726440429688,
+    "width": 354.7474365234375,
+    "x": 0,
+    "y": 0
+  },
+  "playReady": true,
+  "summary": " 校内 20/24 单0/24 已签收0.00 模拟分钟30 个候选地点本轮接纳 24 · 未接纳 0",
+  "vehicles": 6,
+  "viewport": [
+    354,
+    767
+  ]
+}
