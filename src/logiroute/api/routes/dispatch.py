@@ -61,7 +61,8 @@ def number(value: Any) -> float:
 async def create(request: Request) -> Any:
     try:
         data=await body(request)
-        if set(data)-{'seed','profile','window_mode'}: raise ValueError('unknown create fields')
+        if set(data)-{'seed','profile','window_mode','auto_replan'}: raise ValueError('unknown create fields')
+        if 'auto_replan' in data and not isinstance(data['auto_replan'],bool):raise ValueError('boolean auto_replan required')
         profile=data.get('profile','random')
         if profile not in ('random','bjut','bjut-campus','bjut-studio'): raise ValueError('unknown map profile')
         if profile in ('bjut','bjut-campus','bjut-studio'):
@@ -76,6 +77,7 @@ async def create(request: Request) -> Any:
         service=request.app.state.dispatch_service
         with service.lock:
             service.counter+=1; key=config['session_prefix']+str(service.counter); session=Session(state)
+            if data.get('auto_replan',False):session.enable_auto_replan()
             service.sessions[key]=session; service.attempts[key]=attempts
             return service.snapshot(key,session)
     except GenerationError as exc: return failure(422,'generation_exhausted',str(exc),attempts=exc.attempts)
@@ -132,8 +134,12 @@ async def command(key: str,request: Request) -> Any:
                 'add':{'id','destination','demand','earliest','deadline','priority'},
                 'automatic':{'count','seed','priority'},'cancel':{'id'},'expire':{'id'},
                 'priority':{'id','priority'},'traffic':{'source','target','status'}}
-            if kind not in fields or set(data)-fields[kind]-{'revision','command'}: raise ValueError('unknown command/fields')
+            mutations={'add','automatic','cancel','expire','priority','traffic'}
+            optional={'auto_replan'} if kind in mutations else set()
+            if kind not in fields or set(data)-fields[kind]-{'revision','command'}-optional: raise ValueError('unknown command/fields')
+            if 'auto_replan' in data and not isinstance(data['auto_replan'],bool):raise ValueError('boolean auto_replan required')
             session=deepcopy(original); comparison=None
+            if data.get('auto_replan',False):session.enable_auto_replan()
             if kind=='plan':
                 proposal=session.prepare(data.get('objective','distance'))
                 if proposal.report.safe_to_apply: session.apply(proposal)
@@ -149,10 +155,13 @@ async def command(key: str,request: Request) -> Any:
             elif kind=='traffic':
                 old_time=session.state.graph.get_edge(data['source'],data['target']).travel_time
                 session.traffic(data['source'],data['target'],data['status'])
-                if 'studio' in session.state.config and (data['status']=='blocked' or session.state.graph.get_edge(data['source'],data['target']).travel_time>=old_time*1.2):
+                if not session.auto_replan_enabled and 'studio' in session.state.config and (data['status']=='blocked' or session.state.graph.get_edge(data['source'],data['target']).travel_time>=old_time*1.2):
                     session._studio_auto_replan_pending=True
                     session._studio_auto_replan_status='等待已进入动作完成后自动重规划'
-            if getattr(session,'_studio_auto_replan_pending',False) and not session.running:
+            if session.auto_replan_enabled:
+                session._studio_auto_replan_pending=False
+                session.process_auto_replan()
+            elif getattr(session,'_studio_auto_replan_pending',False) and not session.running:
                 session._studio_auto_replan_pending=False
                 proposal=session.prepare(session.plan.objective if session.plan else 'cost')
                 if proposal.report.safe_to_apply:

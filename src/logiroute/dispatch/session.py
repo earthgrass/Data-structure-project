@@ -26,12 +26,52 @@ class Session:
         self.state.graph=self.network.snapshot(); self.events=[]; self.plan=None
         self._programs={k:[] for k in state.vehicles}; self.current={k:None for k in state.vehicles}
         self._pausing=False; self._ready=False; self._auto_counter=0
+        self._order_control_enabled=False; self._order_version=0; self._planned_order_version=None
+        self._order_control_status='idle'; self._order_control_reason=None; self._order_change_kind=None
         self._initial_positions=dict(state.positions); self._initial_locations=dict(state.locations)
         self._initial_orders=dict(state.orders)
 
     @property
     def running(self) -> bool:
         return any(a is not None for a in self.current.values())
+
+    @property
+    def auto_replan_enabled(self) -> bool:
+        return self._order_control_enabled
+
+    def enable_auto_replan(self) -> None:
+        """Opt in without changing physical state or a pending plan. Time/Space O(1)."""
+        self._order_control_enabled=True
+
+    def _request_auto_replan(self,kind: str) -> None:
+        """Stop successors, retaining entered atomic actions. Time/Space O(K)."""
+        if not self._order_control_enabled:return
+        if not self._pausing:self.pause()
+        self._order_control_status='waiting_checkpoint';self._order_change_kind=kind
+        self._order_control_reason='订单或路况已变化，等待已进入动作完成后自动重规划'
+        if 'studio' in self.state.config:self._studio_auto_replan_status=self._order_control_reason
+
+    def _order_changed(self,kind: str) -> None:
+        """Version input changes, not delivery progress. Time/Space O(K) when enabled."""
+        self._order_version+=1
+        self._request_auto_replan(kind)
+
+    def process_auto_replan(self) -> None:
+        """Try once at a checkpoint, never depart or discard an unsafe mutation.
+
+        Time O(planner + validator); Space O(plan). Only actual action completion
+        can make running false. A blocked attempt waits for a new mutation/manual plan.
+        """
+        if not self._order_control_enabled or self._order_control_status!='waiting_checkpoint' or self.running:return
+        proposal=self.prepare(self.plan.objective if self.plan else 'distance')
+        if proposal.report.valid and proposal.report.safe_to_apply:
+            self.apply(proposal)
+            self._order_control_reason='已自动独立验证并应用续程；等待确认继续配送'
+        else:
+            self._order_control_status='blocked'
+            details=','.join(proposal.report.violations)
+            self._order_control_reason='无法安全应用自动续程，车辆保持停靠，订单与载货已保留'+('：'+details if details else '')
+        if 'studio' in self.state.config:self._studio_auto_replan_status=self._order_control_reason
 
     def prepare(self,objective: str) -> Plan:
         """Pure proposal at checkpoint; O(planner)."""
@@ -49,6 +89,8 @@ class Session:
             self.state.orders[key]=replace(o,hub=assigned[key],status='planned' if o.status=='pending' else o.status)
         self.state.protected.update(plan.accepted)
         self._programs={r.vehicle:list(r.actions) for r in plan.routes}; self._ready=True; self._pausing=False
+        self._planned_order_version=self._order_version
+        if self._order_control_enabled:self._order_control_status='applied';self._order_control_reason=None
         self.events.append({'kind':'plan','time':self.state.now,'accepted':plan.accepted,'objective':plan.objective})
         self.state.revision+=1
 
@@ -112,6 +154,7 @@ class Session:
         if deadline<=self.state.now: raise ValueError('deadline is not in the future')
         self.state.orders[key]=order; location=('warehouse',self.state.config['warehouse_ids'][0]); self.state.locations[key]=location
         self.events.append({'kind':'create','time':self.state.now,'order':order,'location':location}); self.state.revision+=1
+        self._order_changed('add')
 
     def automatic(self,count: int,seed: int,priority: str = 'normal') -> None:
         from logiroute.scenario_generator.random_source import RandomSource
@@ -127,22 +170,26 @@ class Session:
                 if key not in self.state.orders: break
             self.add_order(key,rng.choice(customers),rng.choice(self.state.config['demand_choices']),self.state.now,
                            self.state.now+float(self.state.config['automatic_window_width']),priority)
+        if self._order_control_enabled:self._order_change_kind='automatic'
 
     def cancel(self,key: str,*,expired: bool = False) -> None:
         order=self.state.orders[key]
         if order.status in ('delivered','cancelled','expired') or self.state.locations[key][0]!='warehouse' or any(a and a.kind=='load' and key in a.ids for a in self.current.values()): raise ConflictError('cannot cancel terminal or entered cargo')
         self.pause(); self.state.orders[key]=replace(order,status='expired' if expired else 'cancelled'); self.state.protected.discard(key)
         self.events.append({'kind':'cancel','time':self.state.now,'id':key,'status':self.state.orders[key].status})
+        self._order_changed('expire' if expired else 'cancel')
 
     def priority(self,key: str,value: str) -> None:
         order=self.state.orders[key]
         if self.state.locations[key][0]!='warehouse' or order.status in ('cancelled','expired','delivered') or any(a and a.kind=='load' and key in a.ids for a in self.current.values()): raise ConflictError('priority update requires unentered warehouse order')
         changed=replace(order,priority=value); self.pause(); self.state.orders[key]=changed
         self.events.append({'kind':'priority','time':self.state.now,'id':key,'priority':value})
+        self._order_changed('priority')
 
     def traffic(self,source: str,target: str,status: str) -> None:
         self.network.update(source,target,status); self.state.graph=self.network.snapshot(); self.state.traffic_version=self.network.version; self.pause()
         self.events.append({'kind':'traffic','time':self.state.now,'source':source,'target':target,'status':status,'version':self.network.version})
+        self._request_auto_replan('traffic')
 
     def audit(self) -> Report:
         from logiroute.dispatch.audit import audit_session
@@ -162,6 +209,9 @@ class Session:
             from logiroute.dispatch.studio import metrics
             studio={'studio':metrics(self)}
         return {**studio,'schema_version':SCHEMA,'revision':state.revision,'traffic_version':state.traffic_version,'now':state.now,
+                'order_control':{'enabled':self._order_control_enabled,'order_version':self._order_version,
+                                 'planned_order_version':self._planned_order_version,'status':self._order_control_status,
+                                 'reason':self._order_control_reason,'change_kind':self._order_change_kind},
                 'running':self.running,'ready':self._ready,'needs_replan':self._pausing,'nodes':nodes,'edges':edges,'vehicles':cars,
                 'orders':[{**json_value(o),'location':list(state.locations[k])} for k,o in state.orders.items()],
                 'events':json_value(self.events),'plan':None if self.plan is None else self.plan.to_dict(),
