@@ -28,6 +28,8 @@ class Session:
         self._pausing=False; self._ready=False; self._auto_counter=0
         self._order_control_enabled=False; self._order_version=0; self._planned_order_version=None
         self._order_control_status='idle'; self._order_control_reason=None; self._order_change_kind=None
+        self._planning_impact=None; self._plan_arrivals={}; self._applied_order_statuses={}
+        self._last_attempt=None; self._last_attempt_order_version=None; self._last_attempt_at=None
         self._initial_positions=dict(state.positions); self._initial_locations=dict(state.locations)
         self._initial_orders=dict(state.orders)
 
@@ -64,6 +66,7 @@ class Session:
         """
         if not self._order_control_enabled or self._order_control_status!='waiting_checkpoint' or self.running:return
         proposal=self.prepare(self.plan.objective if self.plan else 'distance')
+        self._last_attempt=proposal; self._last_attempt_order_version=self._order_version; self._last_attempt_at=self.state.now
         if proposal.report.valid and proposal.report.safe_to_apply:
             self.apply(proposal)
             self._order_control_reason='已自动独立验证并应用续程；等待确认继续配送'
@@ -83,11 +86,16 @@ class Session:
         if self.running or plan.fingerprint!=self.state.fingerprint(): raise ConflictError('stale plan/checkpoint required')
         report=validate_plan(self.state,plan)
         if not report.valid or not report.safe_to_apply: raise ValueError('unsafe plan: '+','.join(report.violations))
+        from logiroute.dispatch.insights import actual_arrivals,build_impact
+        self._planning_impact=build_impact(self.state,self.plan,plan,self.events,self._applied_order_statuses)
+        self._plan_arrivals=actual_arrivals(self)
         self.plan=replace(plan,report=report); assigned=dict(plan.assignments)
+        self._last_attempt=self.plan; self._last_attempt_order_version=self._order_version; self._last_attempt_at=self.state.now
         for key in plan.accepted:
             o=self.state.orders[key]
             self.state.orders[key]=replace(o,hub=assigned[key],status='planned' if o.status=='pending' else o.status)
         self.state.protected.update(plan.accepted)
+        self._applied_order_statuses={key:order.status for key,order in self.state.orders.items()}
         self._programs={r.vehicle:list(r.actions) for r in plan.routes}; self._ready=True; self._pausing=False
         self._planned_order_version=self._order_version
         if self._order_control_enabled:self._order_control_status='applied';self._order_control_reason=None
@@ -198,6 +206,7 @@ class Session:
     def snapshot(self) -> dict[str,Any]:
         """Versioned JSON boundary; quantities serialized only here. O(V+E+A+N)."""
         state=self.state
+        from logiroute.dispatch.insights import planning_insights
         nodes=[{'id':n.id,'type':'junction' if n.metadata.get('routing_only') else n.node_type.value,'x':n.x,'y':n.y,'name':n.name,**n.metadata} for n in state.graph.nodes]
         edges=[{'source':e.source_id,'target':e.target_id,'distance':e.distance,'travel_time':e.travel_time,'cost':e.cost,'status':e.traffic_status.value,**e.metadata} for e in state.graph.edges]
         cars=[]
@@ -209,6 +218,7 @@ class Session:
             from logiroute.dispatch.studio import metrics
             studio={'studio':metrics(self)}
         return {**studio,'schema_version':SCHEMA,'revision':state.revision,'traffic_version':state.traffic_version,'now':state.now,
+                'planning_insights':planning_insights(self),
                 'order_control':{'enabled':self._order_control_enabled,'order_version':self._order_version,
                                  'planned_order_version':self._planned_order_version,'status':self._order_control_status,
                                  'reason':self._order_control_reason,'change_kind':self._order_change_kind},
