@@ -17,7 +17,7 @@ export function useNetworkViewport(nodes:Snapshot['nodes'],bounds?:number[],mobi
   const project=useMemo(()=>bounds?mapProjection(bounds,size.width,size.height,size.width<760?32:100):null,[bounds,size]);
   const points=useMemo(()=>project?new Map(nodes.map(n=>[n.id,project([n.x,n.y])])):projectNodes(nodes,size.width,size.height),[nodes,size,project]);
   const [cx,cy]=center??[size.width/2,size.height/2];
-  return {frame,size,points,project,zoom,transform:`translate(${size.width/2} ${size.height/2}) scale(${zoom}) translate(${-cx} ${-cy})`,
+  return {frame,size,points,project,zoom,offset:[size.width/2-cx*zoom,size.height/2-cy*zoom],transform:`translate(${size.width/2} ${size.height/2}) scale(${zoom}) translate(${-cx} ${-cy})`,
     zoomBy:(delta:number)=>setZoom(z=>Math.max(1,Math.min(8,z+delta))),
     panBy:(dx:number,dy:number)=>setCenter(current=>{const [x,y]=current??[cx,cy];return [x-dx/zoom,y-dy/zoom];}),
     reset:()=>{setZoom(1);setCenter(null);},focus:(id:string)=>{setCenter(points.get(id)??null);setZoom(1.5);}};

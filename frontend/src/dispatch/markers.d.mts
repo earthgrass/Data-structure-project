@@ -1,0 +1,1 @@
+export function layoutVehicleBadges(items:{id:string;point:number[];text:string}[],obstacles?:{left:number;right:number;top:number;bottom:number}[],bounds?:{left:number;right:number;top:number;bottom:number}):Map<string,{x:number;y:number;width:number}>;

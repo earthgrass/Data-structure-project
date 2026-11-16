@@ -1,3 +1,5 @@
+export type StudioParameters={hub_ids:string[];capacities:Record<string,string>;fuel_per_100km:string;fuel_price:string;driver_hourly:string;maintenance_per_km:string};
+export type CostMetrics={distance:number;fuel_liters:number;fuel_cost:number;labor_cost:number;maintenance_cost:number;total_cost:number;travel_time:number};
 export type Action = {vehicle:string; kind:string; start:number; end:number; source:string; target:string; ids:string[]; distance:number; cost:number;travel_time:number;batch:number;traffic_version:number};
 export type Report = {valid:boolean;complete_all:boolean;safe_to_apply:boolean;violations:string[]};
 export type Plan = {objective:string;revision:number;traffic_version:number;fingerprint:string;accepted:string[];deferred:[string,string][];report:Report;total_distance:number;total_cost:number;routes:{vehicle:string;actions:Action[];total_distance:number;total_cost:number;end_time:number}[]};
@@ -12,6 +14,7 @@ export type Road=Snapshot['edges'][number];
 export type Snapshot = {
   id:string;revision:number;traffic_version:number;now:number;running:boolean;ready:boolean;needs_replan:boolean;
   time_windows?:WindowEvidence;
+  studio?:{presets:{delivery_capacity_kg:string;fuel_price_stress:string};late_orders:{id:string;deadline:number;penalty:number}[];auto_replan:string|null;parameters:StudioParameters;model_note:string;official_map_url:string;available_hubs:{id:string;name:string}[];planned:CostMetrics|null;executed:CostMetrics;trial?:{original_session:string;objective:string;before:{distance:number;cost:number;accepted:number;complete_all:boolean}}|null};
   nodes:{id:string;type:string;x:number;y:number;name?:string;lon?:number;lat?:number;zone?:string;display_name?:string;approximate?:boolean;location_note?:string;snap_distance_m?:number}[];
   edges:{source:string;target:string;distance:number;travel_time:number;cost:number;status:string;geometry?:[number,number][];name?:string;osm_way?:string}[];
   map?:{source:string;title:string;download_date:string;license:string;bounds:number[];candidate_count:number;campus_profile?:boolean;campus_candidate_count?:number;initial_campus_orders?:number;initial_orders?:number;outline?:[number,number][];location_note?:string;features:{kind:string;name:string;geometry:[number,number][]}[];background_roads:{name:string;kind:string;geometry:[number,number][]}[]};

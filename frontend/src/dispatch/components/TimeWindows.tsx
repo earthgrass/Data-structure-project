@@ -4,6 +4,7 @@ import {windowEvidenceCurrent} from '../windows.mjs';
 
 export function TimeWindowPanel({data,showRelaxed,setShowRelaxed,onVehicle,selected}:{data:Snapshot;showRelaxed:boolean;setShowRelaxed:(v:boolean)=>void;onVehicle:(id:string)=>void;selected:string}){
   const info=data.time_windows,live=windowEvidenceCurrent(data);
+  if(!info&&data.studio)return <div className="d-window-panel"><h3>参数试算保留原签收窗口</h3><p>订单的最早服务和完成截止均未放宽；原参数下的初始宽松路线对照已失效，请在订单中查看真实窗口。</p></div>;
   if(!info)return <div className="d-window-panel"><h3>当前场景尚未启用严格时间窗</h3><p>在“场景与管理”选择严格预约窗，新建同一 Seed 的校内配送场景。</p></div>;
   const probe=info.orders?.find(o=>o.id===info.probe_order_id);
   const original=info.relaxed_routes?.find(r=>r.vehicle===selected)?.service_order;

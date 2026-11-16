@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
-import type {Snapshot,Comparison,Connection,WindowMode} from '../types';
+import type {Snapshot,Comparison,Connection,WindowMode,StudioParameters} from '../types';
 import {bindComparison,reconcileSnapshot,failureFeedback} from '../sync.mjs';
 import {useConfirmedMotion} from './useConfirmedMotion';
 
@@ -60,11 +60,21 @@ export function useDispatchSession(){
     locked.current=true;setBusy('create');setPlaying(false);setError('');setMessage('');setConnection('connecting');
     const ticket=++epoch.current;
     try{
-      const incoming=await request('/sessions',{profile:'bjut-campus',window_mode:windowMode,...(seed===''?{}:{seed:Number(seed)})});
+      const incoming=await request('/sessions',{profile:'bjut-studio',window_mode:windowMode,...(seed===''?{}:{seed:Number(seed)})});
       active.current=incoming.id;sessionStorage.setItem('logiroute-session',incoming.id);
       live.current={snapshot:null,comparison:null};receive(incoming,ticket);setMessage('新场景已创建，等待规划。');return true;
     }catch(e){failed(e,ticket);return false;}finally{locked.current=false;setBusy('');}
   },[receive,failed]);
+  const trial=useCallback(async(parameters:StudioParameters)=>{
+    if(locked.current||!live.current.snapshot)return false;
+    locked.current=true;setBusy('trial');setPlaying(false);setError('');
+    const ticket=++epoch.current,id=active.current;
+    try{
+      const incoming=await request(`/sessions/${id}/trial`,{revision:live.current.snapshot.revision,parameters,objective:'cost'});
+      active.current=incoming.id;sessionStorage.setItem('logiroute-session',incoming.id);
+      live.current={snapshot:null,comparison:null};receive(incoming,ticket);setMessage('参数试算已独立验证。原会话保留，请核对覆盖情况。');return true;
+    }catch(e){if(failed(e,ticket))await refresh(false,true);return false;}finally{locked.current=false;setBusy('');}
+  },[receive,failed,refresh]);
   const command=useCallback(async(kind:string,fields:Record<string,unknown>={})=>{
     if(locked.current||!live.current.snapshot)return false;
     const ticket=epoch.current,id=active.current;
@@ -89,7 +99,7 @@ export function useDispatchSession(){
     if(live.current.snapshot?.ready){if(!await command('depart'))return;}
     setPlayback(true);
   };
-  return {snapshot,comparison,connection,busy,error,message,playing,setPlaying:setPlayback,create,command,
+  return {snapshot,comparison,connection,busy,error,message,playing,setPlaying:setPlayback,create,trial,command,
     motionClock:motion.clock,speed:motion.speed,setSpeed:motion.setSpeed,togglePlayback,
     reconnect:()=>{setConnection('connecting');void refresh();}};
 }
