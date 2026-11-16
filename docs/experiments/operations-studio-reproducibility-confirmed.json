@@ -1,0 +1,20 @@
+{
+  "seed": 42,
+  "profile": "bjut-studio",
+  "window_mode": "relaxed",
+  "scope": "full config, nodes, edge metadata+geometry, orders, vehicles, positions, locations and actual cost plan",
+  "processes": [
+    {
+      "PYTHONHASHSEED": "1",
+      "sha256": "cdce36dbdb55b055e6c7746791943c914a1b15359df2923f3d2ef727ac2ab109",
+      "bytes": 804123,
+      "accepted": 24
+    },
+    {
+      "PYTHONHASHSEED": "2",
+      "sha256": "cdce36dbdb55b055e6c7746791943c914a1b15359df2923f3d2ef727ac2ab109",
+      "bytes": 804123,
+      "accepted": 24
+    }
+  ]
+}

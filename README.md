@@ -2,13 +2,15 @@
 
 数据结构课程设计：在北工大校园及周边离线真实道路上，演示多车辆配送、严格签收时间窗、动态订单、模拟拥堵与安全重规划。核心图、最小堆、Dijkstra、优先队列及可行插入自主实现；React界面只展示后端事实。
 
-**[最终课程交付包](docs/final-delivery/README.md)** · [答辩讲解](docs/final-delivery/defense.md) · [7分钟演示脚本](docs/final-delivery/demo-script.md) · [本轮验收报告](docs/final-delivery/report.md)
+**[最终课程交付包](docs/final-delivery/README.md)** · [答辩讲解](docs/final-delivery/defense.md) · [7分钟演示脚本](docs/final-delivery/demo-script.md) · [Phase 7验收报告](docs/final-delivery/report.md)
+
+**新版：[运营参数工作台与真实路线试算](docs/operations-studio.md)**。默认3个运营站、4辆车，备用站点按需启用；逐车载重、油耗、模拟油价、行驶工时和维护费可调整，由原后端规划器重新计算。参数试算保留同一批订单与时间窗，创建隔离的新会话，不重置在途货物。历史5站6车的 `bjut-campus` 档案保持不变。
 
 ## 当前校园场景
 
 - 固定342个路由节点、768条有向道路，保留真实道路方向和折线。
 - 30个固定候选配送地点；默认24单，校内20、周边4。Seed改变订单，不改变校园路网。
-- 游泳馆北侧校内快递站与东、西、北、南门外卖柜五个中转点；1辆干线车、5辆末端车。
+- 游泳馆北侧校内快递站与东、西、北、南门外卖柜五个设施。新版默认启用中央/东/西3站、1辆干线车和3辆末端车；北/南两站备用。历史档案仍为5站6车。
 - critical / urgent / normal三级优先级，逐车Decimal精确容量，同址多订单分别追踪。
 - 新建校园场景默认严格预约窗，earliest限制服务开始、deadline限制签收完成，支持宽松对照。
 - 动态新增、合法取消/显式过期、检查点重规划、方向性模拟交通、逐动作动画及独立历史审计。
@@ -73,7 +75,7 @@ Get-ChildItem frontend/tests/*.mjs | ForEach-Object { node $_.FullName; if($LAST
 npm --prefix frontend run build
 ```
 
-原794项Python测试及100个前端断言完整保留。本轮Python全量801/801通过、前端109个断言通过，类型检查与生产构建通过；实际执行统计以[最终报告](docs/final-delivery/report.md)为准，历史统计不冒充本轮结果。
+原794项Python测试及100个前端断言完整保留。Phase 7全量801/801、前端109个断言通过，详见[历史最终报告](docs/final-delivery/report.md)。运营工作台升级在原801项之上新增9项测试，当前门禁与135个前端断言见[新版验收说明](docs/operations-studio.md)，不混用历史测试数量。
 
 - [双目标受控实验](docs/experiments/phase7-objectives.json)：同输入distance距离4/模拟成本18，cost距离6/模拟成本6；独立执行均完整。仅极小例枚举基准，不证明一般贪心最优。
 - [严格窗A–G](docs/experiments/phase7-windows-final.json)：包括宽松/严格、极小不可行窗、等待、紧急竞争、同址不同截止与路况失效；保留partial案例。

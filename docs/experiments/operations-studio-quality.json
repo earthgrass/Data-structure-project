@@ -1,0 +1,42 @@
+{
+  "banned_imports": [],
+  "sort_calls": [
+    {
+      "file": "src/logiroute/algorithms/dijkstra.py",
+      "line": 257,
+      "classification": "existing_trace_snapshot_only"
+    },
+    {
+      "file": "src/logiroute/graph/logistics_graph.py",
+      "line": 311,
+      "classification": "existing_adjacency_export_view"
+    },
+    {
+      "file": "src/logiroute/scheduling/depot.py",
+      "line": 47,
+      "classification": "existing_legacy_depot_initialization_and_diagnostics"
+    },
+    {
+      "file": "src/logiroute/scheduling/depot.py",
+      "line": 116,
+      "classification": "existing_legacy_depot_initialization_and_diagnostics"
+    },
+    {
+      "file": "src/logiroute/scheduling/depot.py",
+      "line": 96,
+      "classification": "existing_legacy_depot_initialization_and_diagnostics"
+    },
+    {
+      "file": "src/logiroute/scheduling/depot.py",
+      "line": 94,
+      "classification": "existing_legacy_depot_initialization_and_diagnostics"
+    },
+    {
+      "file": "src/logiroute/scheduling/depot.py",
+      "line": 130,
+      "classification": "existing_legacy_depot_initialization_and_diagnostics"
+    }
+  ],
+  "new_unreviewed_sort_calls": [],
+  "note": "Seven pre-existing auxiliary sorted calls retained and disclosed; no new sorting-library replacement in current algorithms."
+}
