@@ -124,6 +124,32 @@ class Report:
 
 
 @dataclass(frozen=True,slots=True)
+class FailureEvidence:
+    """One observed rejected candidate; never a proof of network infeasibility."""
+    code: str
+    stage: str
+    hub: str | None = None
+    vehicle: str | None = None
+    order_ids: tuple[str,...] = ()
+    load: Decimal | None = None
+    capacity: Decimal | None = None
+    service_end: float | None = None
+    deadline: float | None = None
+    source: str | None = None
+    target: str | None = None
+
+
+@dataclass(frozen=True,slots=True)
+class OrderExplanation:
+    order_id: str
+    reason: str
+    summary: str
+    scope: str
+    attempts: tuple[FailureEvidence,...]
+    suggestions: tuple[str,...]
+
+
+@dataclass(frozen=True,slots=True)
 class Plan:
     objective: str
     revision: int
@@ -134,6 +160,7 @@ class Plan:
     deferred: tuple[tuple[str,str],...]
     report: Report | None = None
     fingerprint: str = ''
+    explanations: tuple[OrderExplanation,...] = ()
 
     def to_dict(self) -> dict[str,Any]:
         """Time/Space O(plan records+digits), including actual route metrics."""

@@ -3,7 +3,8 @@ from __future__ import annotations
 from dataclasses import replace
 from logiroute.algorithms.ordering import ordered_strings
 from logiroute.core.quantities import exact_sum
-from logiroute.dispatch.models import Action,Job,Plan,Route,RANK
+from logiroute.dispatch.models import Action,Job,Plan,Route,RANK,FailureEvidence
+from logiroute.dispatch.explanations import explain_order
 from logiroute.dispatch.algorithms import Paths,build_route,RouteUnavailableError
 from logiroute.dispatch.scenario import State
 from logiroute.dispatch.validation import validate_plan
@@ -26,19 +27,40 @@ def _jobs(state: State,ids: list[str],assign: dict[str,str],kind: str) -> list[J
     return result
 
 
-def _schedule(state: State,assign: dict[str,str],objective: str,paths: Paths) -> tuple[tuple[Route,...] | None,str]:
+def _schedule(state: State,assign: dict[str,str],objective: str,paths: Paths,
+              details: list[FailureEvidence] | None = None) -> tuple[tuple[Route,...] | None,str]:
+    """Replay original candidates, optionally recording its first failure.
+
+    Time is unchanged from the route builder; evidence retains O(N) identity data
+    for the first rejected trip. Diagnostic output never affects route selection.
+    """
     t=state.config['timing']; programs={k:[] for k in state.vehicles}; ready={k:state.now for k in state.vehicles}
     release={k:state.now for k in assign if state.locations[k][0]=='hub'}
     def append_trip(car_id: str,ids: list[str],start: str,begin: float,batch: int,load: bool) -> str:
         car=state.vehicles[car_id]; actions=programs[car_id]
         if load:
-            if exact_sum(state.orders[k].demand for k in ids)>car.capacity: return 'capacity'
+            demand=exact_sum(state.orders[k].demand for k in ids)
+            if demand>car.capacity:
+                if details is not None:details.append(FailureEvidence('capacity','load',vehicle=car_id,order_ids=tuple(ids),load=demand,capacity=car.capacity,source=start,target=start))
+                return 'capacity'
             if begin>ready[car_id]: actions.append(Action(car_id,'wait',ready[car_id],begin,start,start,batch=batch))
             end=begin+t['loading']; actions.append(Action(car_id,'load',begin,end,start,start,tuple(ids),batch=batch)); begin=end
         kind='unload' if car.role=='trunk' else 'deliver'
-        try: route,failed=build_route(paths,car,_jobs(state,ids,assign,kind),begin,start_node=start,objective=objective,batch=batch)
-        except RouteUnavailableError: return 'return_unreachable'
-        if failed: return next(iter(failed.values()))
+        failures={} if details is not None else None
+        try:route,failed=build_route(paths,car,_jobs(state,ids,assign,kind),begin,start_node=start,objective=objective,batch=batch,failure_details=failures)
+        except RouteUnavailableError as exc:
+            if details is not None:details.append(exc.detail or FailureEvidence('return_unreachable','return',vehicle=car_id,source=start,target=car.base))
+            return 'return_unreachable'
+        if failed:
+            first=next(iter(failed))
+            if details is not None:
+                detail=failures.get(first,FailureEvidence(failed[first],kind,vehicle=car_id))
+                # Hub jobs group several parcels under their earliest deadline.
+                # Name only actual identities whose deadline is exceeded.
+                if detail.code=='completion_deadline' and detail.stage=='unload':
+                    detail=replace(detail,order_ids=tuple(k for k in detail.order_ids if state.orders[k].deadline<detail.service_end))
+                details.append(detail)
+            return failed[first]
         actions.extend(route.actions); ready[car_id]=route.end_time
         for a in route.actions:
             if a.kind=='unload':
@@ -52,7 +74,9 @@ def _schedule(state: State,assign: dict[str,str],objective: str,paths: Paths) ->
             if error: return None,error
     trunk=next(v for v in state.vehicles.values() if v.role=='trunk')
     warehouse=[k for k in ordered_strings(assign) if state.locations[k][0]=='warehouse']
-    if any(state.locations[k][1]!=trunk.base for k in warehouse): return None,'unsupported_warehouse'
+    if any(state.locations[k][1]!=trunk.base for k in warehouse):
+        if details is not None:details.append(FailureEvidence('unsupported_warehouse','load',vehicle=trunk.id,order_ids=tuple(k for k in warehouse if state.locations[k][1]!=trunk.base),target=trunk.base))
+        return None,'unsupported_warehouse'
     if warehouse:
         error=append_trip(trunk.id,warehouse,trunk.base,ready[trunk.id],1,True)
         if error: return None,error
@@ -61,7 +85,9 @@ def _schedule(state: State,assign: dict[str,str],objective: str,paths: Paths) ->
         if car.role!='delivery': continue
         ids=[k for k in ordered_strings(assign) if assign[k]==car.base and state.locations[k]!=('vehicle',key)]
         if ids:
-            if any(k not in release for k in ids): return None,'inventory_not_released'
+            if any(k not in release for k in ids):
+                if details is not None:details.append(FailureEvidence('inventory_not_released','inventory',vehicle=key,order_ids=tuple(k for k in ids if k not in release),target=car.base))
+                return None,'inventory_not_released'
             error=append_trip(key,ids,car.base,max(ready[key],max(release[k] for k in ids)),1,True)
             if error: return None,error
     return tuple(Route(key,state.positions[key],state.vehicles[key].base,tuple(programs[key])) for key in ordered_strings(state.vehicles)),''
@@ -72,18 +98,25 @@ def plan_dispatch(state: State,objective: str = 'distance') -> Plan:
 
     Hand insertion orders admissions by priority/deadline/ID; hubs by travel-time/ID.
     Each trial uses hand feasible insertion and shared original Dijkstra closure.
-    Time O(N*H*N⁴*D + closure); Space O(ND+U²V). No optimality claim.
+    Time O(N*H*N⁴*D + closure); Space O(ND+U²V+HN²), including failure IDs.
+    Each rejected hub keeps one representative candidate, not every attempted
+    permutation. No optimality or global-infeasibility claim.
     """
     if objective not in ('distance','cost'): raise ValueError('invalid objective')
     paths=Paths(state.graph,state.traffic_version); active=[k for k in ordered_strings(state.orders) if state.orders[k].status not in ('delivered','cancelled','expired')]
     required={k for k in active if k in state.protected or state.locations[k][0]!='warehouse'}
-    assign={k:state.orders[k].hub for k in active if k in required}; deferred={}
+    assign={k:state.orders[k].hub for k in active if k in required}; deferred={}; explanations={}
     for key in required:
         if not assign[key] and state.locations[key][0]=='hub': assign[key]=state.locations[key][1]
-    routes,error=_schedule(state,assign,objective,paths) if all(assign.values()) else (None,'missing_protected_hub')
+    protected_details=[]
+    if all(assign.values()):routes,error=_schedule(state,assign,objective,paths,protected_details)
+    else:
+        routes,error=None,'missing_protected_hub'
+        protected_details.append(FailureEvidence(error,'assignment',order_ids=tuple(k for k in active if k in assign and not assign[k])))
     if routes is None:
         assign={}; routes=tuple(Route(k,state.positions[k],v.base,()) for k,v in state.vehicles.items())
         deferred={k:'protected_continuation:'+error for k in active}
+        explanations={k:explain_order(k,deferred[k],tuple(protected_details)) for k in active}
     else:
         pending=[k for k in active if k not in required]
         for i in range(1,len(pending)):
@@ -93,19 +126,26 @@ def plan_dispatch(state: State,objective: str = 'distance') -> Plan:
             while j>=0 and rank(key)<rank(pending[j]): pending[j+1]=pending[j]; j-=1
             pending[j+1]=key
         for key in pending:
-            hubs=[]
+            hubs=[]; attempts=[]
             for hub in ordered_strings(state.config['hub_ids']):
                 path=paths.get(hub,state.orders[key].destination,'travel_time')
-                if path.reachable: hubs.append((path.total_weight,hub))
+                if path.reachable:hubs.append((path.total_weight,hub))
+                else:
+                    car=next((v.id for v in state.vehicles.values() if v.role=='delivery' and v.base==hub),None)
+                    attempts.append(FailureEvidence('unreachable','travel',hub=hub,vehicle=car,order_ids=(key,),source=hub,target=state.orders[key].destination))
             for i in range(1,len(hubs)):
                 item=hubs[i]; j=i-1
                 while j>=0 and item<hubs[j]: hubs[j+1]=hubs[j]; j-=1
                 hubs[j+1]=item
             reason='unreachable'
             for _,hub in hubs:
-                trial={**assign,key:hub}; proposed,reason=_schedule(state,trial,objective,paths)
+                details=[];trial={**assign,key:hub}; proposed,reason=_schedule(state,trial,objective,paths,details)
                 if proposed is not None: assign=trial; routes=proposed; break
-            else: deferred[key]=reason or 'heuristic_incomplete'
+                attempts.extend(replace(item,hub=hub) for item in details)
+            else:
+                deferred[key]=reason or 'heuristic_incomplete'
+                explanations[key]=explain_order(key,deferred[key],tuple(attempts))
     plan=Plan(objective,state.revision,state.traffic_version,tuple((k,assign[k]) for k in ordered_strings(assign)),routes,
-              tuple(ordered_strings(assign)),tuple((k,deferred[k]) for k in ordered_strings(deferred)),fingerprint=state.fingerprint())
+              tuple(ordered_strings(assign)),tuple((k,deferred[k]) for k in ordered_strings(deferred)),fingerprint=state.fingerprint(),
+              explanations=tuple(explanations[k] for k in ordered_strings(explanations)))
     return replace(plan,report=validate_plan(state,plan))
