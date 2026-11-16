@@ -22,14 +22,17 @@ export function NetworkCanvas({data,orderFocus=null,changes=null,routeView='chan
   const info=chosenNode?`${chosenNode.name??chosenNode.id}${chosenNode.lon?` · ${chosenNode.lon.toFixed(5)}, ${chosenNode.lat?.toFixed(5)}`:''}${chosenNode.approximate?' · 道路服务点，位置近似':''}${chosenNode.location_note?' · '+chosenNode.location_note:''}`:chosenEdge?`${chosenEdge.name??''} · ${chosenEdge.source} → ${chosenEdge.target} · ${trafficLabels[chosenEdge.status]} · ${fmt(chosenEdge.distance)} km · ${fmt(chosenEdge.travel_time)} 分 · ¥${fmt(chosenEdge.cost)}`:'';
   const roads=useMemo(()=>physicalRoads(data.edges),[data.edges]);
   const geometry=useMemo(()=>new Map(data.edges.map(r=>[r.source+'|'+r.target,r.geometry&&view.project?r.geometry.map(view.project):[view.points.get(r.source)!,view.points.get(r.target)!]])),[data.edges,view.project,view.points]);
+  const [focusMap,setFocusMap]=useState(false);
   const [showRoads,setShowRoads]=useState(true),[showPool,setShowPool]=useState(false),[showBackups,setShowBackups]=useState(false),[showAllRoutes,setShowAllRoutes]=useState(true);
   const visualClock=clock??data.now;
   const deliveries=useMemo(()=>{
     const result=new Map<string,{count:number;done:number}>();
-    for(const order of data.orders){if(order.status==='cancelled'||order.status==='expired')continue;const item=result.get(order.destination)??{count:0,done:0};item.count++;if(order.status==='delivered')item.done++;result.set(order.destination,item);}
+    for(const order of data.orders){if(!['pending','planned','in_transit'].includes(order.status))continue;const item=result.get(order.destination)??{count:0,done:0};item.count++;result.set(order.destination,item);}
     return result;
   },[data.orders]);
-  const orderGroups=useMemo(()=>groupMapOrders(data.orders,changes?.addedOrderIds??[]),[data.orders,changes]);
+  const orderGroups=useMemo(()=>groupMapOrders(data.orders,changes?.addedOrderIds??[],{activeOnly:true}),[data.orders,changes]);
+  const previousOrderNodes=useRef(new Set<string>());
+  useEffect(()=>{if(previousOrderNodes.current.has(node)&&!orderGroups.has(node))setNode('');previousOrderNodes.current=new Set(orderGroups.keys());},[orderGroups,node]);
   const nodeLabels=useMemo(()=>{
     const visible=data.nodes.filter(n=>n.type!=='junction'&&(!data.studio||n.type!=='transfer'||data.studio.parameters.hub_ids.includes(n.id)||showBackups)&&n.type!=='customer');
     const arranged=[...visible.filter(n=>n.type!=='customer'),...visible.filter(n=>n.type==='customer'&&n.id===node),...visible.filter(n=>n.type==='customer'&&n.id!==node)];
@@ -70,7 +73,7 @@ export function NetworkCanvas({data,orderFocus=null,changes=null,routeView='chan
   },[data.map,view.project,view.zoom]);
   function chooseRoad(road:Road){setNode('');setEdge(road.source+'|'+road.target);onRoad?.(road);}
   function chooseNode(id:string){setNode(id);setEdge('');}
-  return <section className={'d-card d-network '+(data.map?'geographic':'')} aria-label="配送网络">
+  return <section className={'d-card d-network '+(data.map?'geographic':'')+(focusMap?' r-map-focused':'')} aria-label="配送网络">
     <div className="d-card-head"><div><h2>{data.map?'北工大周边 · 真实道路':'配送网络'}</h2><p>{data.map?`${data.map.candidate_count} 个固定候选点 · ${data.orders.length} 张订单`:`${data.nodes.length} 节点 · ${roads.length} 条物理道路 · ${data.edges.length} 条方向边`}</p></div><Badge tone="info">{selected} 路线</Badge></div>
     <div className="d-map-frame" ref={view.frame}>
       <svg viewBox={`0 0 ${view.size.width} ${view.size.height}`} aria-label={data.map?'北工大周边真实道路配送地图':'真实场景配送地图'} role="group"
@@ -100,10 +103,10 @@ export function NetworkCanvas({data,orderFocus=null,changes=null,routeView='chan
 
         </g>
       </svg>
-      <div className="d-map-tools" aria-label="地图视口控制"><button aria-label="放大地图" onClick={()=>view.zoomBy(.5)} disabled={view.zoom>=8}>＋</button><span>{Math.round(view.zoom*100)}%</span><button aria-label="缩小地图" onClick={()=>view.zoomBy(-.5)} disabled={view.zoom<=1}>−</button><button aria-label="重置地图视口" onClick={view.reset}>适配</button><button aria-label="定位选中车辆" onClick={()=>view.focus(data.vehicles.find(v=>v.id===selected)?.position??'')}><Icon name="pin" size={18}/></button></div>
+      <div className="d-map-tools" aria-label="地图视口控制"><button className="r-focus-map" aria-pressed={focusMap} onClick={()=>setFocusMap(v=>!v)} title="收起车队和播放面板，让地图更完整">{focusMap?'退出专注':'专注地图'}</button><button aria-label="放大地图" onClick={()=>view.zoomBy(.5)} disabled={view.zoom>=8}>＋</button><span>{Math.round(view.zoom*100)}%</span><button aria-label="缩小地图" onClick={()=>view.zoomBy(-.5)} disabled={view.zoom<=1}>−</button><button aria-label="重置地图视口" onClick={view.reset}>适配</button><button aria-label="定位选中车辆" onClick={()=>view.focus(data.vehicles.find(v=>v.id===selected)?.position??'')}><Icon name="pin" size={18}/></button></div>
       {info&&<div className={'d-map-info'+(orderGroups.has(node)?' r-order-info':'')} role="status"><strong>{chosenNode?.name??info}</strong>{orderGroups.has(node)&&<div className="r-node-orders">{orderGroups.get(node)!.orders.map(o=><div key={o.id} className={'r-node-order '+o.priority}><b>{o.id} · {priorities.find(([id])=>id===o.priority)?.[1]}{changes?.addedOrderIds.includes(o.id)?' · 新增':''}</b><small>{labels[o.status]} · {o.demand} kg · 签收窗 {fmt(o.earliest)}–{fmt(o.deadline)}</small><small>{data.plan?.deferred.find(([id])=>id===o.id)?.[1]??(o.hub?`中转站 ${o.hub}`:'尚未分配')}</small></div>)}</div>}{chosenNode?.type==='customer'&&onCandidate&&<button onClick={()=>onCandidate(chosenNode.id)}>在此新增订单</button>}<button aria-label="关闭地图详情" onClick={()=>{setNode('');setEdge('');}}>×</button></div>}
 
     </div>
-    <div className="d-map-legend"><label className="d-road-toggle"><input type="checkbox" checked={showRoads} onChange={e=>setShowRoads(e.target.checked)}/>道路底图</label>{data.map&&<label className="d-road-toggle"><input type="checkbox" checked={showPool} onChange={e=>setShowPool(e.target.checked)}/>候选地点</label>}<label className="d-road-toggle"><input type="checkbox" checked={showAllRoutes} onChange={e=>setShowAllRoutes(e.target.checked)}/>全部路线</label>{data.studio&&<label className="d-road-toggle"><input type="checkbox" checked={showBackups} onChange={e=>setShowBackups(e.target.checked)}/>备用站点</label>}<span><i className="warehouse"/>模拟仓库</span><span><i className="hub"/>模拟中转站</span><span className="r-map-key">包裹 = 订单 · ! = 紧急 · ✓ = 已签收 · 空心点 = 候选</span><span className="r-map-mode">{routeView==='before'&&changes?'变更前路线':routeView==='changes'&&changes?.status==='compared'?'灰虚线移除 / 橙边新增':'彩色实线 = 已规划路线'}</span>{showRelaxed&&<span className="d-muted">灰虚线：初始宽松路线</span>}<span className="d-muted">{data.map?<><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors · ODbL</a> · 离线道路快照</>:'示意坐标 · 动画非 GPS'}</span></div>
+    <div className="d-map-legend"><label className="d-road-toggle"><input type="checkbox" checked={showRoads} onChange={e=>setShowRoads(e.target.checked)}/>道路底图</label>{data.map&&<label className="d-road-toggle"><input type="checkbox" checked={showPool} onChange={e=>setShowPool(e.target.checked)}/>候选地点</label>}<label className="d-road-toggle"><input type="checkbox" checked={showAllRoutes} onChange={e=>setShowAllRoutes(e.target.checked)}/>全部路线</label>{data.studio&&<label className="d-road-toggle"><input type="checkbox" checked={showBackups} onChange={e=>setShowBackups(e.target.checked)}/>备用站点</label>}<span><i className="warehouse"/>模拟仓库</span><span><i className="hub"/>模拟中转站</span><span className="r-map-key">包裹 = 待完成订单 · ! = 紧急 · 已签收 / 取消自动移除</span><span className="r-map-mode">{routeView==='before'&&changes?'变更前路线':routeView==='changes'&&changes?.status==='compared'?'灰虚线移除 / 橙边新增':'彩色实线 = 已规划路线'}</span>{showRelaxed&&<span className="d-muted">灰虚线：初始宽松路线</span>}<span className="d-muted">{data.map?<><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors · ODbL</a> · 离线道路快照</>:'示意坐标 · 动画非 GPS'}</span></div>
   </section>;
 }

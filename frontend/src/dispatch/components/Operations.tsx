@@ -16,6 +16,7 @@ export function KPIStrip({data}:{data:Snapshot}){
 }
 export function DispatchToolbar({data,objective,setObjective,busy,connection,command,onResults,onCreate,playing,setPlaying}:{data:Snapshot;objective:string;setObjective:(v:string)=>void;busy:string;connection:Connection;command:Command;onResults:()=>void;onCreate:()=>void;playing:boolean;setPlaying:(v:boolean)=>void}){
   const unavailable=!!busy||connection!=='connected';
+  const automatic=data.order_control?.status==='waiting_checkpoint';
   let primary='规划路线',hint='先生成并验证配送计划，再开始配送。';
   let action:()=>void=()=>void command('plan',{objective});
   if(data.running){primary=data.needs_replan?'推进至检查点':'下一节点暂停';action=()=>void command(data.needs_replan?'step':'pause');hint=data.needs_replan?'进行中的原子动作完成后即可重新规划。':'车辆位置和载货由后端逐动作更新。';}
@@ -24,10 +25,12 @@ export function DispatchToolbar({data,objective,setObjective,busy,connection,com
   else if(data.ready){primary='开始配送';action=()=>void command('depart');hint='计划已验证，签收将在真实服务动作完成后增加。';}
   else if(data.audit.complete_all){primary='查看结果';action=onResults;hint='客户已全部签收，查看历史审计和结果。';}
   else if(data.plan){primary='规划待处理订单';hint='旧计划保留为执行依据，可重新规划剩余订单。';}
+  if(automatic){primary='正在自动停靠与规划';hint='已停止后续配送，只完成当前已进入动作；新路线验证后等待你继续。';}
+  else if(data.order_control?.status==='blocked'){primary='重试规划';hint=data.order_control.reason??'当前无法安全重规划，车辆保持停靠。';}
   return <section className="d-dispatch-toolbar" aria-label="调度操作"><div className="d-target"><label htmlFor="dispatch-objective">规划目标</label><select id="dispatch-objective" value={objective} onChange={e=>setObjective(e.target.value)} disabled={!!busy}><option value="distance">最短距离</option><option value="cost">最低成本</option></select></div>
-    <button className="d-primary" disabled={unavailable} onClick={action}>{busy?'处理中…':primary}<Icon name="arrow" size={16}/></button>
-    <button disabled={unavailable||!data.running} onClick={()=>void command('step')} title={!data.running?'后端无进行中的动作':''}>单步推进</button>
-    <button disabled={unavailable&&!playing||!data.running} onClick={()=>setPlaying(!playing)} title={!data.running?'开始配送后可自动调用后端step':''}>{playing?'暂停动画':'播放动画'}</button>
+    <button className="d-primary" disabled={unavailable||automatic} onClick={action}>{busy?'处理中…':primary}<Icon name="arrow" size={16}/></button>
+    <button disabled={unavailable||!data.running||automatic} onClick={()=>void command('step')} title={!data.running?'后端无进行中的动作':''}>单步推进</button>
+    <button disabled={automatic||unavailable&&!playing||!data.running} onClick={()=>setPlaying(!playing)} title={!data.running?'开始配送后可自动调用后端step':''}>{playing?'暂停动画':'播放动画'}</button>
     <button className="d-quiet" onClick={onCreate} disabled={!!busy}>新建场景</button>
     <p className="d-toolbar-hint">{connection!=='connected'?'连接不可用；请先重新连接。':busy?'正在等待后端确认；请勿重复提交。':hint}</p>
   </section>;

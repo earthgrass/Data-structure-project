@@ -2,6 +2,7 @@ import {useCallback,useEffect,useRef,useState} from 'react';
 import type {Snapshot,Comparison,Connection,WindowMode,StudioParameters} from '../types';
 import {bindComparison,reconcileSnapshot,failureFeedback} from '../sync.mjs';
 import {advanceRouteChanges,summarizeRouteChanges,type RouteChangeState} from '../routeChanges.mjs';
+import {checkpointCommand,orderMutationFields} from '../auto-replan.mjs';
 import {useConfirmedMotion} from './useConfirmedMotion';
 
 class RequestError extends Error {
@@ -21,7 +22,7 @@ async function request(path:string,payload?:unknown,base='/api/v2'):Promise<Snap
     return value;
   }finally{clearTimeout(timer);}
 }
-const messages:Record<string,string>={plan:'新计划已独立验证并应用；签收进度仍以实际执行为准。',compare:'双目标比较已完成，结果绑定当前会话和版本。',depart:'配送已开始。',step:'已完成一个真实原子动作。',pause:'已请求暂停；进行中的原子动作将在检查点完成。',add:'订单已加入待处理队列，尚需规划接纳。',automatic:'自动订单已入队，尚需规划接纳。',cancel:'订单已取消，其余任务需重新规划。',expire:'订单已显式过期。',priority:'优先级已更新，请在检查点重新规划。',traffic:'所选方向的交通已更新，请完成已进入动作后重规划。'};
+const messages:Record<string,string>={plan:'新计划已独立验证并应用；签收进度仍以实际执行为准。',compare:'双目标比较已完成，结果绑定当前会话和版本。',depart:'配送已开始。',step:'已完成一个真实原子动作。',pause:'已请求暂停；进行中的原子动作将在检查点完成。',add:'订单已加入，已触发停靠与自动重规划。',automatic:'紧急订单已加入，已触发停靠与自动重规划。',cancel:'订单已取消并从地图移除，已触发自动重规划。',expire:'订单已过期并从地图移除，已触发自动重规划。',priority:'优先级已更新，已触发自动重规划。',traffic:'所选方向的交通已更新，请完成已进入动作后重规划。'};
 
 export function useDispatchSession(){
   const [snapshot,setSnapshot]=useState<Snapshot|null>(null),[comparison,setComparison]=useState<Comparison|null>(null);
@@ -40,6 +41,7 @@ export function useDispatchSession(){
     if(incoming.comparison)next.comparison=bindComparison(incoming,incoming.comparison);
     changeState.current=advanceRouteChanges(changeState.current,live.current.snapshot,incoming);
     setRouteChanges(summarizeRouteChanges(changeState.current,incoming));
+    if(incoming.order_control?.status==='waiting_checkpoint'||incoming.order_control?.status==='blocked')setPlaying(false);
     live.current=next;setSnapshot(next.snapshot);setComparison(next.comparison);setConnection('connected');
   },[]);
   const failed=useCallback((exception:unknown,ticket:number)=>{
@@ -65,7 +67,7 @@ export function useDispatchSession(){
     locked.current=true;setBusy('create');setPlaying(false);setError('');setMessage('');setConnection('connecting');
     const ticket=++epoch.current;
     try{
-      const incoming=await request('/sessions',{profile:'bjut-studio',window_mode:windowMode,...(seed===''?{}:{seed:Number(seed)})});
+      const incoming=await request('/sessions',{profile:'bjut-studio',window_mode:windowMode,auto_replan:true,...(seed===''?{}:{seed:Number(seed)})});
       active.current=incoming.id;sessionStorage.setItem('logiroute-session',incoming.id);
       live.current={snapshot:null,comparison:null};receive(incoming,ticket);setMessage('新场景已创建，等待规划。');return true;
     }catch(e){failed(e,ticket);return false;}finally{locked.current=false;setBusy('');}
@@ -86,12 +88,16 @@ export function useDispatchSession(){
     locked.current=true;setBusy(kind);setError('');if(kind!=='step')setPlaying(false);
     try{
       const before=live.current.snapshot;
-      const incoming=await request(`/sessions/${id}/commands`,{revision:before.revision,command:kind,...fields});
+      const incoming=await request(`/sessions/${id}/commands`,{revision:before.revision,command:kind,...orderMutationFields(kind,fields)});
       if(kind==='step'&&ticket===epoch.current)await motion.play(before,incoming);
       receive(incoming,ticket);setMessage(messages[kind]??'操作完成。');return true;
     }catch(e){if(failed(e,ticket))await refresh(false,true);return false;}
     finally{locked.current=false;setBusy('');}
   },[receive,failed,refresh,motion.play]);
+  useEffect(()=>{
+    const next=checkpointCommand(snapshot,{busy:!!busy||!!error,connection});
+    if(next){setPlaying(false);void command(next);}
+  },[snapshot,busy,error,connection,command]);
   useEffect(()=>{
     if(!playing||!snapshot?.running||busy)return;
     const timer=setTimeout(()=>void command('step'),100);

@@ -13,6 +13,7 @@ export type Vehicle=Snapshot['vehicles'][number];
 export type Road=Snapshot['edges'][number];
 export type Snapshot = {
   id:string;revision:number;traffic_version:number;now:number;running:boolean;ready:boolean;needs_replan:boolean;
+  order_control?:{enabled:boolean;order_version:number;planned_order_version:number|null;status:'idle'|'waiting_checkpoint'|'applied'|'blocked';reason:string|null;change_kind:string|null};
   time_windows?:WindowEvidence;
   studio?:{presets:{delivery_capacity_kg:string;fuel_price_stress:string};late_orders:{id:string;deadline:number;penalty:number}[];auto_replan:string|null;parameters:StudioParameters;model_note:string;official_map_url:string;available_hubs:{id:string;name:string}[];planned:CostMetrics|null;executed:CostMetrics;trial?:{original_session:string;objective:string;before:{distance:number;cost:number;accepted:number;complete_all:boolean}}|null};
   nodes:{id:string;type:string;x:number;y:number;name?:string;lon?:number;lat?:number;zone?:string;display_name?:string;approximate?:boolean;location_note?:string;snap_distance_m?:number}[];

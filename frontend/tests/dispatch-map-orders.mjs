@@ -45,4 +45,26 @@ assert.ok(obstacles.every(b=>avoided.box.right<=b.left||avoided.box.left>=b.righ
 assert.equal(JSON.stringify(obstacles),obstacleBefore);
 assert.deepEqual(buildOrderMapLabels(single,points,1,'',[]).get('P1'),preferred);
 assert.equal(buildOrderMapLabels(single,points,1,'',[{left:-1000,right:1000,top:-1000,bottom:1000}]).size,0);
-console.log('31 order identity, same-site status, urgency, new-order and cross-layer label assertions passed');
+// The live map contains only outstanding tasks. Keep full order history in the
+// snapshot, including cancelled and delivered IDs, while reducing shared pins.
+const active=groupMapOrders(input,['O1','O3','O5','O6'],{activeOnly:true});
+assert.equal(active.size,2);
+assert.deepEqual(active.get('P1').ids,['O2','O3']);
+assert.equal(active.get('P1').count,2);
+assert.equal(active.get('P1').done,0);
+assert.equal(active.get('P1').priority,'urgent');
+assert.equal(active.get('P1').allDelivered,false);
+assert.deepEqual(active.get('P1').newIds,['O3']);
+assert.equal(active.get('P2').inTransit,1);
+assert.equal(active.has('P3'),false);
+assert.equal(active.has('P4'),false);
+assert.equal(JSON.stringify(input),original);
+assert.throws(()=>groupMapOrders([...input,order('O1','P9')],[],{activeOnly:true}),/duplicate order ID/);
+assert.throws(()=>groupMapOrders([order('C','P1','cancelled'),order('C','P2','expired')],[],{activeOnly:true}),/duplicate order ID/);
+const partial=[order('A','P1','delivered'),order('B','P1','planned'),order('C','P1','cancelled')];
+assert.deepEqual(groupMapOrders(partial,[],{activeOnly:true}).get('P1').ids,['B']);
+assert.equal(groupMapOrders(partial,[],{activeOnly:true}).get('P1').count,1);
+assert.equal(groupMapOrders(partial.map(o=>o.id==='B'?{...o,status:'delivered'}:o),[],{activeOnly:true}).size,0);
+assert.equal(groupMapOrders([order('A','P1','unknown')],[],{activeOnly:true}).size,0);
+assert.deepEqual(groupMapOrders(input,[],{activeOnly:false}),groupMapOrders(input));
+console.log('49 order identity, active-task filtering, urgency and cross-layer label assertions passed');

@@ -2,13 +2,17 @@ import {layoutMapLabels} from './geography.mjs';
 
 const rank={normal:0,urgent:1,critical:2};
 
-/** Preserve each order identity while sharing a destination pin. Time/Space O(N+K). */
-export function groupMapOrders(orders,newIds=[]){
+/** Preserve identities while sharing a destination pin. Time/Space O(N+K).
+ * activeOnly restricts the live map to outstanding tasks; historical callers
+ * retain delivered records by default. Identity validation always includes all IDs.
+ */
+export function groupMapOrders(orders,newIds=[],{activeOnly=false}={}){
  const groups=new Map(),seen=new Set(),fresh=new Set(newIds);
  for(const order of orders){
   if(seen.has(order.id))throw new Error('duplicate order ID: '+order.id);
   seen.add(order.id);
   if(order.status==='cancelled'||order.status==='expired')continue;
+  if(activeOnly&&!['pending','planned','in_transit'].includes(order.status))continue;
   let group=groups.get(order.destination);
   if(!group){group={destination:order.destination,orders:[],ids:[],count:0,done:0,pending:0,inTransit:0,priority:'normal',allDelivered:false,newIds:[],label:''};groups.set(order.destination,group);}
   group.orders.push(order);group.ids.push(order.id);group.count++;
