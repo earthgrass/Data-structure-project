@@ -1,6 +1,7 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import type {Snapshot,Comparison,Connection,WindowMode,StudioParameters} from '../types';
 import {bindComparison,reconcileSnapshot,failureFeedback} from '../sync.mjs';
+import {advanceRouteChanges,summarizeRouteChanges,type RouteChangeState} from '../routeChanges.mjs';
 import {useConfirmedMotion} from './useConfirmedMotion';
 
 class RequestError extends Error {
@@ -26,6 +27,8 @@ export function useDispatchSession(){
   const [snapshot,setSnapshot]=useState<Snapshot|null>(null),[comparison,setComparison]=useState<Comparison|null>(null);
   const [connection,setConnection]=useState<Connection>('connecting'),[busy,setBusy]=useState(''),[error,setError]=useState(''),[message,setMessage]=useState('');
   const [playing,setPlaying]=useState(false);
+  const changeState=useRef<RouteChangeState|null>(null);
+  const [routeChanges,setRouteChanges]=useState<ReturnType<typeof summarizeRouteChanges>>(null);
   const motion=useConfirmedMotion();
   const setPlayback=useCallback((value:boolean)=>{setPlaying(value);if(!value)motion.stop();},[motion.stop]);
   const live=useRef<{snapshot:Snapshot|null;comparison:Comparison|null}>({snapshot:null,comparison:null});
@@ -35,6 +38,8 @@ export function useDispatchSession(){
     const next=reconcileSnapshot(live.current.snapshot,live.current.comparison,incoming,active.current);
     if(next.snapshot!==incoming)return;
     if(incoming.comparison)next.comparison=bindComparison(incoming,incoming.comparison);
+    changeState.current=advanceRouteChanges(changeState.current,live.current.snapshot,incoming);
+    setRouteChanges(summarizeRouteChanges(changeState.current,incoming));
     live.current=next;setSnapshot(next.snapshot);setComparison(next.comparison);setConnection('connected');
   },[]);
   const failed=useCallback((exception:unknown,ticket:number)=>{
@@ -99,7 +104,7 @@ export function useDispatchSession(){
     if(live.current.snapshot?.ready){if(!await command('depart'))return;}
     setPlayback(true);
   };
-  return {snapshot,comparison,connection,busy,error,message,playing,setPlaying:setPlayback,create,trial,command,
+  return {snapshot,comparison,routeChanges,connection,busy,error,message,playing,setPlaying:setPlayback,create,trial,command,
     motionClock:motion.clock,speed:motion.speed,setSpeed:motion.setSpeed,togglePlayback,
     reconnect:()=>{setConnection('connecting');void refresh();}};
 }

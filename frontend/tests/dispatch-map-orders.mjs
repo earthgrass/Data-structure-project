@@ -1,0 +1,48 @@
+import assert from 'node:assert/strict';
+import {groupMapOrders,buildOrderMapLabels} from '../src/dispatch/order-map.mjs';
+
+const order=(id,destination,status='pending',priority='normal')=>({id,destination,status,priority});
+const input=[order('O1','P1','delivered','critical'),order('O2','P1','planned'),order('O3','P1','pending','urgent'),order('O4','P2','in_transit','critical'),order('O5','P3','delivered'),order('O6','P4','cancelled'),order('O7','P4','expired')];
+const original=JSON.stringify(input),groups=groupMapOrders(input,['O3','O6']);
+assert.equal(groups.size,3);
+assert.deepEqual(groups.get('P1').ids,['O1','O2','O3']);
+assert.equal(groups.get('P1').count,3);
+assert.equal(groups.get('P1').done,1);
+assert.equal(groups.get('P1').pending,1);
+assert.equal(groups.get('P1').priority,'urgent');
+assert.deepEqual(groups.get('P1').newIds,['O3']);
+assert.match(groups.get('P1').label,/O3/);
+assert.match(groups.get('P1').label,/新/);
+assert.match(groups.get('P1').label,/紧急/);
+assert.equal(groups.get('P2').priority,'critical');
+assert.equal(groups.get('P2').inTransit,1);
+assert.equal(groups.get('P3').allDelivered,true);
+assert.equal(groups.has('P4'),false);
+assert.equal(JSON.stringify(input),original);
+assert.throws(()=>groupMapOrders([...input,order('O1','P9')]),/duplicate order ID/);
+const points=new Map([['P1',[100,100]],['P2',[110,110]],['P3',[400,400]]]);
+const labels=buildOrderMapLabels(groups,points,1,'P1');
+assert.ok(labels.has('P1'));
+assert.deepEqual(labels,buildOrderMapLabels(groups,points,1,'P1'));
+assert.deepEqual(points.get('P1'),[100,100]);
+const boxes=[...labels.values()].map(l=>l.box);
+assert.ok(boxes.every((a,i)=>boxes.every((b,j)=>i===j||a.right<=b.left||a.left>=b.right||a.bottom<=b.top||a.top>=b.bottom)));
+assert.equal(buildOrderMapLabels(groups,new Map(),1).size,0);
+assert.equal(groupMapOrders([order('A','P','planned'),order('B','P','planned','urgent'),order('C','P','planned','critical')]).get('P').priority,'critical');
+assert.equal(groupMapOrders([order('A','P','delivered','critical'),order('B','P','pending')]).get('P').priority,'normal');
+assert.equal(groupMapOrders([order('A','P')]).get('P').label,'A');
+assert.deepEqual(groupMapOrders(input,['O3','O3']).get('P1').newIds,['O3']);
+// A hub label occupies the order's preferred spot. Cross-layer avoidance must
+// choose another position without pushing into or changing the caller's boxes.
+const single=groupMapOrders([order('O1','P1')]);
+const preferred=buildOrderMapLabels(single,points,1).get('P1');
+const obstacles=Object.freeze([Object.freeze({...preferred.box})]);
+const obstacleBefore=JSON.stringify(obstacles);
+const avoided=buildOrderMapLabels(single,points,1,'',obstacles).get('P1');
+assert.ok(avoided);
+assert.notDeepEqual(avoided.box,preferred.box);
+assert.ok(obstacles.every(b=>avoided.box.right<=b.left||avoided.box.left>=b.right||avoided.box.bottom<=b.top||avoided.box.top>=b.bottom));
+assert.equal(JSON.stringify(obstacles),obstacleBefore);
+assert.deepEqual(buildOrderMapLabels(single,points,1,'',[]).get('P1'),preferred);
+assert.equal(buildOrderMapLabels(single,points,1,'',[{left:-1000,right:1000,top:-1000,bottom:1000}]).size,0);
+console.log('31 order identity, same-site status, urgency, new-order and cross-layer label assertions passed');

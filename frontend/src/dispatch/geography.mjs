@@ -22,9 +22,9 @@ export function polylinePrefix(line,fraction){
 }
 export function pathData(line){return line.map((p,i)=>`${i?'L':'M'}${p[0]},${p[1]}`).join(' ');}
 
-/** Greedy screen-space label placement; Time O(N²), Space O(N), stable input order. */
-export function layoutMapLabels(items){
-  const occupied=[],result=new Map();
+/** Greedy screen-space labels; Time O(N*(N+B)), Space O(N+B), B input obstacles. */
+export function layoutMapLabels(items,obstacles=[]){
+  const occupied=[...obstacles],result=new Map();
   for(const item of items){
     let width=0;for(const ch of item.text)width+=ch.codePointAt(0)>255?11:7;
     for(const [x,y,anchor] of [[0,-27,'middle'],[20,4,'start'],[-20,4,'end'],[0,34,'middle']]){

@@ -1,4 +1,4 @@
-import {useMemo,useRef,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import type {Snapshot,Road} from '../types';
 import {useNetworkViewport} from '../hooks/useNetworkViewport';
 import {vehicleColor,trafficLabels,fmt} from '../presentation';
@@ -6,24 +6,32 @@ import {Badge,Icon} from './Common';
 import {vehiclePoint,physicalRoads,driveFraction} from '../motion.mjs';
 import {polylinePrefix,pathData,polylinePoint,layoutMapLabels,type Point} from '../geography.mjs';
 import {actionPhase} from '../sync.mjs';
+import {MapOrders} from './MapOrders';
+import {groupMapOrders,buildOrderMapLabels} from '../order-map.mjs';
+import type {RouteChangeSummary} from '../routeChanges.mjs';
+import type {RouteView} from './RouteChanges';
+import {labels,priorities} from '../presentation';
 import {layoutVehicleBadges} from '../markers.mjs';
 
-export function NetworkCanvas({data,selected,onVehicle,onRoad,onCandidate,showRelaxed=false,clock=null}:{data:Snapshot;selected:string;onVehicle:(id:string)=>void;onRoad?:(road:Road)=>void;onCandidate?:(id:string)=>void;showRelaxed?:boolean;clock?:number|null}){
+export function NetworkCanvas({data,orderFocus=null,changes=null,routeView='changes',selected,onVehicle,onRoad,onCandidate,showRelaxed=false,clock=null}:{data:Snapshot;orderFocus?:{id:string;request:number}|null;changes?:RouteChangeSummary|null;routeView?:RouteView;selected:string;onVehicle:(id:string)=>void;onRoad?:(road:Road)=>void;onCandidate?:(id:string)=>void;showRelaxed?:boolean;clock?:number|null}){
   const view=useNetworkViewport(data.nodes,data.map?.bounds,data.map?.campus_profile?1.4:1.7),[node,setNode]=useState(''),[edge,setEdge]=useState('');
+  useEffect(()=>{if(orderFocus){view.focus(orderFocus.id);setNode(orderFocus.id);setEdge('');}},[orderFocus]);
+  useEffect(()=>{if(orderFocus)view.focus(orderFocus.id);},[view.size.width,view.size.height]);
   const drag=useRef<{x:number;y:number}|null>(null);
   const chosenNode=data.nodes.find(n=>n.id===node),chosenEdge=data.edges.find(r=>r.source+'|'+r.target===edge);
   const info=chosenNode?`${chosenNode.name??chosenNode.id}${chosenNode.lon?` · ${chosenNode.lon.toFixed(5)}, ${chosenNode.lat?.toFixed(5)}`:''}${chosenNode.approximate?' · 道路服务点，位置近似':''}${chosenNode.location_note?' · '+chosenNode.location_note:''}`:chosenEdge?`${chosenEdge.name??''} · ${chosenEdge.source} → ${chosenEdge.target} · ${trafficLabels[chosenEdge.status]} · ${fmt(chosenEdge.distance)} km · ${fmt(chosenEdge.travel_time)} 分 · ¥${fmt(chosenEdge.cost)}`:'';
   const roads=useMemo(()=>physicalRoads(data.edges),[data.edges]);
   const geometry=useMemo(()=>new Map(data.edges.map(r=>[r.source+'|'+r.target,r.geometry&&view.project?r.geometry.map(view.project):[view.points.get(r.source)!,view.points.get(r.target)!]])),[data.edges,view.project,view.points]);
-  const [showRoads,setShowRoads]=useState(true),[showPool,setShowPool]=useState(false),[showBackups,setShowBackups]=useState(false),[showAllRoutes,setShowAllRoutes]=useState(false);
+  const [showRoads,setShowRoads]=useState(true),[showPool,setShowPool]=useState(false),[showBackups,setShowBackups]=useState(false),[showAllRoutes,setShowAllRoutes]=useState(true);
   const visualClock=clock??data.now;
   const deliveries=useMemo(()=>{
     const result=new Map<string,{count:number;done:number}>();
     for(const order of data.orders){if(order.status==='cancelled'||order.status==='expired')continue;const item=result.get(order.destination)??{count:0,done:0};item.count++;if(order.status==='delivered')item.done++;result.set(order.destination,item);}
     return result;
   },[data.orders]);
+  const orderGroups=useMemo(()=>groupMapOrders(data.orders,changes?.addedOrderIds??[]),[data.orders,changes]);
   const nodeLabels=useMemo(()=>{
-    const visible=data.nodes.filter(n=>n.type!=='junction'&&(!data.studio||n.type!=='transfer'||data.studio.parameters.hub_ids.includes(n.id)||showBackups)&&(n.type!=='customer'||n.id===node||view.zoom>1.6&&deliveries.has(n.id)));
+    const visible=data.nodes.filter(n=>n.type!=='junction'&&(!data.studio||n.type!=='transfer'||data.studio.parameters.hub_ids.includes(n.id)||showBackups)&&n.type!=='customer');
     const arranged=[...visible.filter(n=>n.type!=='customer'),...visible.filter(n=>n.type==='customer'&&n.id===node),...visible.filter(n=>n.type==='customer'&&n.id!==node)];
     return layoutMapLabels(arranged.map(n=>{
       const p=view.points.get(n.id)!;const count=deliveries.get(n.id)?.count;
@@ -31,9 +39,10 @@ export function NetworkCanvas({data,selected,onVehicle,onRoad,onCandidate,showRe
       return {id:n.id,point:[p[0]*view.zoom,p[1]*view.zoom] as Point,text:title+(count?` · ${count}单`:'')};
     }));
   },[data.nodes,data.map?.campus_profile,deliveries,node,view.points,view.zoom,showBackups]);
+  const orderLabels=useMemo(()=>buildOrderMapLabels(orderGroups,view.points,view.zoom,node,[...nodeLabels.values()].map(l=>l.box)),[orderGroups,view.points,view.zoom,node,nodeLabels]);
   const carPoints=data.vehicles.map(v=>({vehicle:v,point:vehiclePoint(v,visualClock,view.points,v.current?.kind==='drive'?geometry.get(v.current.source+'|'+v.current.target):undefined)}));
   const badgeItems=[...carPoints.filter(c=>c.vehicle.id===selected),...carPoints.filter(c=>c.vehicle.id!==selected)].map(c=>({id:c.vehicle.id,point:c.point.map(n=>n*view.zoom),text:c.vehicle.id+' '+c.vehicle.load+'kg'}));
-  const badges=layoutVehicleBadges(badgeItems,[...nodeLabels.values()].map(l=>l.box),{left:12-view.offset[0],right:view.size.width-12-view.offset[0],top:(view.size.width<760?296:222)-view.offset[1],bottom:view.size.height-(view.size.width<760?288:228)-view.offset[1]});
+  const badges=layoutVehicleBadges(badgeItems,[...nodeLabels.values(),...orderLabels.values()].map(l=>l.box),{left:12-view.offset[0],right:view.size.width-12-view.offset[0],top:(view.size.width<760?296:222)-view.offset[1],bottom:view.size.height-(view.size.width<760?288:228)-view.offset[1]});
   const background=useMemo(()=>{
     if(!data.map||!view.project)return null;
     const project=view.project,labels:{name:string;point:Point}[]=[],used=new Set<string>();
@@ -51,7 +60,7 @@ export function NetworkCanvas({data,selected,onVehicle,onRoad,onCandidate,showRe
       if(areas.some(a=>Math.abs(a.point[0]-point[0])*view.zoom<150&&Math.abs(a.point[1]-point[1])*view.zoom<65))continue;
       areas.push({name:f.name,point});
     }
-    return <g className="d-geographic-base" pointerEvents="none">
+    return <g className="d-geographic-base" aria-hidden="true" pointerEvents="none">
       {data.map.features.map((f,i)=><path key={i} className={'d-geo-'+f.kind} d={pathData(f.geometry.map(project))+' Z'}/>)}
       {data.map.background_roads.map((r,i)=><path key={'case'+i} className={'d-geo-road-casing '+r.kind} d={pathData(r.geometry.map(project))}/>)}
       {data.map.background_roads.map((r,i)=><path key={'road'+i} className={'d-geo-road '+r.kind} d={pathData(r.geometry.map(project))}/>)}
@@ -64,7 +73,7 @@ export function NetworkCanvas({data,selected,onVehicle,onRoad,onCandidate,showRe
   return <section className={'d-card d-network '+(data.map?'geographic':'')} aria-label="配送网络">
     <div className="d-card-head"><div><h2>{data.map?'北工大周边 · 真实道路':'配送网络'}</h2><p>{data.map?`${data.map.candidate_count} 个固定候选点 · ${data.orders.length} 张订单`:`${data.nodes.length} 节点 · ${roads.length} 条物理道路 · ${data.edges.length} 条方向边`}</p></div><Badge tone="info">{selected} 路线</Badge></div>
     <div className="d-map-frame" ref={view.frame}>
-      <svg viewBox={`0 0 ${view.size.width} ${view.size.height}`} aria-label={data.map?'北工大周边真实道路配送地图':'真实场景配送地图'} role="img"
+      <svg viewBox={`0 0 ${view.size.width} ${view.size.height}`} aria-label={data.map?'北工大周边真实道路配送地图':'真实场景配送地图'} role="group"
         onPointerDown={e=>{if((e.target as Element).closest('[role="button"]'))return;drag.current={x:e.clientX,y:e.clientY};e.currentTarget.setPointerCapture(e.pointerId);}}
         onPointerMove={e=>{if(!drag.current)return;view.panBy(e.clientX-drag.current.x,e.clientY-drag.current.y);drag.current={x:e.clientX,y:e.clientY};}}
         onPointerUp={()=>{drag.current=null;}} onPointerCancel={()=>{drag.current=null;}} onWheel={e=>view.zoomBy(e.deltaY<0?.2:-.2)}>
@@ -74,21 +83,27 @@ export function NetworkCanvas({data,selected,onVehicle,onRoad,onCandidate,showRe
           {showRoads&&background}
           {data.map?.outline&&view.project&&<path className="d-campus-boundary" d={pathData(data.map.outline.map(view.project))+' Z'} pointerEvents="none"/>}
           {showRelaxed&&data.time_windows?.relaxed_routes?.filter(r=>r.vehicle===selected).map(r=>r.edges.map((e,i)=><path key={'relaxed'+i} className="d-relaxed-reference" d={pathData(geometry.get(e.source+'|'+e.target)!)}><title>初始宽松路线对照 · {r.vehicle}</title></path>))}
-          {showRoads&&roads.map(group=>{const r=group.directions[0],d=pathData(geometry.get(r.source+'|'+r.target)!);return <g key={group.key} onClick={()=>chooseRoad(r)}><path className={'d-road '+r.status+(edge===r.source+'|'+r.target?' chosen':'')} d={d}/><path className="d-road-hit" d={d}><title>{r.name??''} · {group.directions.map(v=>`${v.source} → ${v.target} · ${trafficLabels[v.status]}`).join(' / ')}</title></path></g>;})}
-          {data.plan?.routes.filter(r=>showAllRoutes||r.vehicle===selected).map(r=>r.actions.filter(a=>a.kind==='drive').map((a,i)=>{const line=geometry.get(a.source+'|'+a.target)!;const phase=actionPhase(data,a),progress=phase==='completed'?1:phase==='current'?driveFraction(a,visualClock):0;return <g key={r.vehicle+i}><path className={'d-route '+(r.vehicle===selected?'active planned':'')} style={{stroke:vehicleColor(data,r.vehicle)}} d={pathData(line)} markerEnd={r.vehicle===selected?'url(#route-direction)':undefined}/>{progress>0&&<path className={'d-route '+(r.vehicle===selected?'active':'')} style={{stroke:vehicleColor(data,r.vehicle)}} d={pathData(polylinePrefix(line,progress))} markerEnd={r.vehicle===selected?'url(#route-direction)':undefined}/>}</g>;}))}
+          {showRoads&&roads.map(group=>{const r=group.directions[0],d=pathData(geometry.get(r.source+'|'+r.target)!);return <g key={group.key} aria-hidden="true" onClick={()=>chooseRoad(r)}><path className={'d-road '+r.status+(edge===r.source+'|'+r.target?' chosen':'')} d={d}/><path className="d-road-hit" d={d}><title>{r.name??''} · {group.directions.map(v=>`${v.source} → ${v.target} · ${trafficLabels[v.status]}`).join(' / ')}</title></path></g>;})}
+          {routeView==='before'&&changes?changes.vehicleChanges.filter(r=>showAllRoutes||r.vehicle===selected).map(r=>r.beforeEdges.map((e,i)=>{const line=geometry.get(e.source+'|'+e.target);return line?<g key={'before'+r.vehicle+i}><path className="r-route-casing" d={pathData(line)}/><path className="r-old-route" d={pathData(line)}/></g>:null;})):<>
+          {routeView==='changes'&&changes?.status==='compared'&&changes.vehicleChanges.filter(r=>showAllRoutes||r.vehicle===selected).map(r=>r.removedEdges.map((e,i)=>{const line=geometry.get(e.source+'|'+e.target);return line?<g key={'old'+r.vehicle+i}><path className="r-route-casing" d={pathData(line)}/><path className="r-old-route" d={pathData(line)}/></g>:null;}))}
+          {routeView==='changes'&&changes?.status==='compared'&&changes.vehicleChanges.filter(r=>showAllRoutes||r.vehicle===selected).map(r=>r.addedEdges.map((e,i)=>{const line=geometry.get(e.source+'|'+e.target);return line?<path key={'added'+r.vehicle+i} className="r-added-route" d={pathData(line)}/>:null;}))}
+          {[...(showAllRoutes?data.plan?.routes.filter(r=>r.vehicle!==selected)??[]:[]),...data.plan?.routes.filter(r=>r.vehicle===selected)??[]].map(r=>r.actions.filter(a=>a.kind==='drive').map((a,i)=>{const line=geometry.get(a.source+'|'+a.target)!;const phase=actionPhase(data,a),progress=phase==='completed'?1:phase==='current'?driveFraction(a,visualClock):0;return <g key={r.vehicle+i}><path className="r-route-casing" d={pathData(line)}/><path className={'d-route r-current '+(r.vehicle===selected?'active':'')} style={{stroke:vehicleColor(data,r.vehicle)}} d={pathData(line)} markerEnd="url(#route-direction)"/>{progress>0&&<path className={'d-route r-current r-travelled '+(r.vehicle===selected?'active':'')} style={{stroke:vehicleColor(data,r.vehicle)}} d={pathData(polylinePrefix(line,progress))}/>}</g>;}))}
+          </>}
           {data.edges.filter(r=>r.status==='blocked'||r.status==='congested').map(r=><path key={'traffic'+r.source+r.target} className={'d-traffic-overlay '+r.status} d={pathData(geometry.get(r.source+'|'+r.target)!)}/>)}
-          {data.nodes.filter(n=>n.type!=='junction'&&(!data.studio||n.type!=='transfer'||data.studio.parameters.hub_ids.includes(n.id)||showBackups)&&(showPool||n.type!=='customer'||deliveries.has(n.id))).map(n=>{const [x,y]=view.points.get(n.id)!,delivery=deliveries.get(n.id);return <g key={n.id} className={'d-map-node '+n.type+(delivery?' assigned':' pool')+(node===n.id?' selected':'')+(delivery&&delivery.done===delivery.count?' served':'')} transform={`translate(${x} ${y})`} role="button" tabIndex={0} aria-label={`${n.id} ${n.type==='warehouse'?'仓库':n.type==='transfer'?'中转站':'候选配送点'}`} onClick={()=>chooseNode(n.id)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();chooseNode(n.id);}}}>
+          {data.nodes.filter(n=>n.type!=='junction'&&(!data.studio||n.type!=='transfer'||data.studio.parameters.hub_ids.includes(n.id)||showBackups)&&(n.type!=='customer'||showPool&&!orderGroups.has(n.id))).map(n=>{const [x,y]=view.points.get(n.id)!,delivery=deliveries.get(n.id);return <g key={n.id} className={'d-map-node '+n.type+(delivery?' assigned':' pool')+(node===n.id?' selected':'')+(delivery&&delivery.done===delivery.count?' served':'')} transform={`translate(${x} ${y})`} role="button" tabIndex={0} aria-label={`${n.id} ${n.type==='warehouse'?'仓库':n.type==='transfer'?'中转站':'候选配送点'}`} onClick={()=>chooseNode(n.id)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();chooseNode(n.id);}}}>
             <title>{n.id} · {n.name??''}{delivery?` · 签收 ${delivery.done}/${delivery.count}`:' · 尚未分配订单'}{n.location_note?' · '+n.location_note:''}</title>
             <g transform={`scale(${1/view.zoom})`}><circle r="18" style={{fill:"transparent",stroke:"none"}}/>{n.type==='warehouse'?<><rect x="-16" y="-16" width="32" height="32" rx="8"/><path d="m-8-3 8-6 8 6v10H-8zM-3 7V1h6v6"/></>:n.type==='transfer'?<><path className="hub-shape" d="M0-18 18 0 0 18-18 0Z"/><path d="M-7-5H7V5H-7zM-7-1H7M0-5V5"/></>:<><circle className="d-stop-dot" r={delivery?9:5}/>{delivery&&<circle className="d-stop-ring" r="14"/>}</>}
             {nodeLabels.has(n.id)&&<text x={nodeLabels.get(n.id)!.x} y={nodeLabels.get(n.id)!.y} textAnchor={nodeLabels.get(n.id)!.anchor}>{nodeLabels.get(n.id)!.text}</text>}
             </g></g>;})}
+          <MapOrders groups={orderGroups} points={view.points} zoom={view.zoom} labels={orderLabels} selected={node} onSelect={chooseNode}/>
           {carPoints.map(({vehicle:v,point:[x,y]})=>{const label=badges.get(v.id)??{x:x*view.zoom,y:y*view.zoom,width:0};const bx=label.x-x*view.zoom,by=label.y-y*view.zoom;return <g key={v.id} transform={`translate(${x} ${y})`} className={'d-map-car '+(v.current?.kind??'idle')+(clock!==null?' animating':'')+(v.id===selected?' selected':'')} data-vehicle={v.id} data-progress={v.current?.kind==='drive'?driveFraction(v.current,visualClock):0} role="button" tabIndex={0} aria-label={`地图选择 ${v.id}`} onClick={()=>onVehicle(v.id)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();onVehicle(v.id);}}}><g transform={`scale(${1/view.zoom})`}><circle className="d-car-halo" r="20" fill="none" stroke={vehicleColor(data,v.id)}/><circle r="6" fill={vehicleColor(data,v.id)} stroke="white" strokeWidth="2"/>{label.width>0&&<><path d={`M0,0 L${bx+(bx<0?label.width:0)},${by+16}`} fill="none" stroke={vehicleColor(data,v.id)} strokeWidth="1.5"/><rect className="s-car-label" x={bx} y={by} width={label.width} height="32" rx="8" fill={vehicleColor(data,v.id)}/><text x={bx+10} y={by+13}>{v.id}</text><text className="s-car-load" x={bx+10} y={by+26}>{v.load} / {v.capacity} kg</text></>}<title>{v.id} · 真实最近到达 {v.position} · 载货 {v.load}/{v.capacity} kg · 引线仅用于标牌避让</title></g></g>;})}
 
         </g>
       </svg>
       <div className="d-map-tools" aria-label="地图视口控制"><button aria-label="放大地图" onClick={()=>view.zoomBy(.5)} disabled={view.zoom>=8}>＋</button><span>{Math.round(view.zoom*100)}%</span><button aria-label="缩小地图" onClick={()=>view.zoomBy(-.5)} disabled={view.zoom<=1}>−</button><button aria-label="重置地图视口" onClick={view.reset}>适配</button><button aria-label="定位选中车辆" onClick={()=>view.focus(data.vehicles.find(v=>v.id===selected)?.position??'')}><Icon name="pin" size={18}/></button></div>
-      {info&&<div className="d-map-info" role="status"><span>{info}</span>{chosenNode?.type==='customer'&&onCandidate&&<button onClick={()=>onCandidate(chosenNode.id)}>在此新增订单</button>}<button aria-label="关闭地图详情" onClick={()=>{setNode('');setEdge('');}}>×</button></div>}
+      {info&&<div className={'d-map-info'+(orderGroups.has(node)?' r-order-info':'')} role="status"><strong>{chosenNode?.name??info}</strong>{orderGroups.has(node)&&<div className="r-node-orders">{orderGroups.get(node)!.orders.map(o=><div key={o.id} className={'r-node-order '+o.priority}><b>{o.id} · {priorities.find(([id])=>id===o.priority)?.[1]}{changes?.addedOrderIds.includes(o.id)?' · 新增':''}</b><small>{labels[o.status]} · {o.demand} kg · 签收窗 {fmt(o.earliest)}–{fmt(o.deadline)}</small><small>{data.plan?.deferred.find(([id])=>id===o.id)?.[1]??(o.hub?`中转站 ${o.hub}`:'尚未分配')}</small></div>)}</div>}{chosenNode?.type==='customer'&&onCandidate&&<button onClick={()=>onCandidate(chosenNode.id)}>在此新增订单</button>}<button aria-label="关闭地图详情" onClick={()=>{setNode('');setEdge('');}}>×</button></div>}
+
     </div>
-    <div className="d-map-legend"><label className="d-road-toggle"><input type="checkbox" checked={showRoads} onChange={e=>setShowRoads(e.target.checked)}/>道路底图</label>{data.map&&<label className="d-road-toggle"><input type="checkbox" checked={showPool} onChange={e=>setShowPool(e.target.checked)}/>候选地点</label>}<label className="d-road-toggle"><input type="checkbox" checked={showAllRoutes} onChange={e=>setShowAllRoutes(e.target.checked)}/>全部路线</label>{data.studio&&<label className="d-road-toggle"><input type="checkbox" checked={showBackups} onChange={e=>setShowBackups(e.target.checked)}/>备用站点</label>}<span><i className="warehouse"/>模拟仓库</span><span><i className="hub"/>模拟中转站</span><span><i className="customer"/>候选点</span><span>━ 已行驶 / ┄ 计划</span>{showRelaxed&&<span className="d-muted">灰虚线：初始宽松路线</span>}<span className="d-muted">{data.map?<><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors · ODbL</a> · 离线道路快照</>:'示意坐标 · 动画非 GPS'}</span></div>
+    <div className="d-map-legend"><label className="d-road-toggle"><input type="checkbox" checked={showRoads} onChange={e=>setShowRoads(e.target.checked)}/>道路底图</label>{data.map&&<label className="d-road-toggle"><input type="checkbox" checked={showPool} onChange={e=>setShowPool(e.target.checked)}/>候选地点</label>}<label className="d-road-toggle"><input type="checkbox" checked={showAllRoutes} onChange={e=>setShowAllRoutes(e.target.checked)}/>全部路线</label>{data.studio&&<label className="d-road-toggle"><input type="checkbox" checked={showBackups} onChange={e=>setShowBackups(e.target.checked)}/>备用站点</label>}<span><i className="warehouse"/>模拟仓库</span><span><i className="hub"/>模拟中转站</span><span className="r-map-key">包裹 = 订单 · ! = 紧急 · ✓ = 已签收 · 空心点 = 候选</span><span className="r-map-mode">{routeView==='before'&&changes?'变更前路线':routeView==='changes'&&changes?.status==='compared'?'灰虚线移除 / 橙边新增':'彩色实线 = 已规划路线'}</span>{showRelaxed&&<span className="d-muted">灰虚线：初始宽松路线</span>}<span className="d-muted">{data.map?<><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">© OpenStreetMap contributors · ODbL</a> · 离线道路快照</>:'示意坐标 · 动画非 GPS'}</span></div>
   </section>;
 }

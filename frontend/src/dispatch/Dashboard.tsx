@@ -11,6 +11,7 @@ import {DemoPlayback} from './components/DemoPlayback';
 import {OrderTable,AddOrder} from './components/OrderTable';
 import {MapWorkbench} from './components/MapWorkbench';
 import {TimeWindowPanel} from './components/TimeWindows';
+import {RouteChangesPanel} from './components/RouteChanges';
 import {EconomicsPanel} from './components/Economics';
 import {ControlledExperiment} from './components/ControlledExperiment';
 import {InventoryPanel,TrafficPanel,ObjectiveComparison,EventHistory} from './components/TaskPanels';
@@ -21,6 +22,13 @@ export function DispatchDashboard(){
   const [workspace,setWorkspace]=useState<Workspace>('overview'),[seed,setSeed]=useState(''),[objective,setObjective]=useState('distance');
   const [selected,setSelected]=useState(''),[road,setRoad]=useState(''),[confirmation,setConfirmation]=useState<Confirmation|null>(null);
   const [destination,setDestination]=useState('');
+  const [orderFocus,setOrderFocus]=useState<{id:string;request:number;sessionId:string}|null>(null);
+  const [mapFocusRequest,setMapFocusRequest]=useState(0);
+  const focusOrder=(id:string)=>setOrderFocus(previous=>({id,request:(previous?.request??0)+1,sessionId:data?.id??''}));
+  useEffect(()=>setOrderFocus(null),[data?.id]);
+  useEffect(()=>{const id=session.routeChanges?.addedOrderIds[0];const order=data?.orders.find(o=>o.id===id);if(order)focusOrder(order.destination);},[data?.id,session.routeChanges?.baselineRevision]);
+  const [routeView,setRouteView]=useState<'before'|'after'|'changes'>('changes');
+  useEffect(()=>setRouteView(session.routeChanges&&!session.routeChanges.hasBaseline?'after':'changes'),[data?.id,session.routeChanges?.baselineRevision,session.routeChanges?.appliedRevision]);
   const [windowMode,setWindowMode]=useState<WindowMode>('strict'),[showRelaxed,setShowRelaxed]=useState(false);
   useEffect(()=>setShowRelaxed(false),[data?.id]);
   useEffect(()=>{
@@ -36,10 +44,10 @@ export function DispatchDashboard(){
   const disabled=!!session.busy||session.connection!=='connected';
   const createDisabled=!!session.busy||session.connection==='failed'||session.connection==='connecting';
   const car=data?.vehicles.find(v=>v.id===selected)??data?.vehicles[0];
-  const map=data&&car?<NetworkCanvas key={data.id} data={data} selected={car.id} clock={session.motionClock} showRelaxed={showRelaxed&&windowEvidenceCurrent(data)} onVehicle={setSelected} onCandidate={id=>{session.setPlaying(false);setDestination(id);}} onRoad={r=>setRoad(r.source+'|'+r.target)}/>:null;
+  const map=data&&car?<NetworkCanvas key={data.id} data={data} orderFocus={orderFocus?.sessionId===data.id?orderFocus:null} changes={session.routeChanges} routeView={routeView} selected={car.id} clock={session.motionClock} showRelaxed={showRelaxed&&windowEvidenceCurrent(data)} onVehicle={setSelected} onCandidate={id=>{session.setPlaying(false);setDestination(id);}} onRoad={r=>setRoad(r.source+'|'+r.target)}/>:null;
   const playback=data?<DemoPlayback data={data} playing={session.playing} busy={session.busy} clock={session.motionClock} speed={session.speed} setSpeed={session.setSpeed} toggle={session.togglePlayback}/>:null;
   const inspector=data&&car?<VehicleInspector data={data} car={car}/>:null;
-  if(workspace==='overview'&&data)return <><MapWorkbench data={data} map={map} playback={playback}
+  if(workspace==='overview'&&data)return <><MapWorkbench mapFocusRequest={mapFocusRequest} changeKey={session.routeChanges?`${data.id}:${session.routeChanges.baselineRevision}:${session.routeChanges.appliedRevision}`:''} changes={<RouteChangesPanel data={data} changes={session.routeChanges} view={routeView} setView={setRouteView} busy={disabled} onOrder={id=>{focusOrder(id);setMapFocusRequest(n=>n+1);}} onPlan={()=>void session.command('plan',{objective})} onVehicle={setSelected}/>} data={data} map={map} playback={playback}
     economics={<EconomicsPanel key={data.id} data={data} busy={disabled} error={session.error} onTrial={async p=>{const ok=await session.trial(p);if(ok)setObjective('cost');return ok;}} onCreate={create}/>}
     windows={<TimeWindowPanel data={data} showRelaxed={showRelaxed} setShowRelaxed={setShowRelaxed} onVehicle={setSelected} selected={car?.id??''}/>} windowMode={windowMode} setWindowMode={setWindowMode}
     toolbar={<DispatchToolbar data={data} objective={objective} setObjective={setObjective} busy={session.busy} connection={session.connection} command={session.command} onCreate={create} onResults={()=>navigate('audit')} playing={session.playing} setPlaying={session.setPlaying}/>}
