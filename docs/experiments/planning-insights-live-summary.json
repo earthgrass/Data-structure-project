@@ -1,0 +1,664 @@
+{
+  "source": "planning-insights-live.json.gz",
+  "archive_sha256": "28f4daadb10769d734e0d46ae7c9ac59c9242076b5dbe93bd29d2fd437cb8634",
+  "assertions": 452,
+  "runtime_seconds": 16.300753400020767,
+  "passed": true,
+  "attempts": [
+    {
+      "mode": "strict",
+      "outcome": "passed",
+      "session": "campus1",
+      "accepted_urgent": false,
+      "request_count": 46,
+      "impact": {
+        "at": 3.1176871442699103,
+        "baseline_revision": 0,
+        "plan_revision": 6,
+        "baseline_traffic_version": 0,
+        "traffic_version": 0,
+        "comparison_basis": "remaining_at_checkpoint",
+        "historical_baseline": true,
+        "objective_before": "distance",
+        "objective_after": "distance",
+        "before": {
+          "distance": 12.253591240449785,
+          "cost": 28.297781408323807,
+          "travel_time": 34.03060358954884
+        },
+        "after": {
+          "distance": 12.253591240449785,
+          "cost": 28.297781408323807,
+          "travel_time": 34.03060358954884
+        },
+        "delta": {
+          "distance": 0.0,
+          "cost": 0.0,
+          "travel_time": 0.0
+        },
+        "vehicles": [
+          {
+            "vehicle": "CENTER",
+            "before": {
+              "distance": 3.2673725838684566,
+              "cost": 8.247666034391344,
+              "travel_time": 10.343220292390182
+            },
+            "after": {
+              "distance": 3.2673725838684566,
+              "cost": 8.247666034391344,
+              "travel_time": 10.343220292390182
+            },
+            "delta": {
+              "distance": 0.0,
+              "cost": 0.0,
+              "travel_time": 0.0
+            },
+            "changed": true
+          },
+          {
+            "vehicle": "EAST",
+            "before": {
+              "distance": 3.637404727784123,
+              "cost": 8.003941763987468,
+              "travel_time": 9.369697973481665
+            },
+            "after": {
+              "distance": 3.637404727784123,
+              "cost": 8.003941763987468,
+              "travel_time": 9.369697973481665
+            },
+            "delta": {
+              "distance": 0.0,
+              "cost": 0.0,
+              "travel_time": 0.0
+            },
+            "changed": true
+          },
+          {
+            "vehicle": "TRUNK",
+            "before": {
+              "distance": 2.223709475629324,
+              "cost": 5.0035019073048295,
+              "travel_time": 5.9466931350309835
+            },
+            "after": {
+              "distance": 2.223709475629324,
+              "cost": 5.0035019073048295,
+              "travel_time": 5.9466931350309835
+            },
+            "delta": {
+              "distance": 0.0,
+              "cost": 0.0,
+              "travel_time": 0.0
+            },
+            "changed": true
+          },
+          {
+            "vehicle": "WEST",
+            "before": {
+              "distance": 3.1251044531678813,
+              "cost": 7.042671702640165,
+              "travel_time": 8.370992188646014
+            },
+            "after": {
+              "distance": 3.1251044531678813,
+              "cost": 7.042671702640165,
+              "travel_time": 8.370992188646014
+            },
+            "delta": {
+              "distance": 0.0,
+              "cost": 0.0,
+              "travel_time": 0.0
+            },
+            "changed": true
+          }
+        ],
+        "orders": [
+          {
+            "order_id": "O12",
+            "before": 13.784923722826518,
+            "after": 13.784923722826518,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O7",
+            "before": 15.887315932563283,
+            "after": 15.887315932563283,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O17",
+            "before": 17.99959334434268,
+            "after": 17.99959334434268,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O4",
+            "before": 20.1414262578699,
+            "after": 20.1414262578699,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O13",
+            "before": 22.83041943199831,
+            "after": 22.83041943199831,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O1",
+            "before": 25.328581400846243,
+            "after": 25.328581400846243,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O8",
+            "before": 27.547747536695017,
+            "after": 27.547747536695017,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O10",
+            "before": 31.040355651384814,
+            "after": 31.040355651384814,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O9",
+            "before": 33.641966895883186,
+            "after": 33.641966895883186,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O2",
+            "before": 35.907631324049326,
+            "after": 35.907631324049326,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O3",
+            "before": 38.61457474558262,
+            "after": 38.61457474558262,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O16",
+            "before": 43.35082003397302,
+            "after": 43.35082003397302,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O6",
+            "before": 17.046193086192716,
+            "after": 17.046193086192716,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O5",
+            "before": 19.331313918284327,
+            "after": 19.331313918284327,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O18",
+            "before": 21.562471077134127,
+            "after": 21.562471077134127,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O24",
+            "before": 24.36137545584304,
+            "after": 24.36137545584304,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O22",
+            "before": 29.044003577009246,
+            "after": 29.044003577009246,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O21",
+            "before": 33.80156591990547,
+            "after": 33.80156591990547,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O20",
+            "before": 23.287308267134453,
+            "after": 23.287308267134453,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O11",
+            "before": 26.015646565791172,
+            "after": 26.015646565791172,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O23",
+            "before": 31.409885879878676,
+            "after": 31.409885879878676,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O15",
+            "before": 35.10527785726476,
+            "after": 35.10527785726476,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O19",
+            "before": 37.79380245529245,
+            "after": 37.79380245529245,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O14",
+            "before": 40.18799136389055,
+            "after": 40.18799136389055,
+            "delta": 0.0,
+            "change": "unchanged"
+          }
+        ],
+        "newly_accepted": [],
+        "no_longer_planned": [],
+        "cancelled": [],
+        "deferred": [
+          "INSIGHT_URGENT"
+        ]
+      },
+      "explanations": {
+        "source": "applied_plan",
+        "revision": 6,
+        "traffic_version": 0,
+        "stale": false,
+        "items": [
+          {
+            "order_id": "INSIGHT_URGENT",
+            "reason": "completion_deadline",
+            "summary": "WEST 候选路线使 O11 的签收完成时刻为 50.9465 分，超过截止 28.0156 分。 这是记录的启发式候选失败，不是全局无解证明。",
+            "scope": "heuristic_candidate",
+            "attempts": [
+              {
+                "code": "completion_deadline",
+                "stage": "deliver",
+                "hub": "T_EAST",
+                "vehicle": "EAST",
+                "order_ids": [
+                  "O18"
+                ],
+                "load": null,
+                "capacity": null,
+                "service_end": 42.959286511196495,
+                "deadline": 23.562471077134127,
+                "source": "P13",
+                "target": "P13"
+              },
+              {
+                "code": "completion_deadline",
+                "stage": "deliver",
+                "hub": "T_CENTER",
+                "vehicle": "CENTER",
+                "order_ids": [
+                  "O1"
+                ],
+                "load": null,
+                "capacity": null,
+                "service_end": 54.836461325487264,
+                "deadline": 27.328581400846243,
+                "source": "P21",
+                "target": "P21"
+              },
+              {
+                "code": "completion_deadline",
+                "stage": "deliver",
+                "hub": "T_WEST",
+                "vehicle": "WEST",
+                "order_ids": [
+                  "O11"
+                ],
+                "load": null,
+                "capacity": null,
+                "service_end": 50.94648481824171,
+                "deadline": 28.015646565791172,
+                "source": "P22",
+                "target": "P22"
+              }
+            ],
+            "suggestions": [
+              "核对所列受影响订单的截止时间；若要调整，请在允许的场景输入中修改并重新验证。",
+              "也可试算其他运营参数；当前失败候选不证明其他路线都不可行。"
+            ]
+          }
+        ]
+      },
+      "steps_to_first_actual_signoff": 38
+    },
+    {
+      "mode": "relaxed",
+      "outcome": "passed",
+      "session": "campus2",
+      "accepted_urgent": true,
+      "request_count": 46,
+      "impact": {
+        "at": 3.1176871442699103,
+        "baseline_revision": 0,
+        "plan_revision": 6,
+        "baseline_traffic_version": 0,
+        "traffic_version": 0,
+        "comparison_basis": "remaining_at_checkpoint",
+        "historical_baseline": true,
+        "objective_before": "distance",
+        "objective_after": "distance",
+        "before": {
+          "distance": 11.207503171160528,
+          "cost": 25.603604246734488,
+          "travel_time": 30.621788111288673
+        },
+        "after": {
+          "distance": 13.774271550889907,
+          "cost": 31.607826997456222,
+          "travel_time": 37.887364143259894
+        },
+        "delta": {
+          "distance": 2.5667683797293783,
+          "cost": 6.004222750721734,
+          "travel_time": 7.2655760319712215
+        },
+        "vehicles": [
+          {
+            "vehicle": "CENTER",
+            "before": {
+              "distance": 2.2212845145792017,
+              "cost": 5.553488872802024,
+              "travel_time": 6.934404814130011
+            },
+            "after": {
+              "distance": 2.2212845145792017,
+              "cost": 5.553488872802024,
+              "travel_time": 6.934404814130011
+            },
+            "delta": {
+              "distance": 0.0,
+              "cost": 0.0,
+              "travel_time": 0.0
+            },
+            "changed": true
+          },
+          {
+            "vehicle": "EAST",
+            "before": {
+              "distance": 3.637404727784123,
+              "cost": 8.003941763987468,
+              "travel_time": 9.369697973481665
+            },
+            "after": {
+              "distance": 4.22996647249702,
+              "cost": 9.682302787368819,
+              "travel_time": 11.576127668103801
+            },
+            "delta": {
+              "distance": 0.5925617447128975,
+              "cost": 1.6783610233813508,
+              "travel_time": 2.206429694622136
+            },
+            "changed": true
+          },
+          {
+            "vehicle": "TRUNK",
+            "before": {
+              "distance": 2.223709475629324,
+              "cost": 5.0035019073048295,
+              "travel_time": 5.9466931350309835
+            },
+            "after": {
+              "distance": 4.197916110645803,
+              "cost": 9.329363634645215,
+              "travel_time": 11.005839472380067
+            },
+            "delta": {
+              "distance": 1.974206635016479,
+              "cost": 4.325861727340386,
+              "travel_time": 5.059146337349084
+            },
+            "changed": true
+          },
+          {
+            "vehicle": "WEST",
+            "before": {
+              "distance": 3.1251044531678813,
+              "cost": 7.042671702640165,
+              "travel_time": 8.370992188646014
+            },
+            "after": {
+              "distance": 3.1251044531678813,
+              "cost": 7.042671702640165,
+              "travel_time": 8.370992188646014
+            },
+            "delta": {
+              "distance": 0.0,
+              "cost": 0.0,
+              "travel_time": 0.0
+            },
+            "changed": true
+          }
+        ],
+        "orders": [
+          {
+            "order_id": "O12",
+            "before": 13.784923722826518,
+            "after": 13.784923722826518,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O7",
+            "before": 15.887315932563283,
+            "after": 15.887315932563283,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O17",
+            "before": 17.99959334434268,
+            "after": 17.99959334434268,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O4",
+            "before": 20.1414262578699,
+            "after": 20.1414262578699,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O16",
+            "before": 23.100960829847306,
+            "after": 23.100960829847306,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O13",
+            "before": 25.52798557558892,
+            "after": 25.52798557558892,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O1",
+            "before": 28.026147544436856,
+            "after": 28.026147544436856,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O8",
+            "before": 30.24531368028563,
+            "after": 30.24531368028563,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O3",
+            "before": 33.83720611823772,
+            "after": 33.83720611823772,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O10",
+            "before": 36.673754564223074,
+            "after": 36.673754564223074,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O9",
+            "before": 39.27536580872144,
+            "after": 39.27536580872144,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O2",
+            "before": 41.54103023688758,
+            "after": 41.54103023688758,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O6",
+            "before": 17.046193086192716,
+            "after": 36.11370658631076,
+            "delta": 19.067513500118046,
+            "change": "later"
+          },
+          {
+            "order_id": "O5",
+            "before": 19.331313918284327,
+            "after": 38.39882741840238,
+            "delta": 19.06751350011805,
+            "change": "later"
+          },
+          {
+            "order_id": "O18",
+            "before": 21.562471077134127,
+            "after": 40.62998457725218,
+            "delta": 19.067513500118054,
+            "change": "later"
+          },
+          {
+            "order_id": "O24",
+            "before": 24.36137545584304,
+            "after": 43.4288889559611,
+            "delta": 19.06751350011806,
+            "change": "later"
+          },
+          {
+            "order_id": "O22",
+            "before": 29.044003577009246,
+            "after": 48.11151707712732,
+            "delta": 19.06751350011807,
+            "change": "later"
+          },
+          {
+            "order_id": "O21",
+            "before": 33.80156591990547,
+            "after": 52.869079420023546,
+            "delta": 19.067513500118075,
+            "change": "later"
+          },
+          {
+            "order_id": "O20",
+            "before": 23.287308267134453,
+            "after": 23.287308267134453,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O11",
+            "before": 26.015646565791172,
+            "after": 26.015646565791172,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O23",
+            "before": 31.409885879878676,
+            "after": 31.409885879878676,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O15",
+            "before": 35.10527785726476,
+            "after": 35.10527785726476,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O19",
+            "before": 37.79380245529245,
+            "after": 37.79380245529245,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "O14",
+            "before": 40.18799136389055,
+            "after": 40.18799136389055,
+            "delta": 0.0,
+            "change": "unchanged"
+          },
+          {
+            "order_id": "INSIGHT_URGENT",
+            "before": null,
+            "after": 32.94535146531554,
+            "delta": null,
+            "change": "newly_planned"
+          }
+        ],
+        "newly_accepted": [
+          "INSIGHT_URGENT"
+        ],
+        "no_longer_planned": [],
+        "cancelled": [],
+        "deferred": []
+      },
+      "explanations": {
+        "source": "applied_plan",
+        "revision": 6,
+        "traffic_version": 0,
+        "stale": false,
+        "items": []
+      },
+      "steps_to_first_actual_signoff": 38
+    }
+  ]
+}

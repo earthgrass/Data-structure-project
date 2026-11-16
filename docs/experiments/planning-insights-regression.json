@@ -1,0 +1,56 @@
+{
+  "command": "python -B -m unittest discover -s tests -t .",
+  "exit_code": 0,
+  "wall_seconds": 246.01293339999393,
+  "output": "<USERPROFILE>\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\anyio\\_backends\\_asyncio.py:1100: DeprecationWarning: POST /api/plan 'algorithm' field is deprecated and ignored; use 'objective' only. Unified planner runs Dijkstra + TSP search.\n  result = context.run(func, *args)\n.................<USERPROFILE>\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\anyio\\_backends\\_asyncio.py:1100: DeprecationWarning: POST /api/plan 'algorithm' field is deprecated and ignored; use 'objective' only. Unified planner runs Dijkstra + TSP search.\n  result = context.run(func, *args)\n...........................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................\n----------------------------------------------------------------------\nRan 844 tests in 244.713s\n\nOK\n",
+  "tests": 844,
+  "passed": 844,
+  "failures": 0,
+  "errors": 0,
+  "unittest_seconds": 244.713,
+  "new_backend_tests": 25,
+  "original_tests_preserved": 819,
+  "frontend_assertions": 301,
+  "frontend_build_modules": 83,
+  "post_wording_change_targeted": {
+    "tests": 25,
+    "seconds": 2.346,
+    "exit_code": 0,
+    "change": "clarified mixed-priority unload batches and retained original time precision in explanation summaries; no algorithm or numeric change"
+  },
+  "dependency_scan": {
+    "forbidden_imports": [],
+    "new_sorted_calls": 0,
+    "historical_sorted_calls_unchanged": [
+      [
+        "src/logiroute/algorithms/dijkstra.py",
+        257
+      ],
+      [
+        "src/logiroute/graph/logistics_graph.py",
+        311
+      ],
+      [
+        "src/logiroute/scheduling/depot.py",
+        47
+      ],
+      [
+        "src/logiroute/scheduling/depot.py",
+        116
+      ],
+      [
+        "src/logiroute/scheduling/depot.py",
+        96
+      ],
+      [
+        "src/logiroute/scheduling/depot.py",
+        94
+      ],
+      [
+        "src/logiroute/scheduling/depot.py",
+        130
+      ]
+    ],
+    "new_dependencies": []
+  }
+}
