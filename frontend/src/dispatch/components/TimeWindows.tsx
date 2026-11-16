@@ -1,8 +1,9 @@
 import type {Snapshot} from '../types';
 import {fmt} from '../presentation';
 import {windowEvidenceCurrent} from '../windows.mjs';
+import {OrderTimeTimeline} from './PlanningInsights';
 
-export function TimeWindowPanel({data,showRelaxed,setShowRelaxed,onVehicle,selected}:{data:Snapshot;showRelaxed:boolean;setShowRelaxed:(v:boolean)=>void;onVehicle:(id:string)=>void;selected:string}){
+function InitialWindowComparison({data,showRelaxed,setShowRelaxed,onVehicle,selected}:{data:Snapshot;showRelaxed:boolean;setShowRelaxed:(v:boolean)=>void;onVehicle:(id:string)=>void;selected:string}){
   const info=data.time_windows,live=windowEvidenceCurrent(data);
   if(!info&&data.studio)return <div className="d-window-panel"><h3>参数试算保留原签收窗口</h3><p>订单的最早服务和完成截止均未放宽；原参数下的初始宽松路线对照已失效，请在订单中查看真实窗口。</p></div>;
   if(!info)return <div className="d-window-panel"><h3>当前场景尚未启用严格时间窗</h3><p>在“场景与管理”选择严格预约窗，新建同一 Seed 的校内配送场景。</p></div>;
@@ -23,4 +24,8 @@ export function TimeWindowPanel({data,showRelaxed,setShowRelaxed,onVehicle,selec
       <div className="d-table-scroll"><table className="d-window-table"><thead><tr><th>订单 / 地点</th><th>开始下限 → 完成截止</th><th>原宽松计划完成</th><th>严格计划完成</th></tr></thead><tbody>{info.orders?.map(o=><tr key={o.id}><td><b>{o.id}</b><small>{data.nodes.find(n=>n.id===o.destination)?.name??o.destination}</small></td><td>{fmt(o.earliest)} → {fmt(o.deadline)}</td><td className={o.baseline_end>o.deadline?'d-window-late':''}>{fmt(o.baseline_end)}{o.baseline_end>o.deadline?' · 超时':''}</td><td>{fmt(o.strict_end)}</td></tr>)}</tbody></table></div>
     </>:<p>本场景用于观察原宽松路线。要施加强约束，请在场景设置中选择严格预约窗后，新建相同 Seed 的场景。</p>}
   </div>;
+}
+
+export function TimeWindowPanel(props:{data:Snapshot;showRelaxed:boolean;setShowRelaxed:(v:boolean)=>void;onVehicle:(id:string)=>void;selected:string}){
+ return <><OrderTimeTimeline data={props.data}/><details className="i-initial-comparison"><summary>初始严格窗与宽松路线对照</summary><InitialWindowComparison {...props}/></details></>;
 }
