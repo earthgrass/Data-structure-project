@@ -1,0 +1,114 @@
+{
+  "source": "order-replan-live.json.gz",
+  "source_sha256": "32e039fdd08934b9881da622843e89e161e3202adf85484ddf0b9f3bf0a0c6d7",
+  "source_sha256_scope": "uncompressed original JSON bytes",
+  "archive_sha256": "34fe966946e68d3a928971c65227d5b0055e1988db91be3f806528cd2dd02471",
+  "uncompressed_bytes": 34400514,
+  "compressed_bytes": 3716776,
+  "decompressed_bytes_match_original": true,
+  "scope": "real isolated HTTP sessions, original planner and independent history validator; no mock output",
+  "assertions": 1247,
+  "runtime_seconds": 54.1211017,
+  "completed": true,
+  "attempts": [
+    {
+      "mode": "strict",
+      "session": "campus2",
+      "outcome": "completed",
+      "initial_order_count": 24,
+      "urgent_input": {
+        "id": "LIVE_MOVING_URGENT",
+        "destination": "P27",
+        "demand": "1",
+        "earliest": 3,
+        "deadline": 2003,
+        "priority": "urgent",
+        "auto_replan": true
+      },
+      "steps_to_first_drive": 1,
+      "moving_time": 3,
+      "add_checkpoint_steps": 1,
+      "checkpoint_time": 3.1176871442699103,
+      "add": {
+        "status": "applied",
+        "accepted": false,
+        "deferred": [
+          "LIVE_MOVING_URGENT",
+          "completion_deadline"
+        ],
+        "changed_vehicles": [],
+        "added_directed_edges": 0,
+        "removed_directed_edges": 0
+      },
+      "cancel": {
+        "status": "applied",
+        "changed_vehicles": [],
+        "added_directed_edges": 0,
+        "removed_directed_edges": 0
+      },
+      "execution_steps": 203,
+      "delivered_count": 24,
+      "cancelled_count": 1,
+      "final_time": 45.39750057810525,
+      "final_audit": {
+        "valid": true,
+        "complete_all": true,
+        "safe_to_apply": true,
+        "violations": []
+      },
+      "recorded_request_count": 211,
+      "error": null
+    },
+    {
+      "mode": "relaxed",
+      "session": "campus3",
+      "outcome": "completed",
+      "initial_order_count": 24,
+      "urgent_input": {
+        "id": "LIVE_MOVING_URGENT",
+        "destination": "P27",
+        "demand": "1",
+        "earliest": 3,
+        "deadline": 2003,
+        "priority": "urgent",
+        "auto_replan": true
+      },
+      "steps_to_first_drive": 1,
+      "moving_time": 3,
+      "add_checkpoint_steps": 1,
+      "checkpoint_time": 3.1176871442699103,
+      "add": {
+        "status": "applied",
+        "accepted": true,
+        "deferred": null,
+        "changed_vehicles": [
+          "EAST",
+          "TRUNK"
+        ],
+        "added_directed_edges": 32,
+        "removed_directed_edges": 0
+      },
+      "cancel": {
+        "status": "applied",
+        "changed_vehicles": [
+          "EAST",
+          "TRUNK"
+        ],
+        "added_directed_edges": 0,
+        "removed_directed_edges": 32
+      },
+      "execution_steps": 188,
+      "delivered_count": 24,
+      "cancelled_count": 1,
+      "final_time": 41.98868509984508,
+      "final_audit": {
+        "valid": true,
+        "complete_all": true,
+        "safe_to_apply": true,
+        "violations": []
+      },
+      "recorded_request_count": 196,
+      "error": null
+    }
+  ]
+}

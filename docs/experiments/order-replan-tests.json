@@ -1,0 +1,64 @@
+{
+  "command": "python -B -m unittest discover -s tests -t .",
+  "environment": {
+    "PYTHONPATH": "src",
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "tests": 819,
+  "passed": 819,
+  "failures": 0,
+  "errors": 0,
+  "exit_code": 0,
+  "unittest_seconds": 256.456,
+  "wall_seconds": 258.6798219,
+  "original_test_files_modified": false,
+  "baseline": "70f29e0f7c9108ad705c8a778df800bf68219918",
+  "output": "<USERPROFILE>\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\anyio\\_backends\\_asyncio.py:1100: DeprecationWarning: POST /api/plan 'algorithm' field is deprecated and ignored; use 'objective' only. Unified planner runs Dijkstra + TSP search.\n  result = context.run(func, *args)\n.................<USERPROFILE>\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\anyio\\_backends\\_asyncio.py:1100: DeprecationWarning: POST /api/plan 'algorithm' field is deprecated and ignored; use 'objective' only. Unified planner runs Dijkstra + TSP search.\n  result = context.run(func, *args)\n..................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................\n----------------------------------------------------------------------\nRan 819 tests in 256.456s\n\nOK\n",
+  "frontend": {
+    "assertions": 270,
+    "exit_code": 0,
+    "typecheck": "passed",
+    "production_build": "passed",
+    "modules": 81
+  },
+  "live_experiment": {
+    "assertions": 1247,
+    "source": "order-replan-live-summary.json",
+    "archive_verified": true
+  },
+  "dependency_scan": {
+    "forbidden_imports": [],
+    "existing_sorted_calls_in_unchanged_baseline_files": [
+      [
+        "src/logiroute/algorithms/dijkstra.py",
+        257
+      ],
+      [
+        "src/logiroute/graph/logistics_graph.py",
+        311
+      ],
+      [
+        "src/logiroute/scheduling/depot.py",
+        47
+      ],
+      [
+        "src/logiroute/scheduling/depot.py",
+        116
+      ],
+      [
+        "src/logiroute/scheduling/depot.py",
+        96
+      ],
+      [
+        "src/logiroute/scheduling/depot.py",
+        94
+      ],
+      [
+        "src/logiroute/scheduling/depot.py",
+        130
+      ]
+    ],
+    "new_forbidden_algorithm_dependencies": 0,
+    "note": "Seven historical sorted calls remain in three unchanged baseline files; this task does not replace legacy algorithms."
+  }
+}
