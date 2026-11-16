@@ -157,7 +157,11 @@ class Session:
         for k,v in state.vehicles.items():
             cargo=[oid for oid,loc in state.locations.items() if loc==('vehicle',k)]
             cars.append({**json_value(v),'position':state.positions[k],'current':json_value(self.current[k]),'cargo':cargo,'load':str(exact_sum(state.orders[o].demand for o in cargo))})
-        return {'schema_version':SCHEMA,'revision':state.revision,'traffic_version':state.traffic_version,'now':state.now,
+        studio={}
+        if 'studio' in state.config:
+            from logiroute.dispatch.studio import metrics
+            studio={'studio':metrics(self)}
+        return {**studio,'schema_version':SCHEMA,'revision':state.revision,'traffic_version':state.traffic_version,'now':state.now,
                 'running':self.running,'ready':self._ready,'needs_replan':self._pausing,'nodes':nodes,'edges':edges,'vehicles':cars,
                 'orders':[{**json_value(o),'location':list(state.locations[k])} for k,o in state.orders.items()],
                 'events':json_value(self.events),'plan':None if self.plan is None else self.plan.to_dict(),

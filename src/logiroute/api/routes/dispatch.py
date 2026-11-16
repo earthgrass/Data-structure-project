@@ -10,6 +10,7 @@ from fastapi import APIRouter,Request
 from fastapi.responses import JSONResponse
 from logiroute.dispatch.scenario import load_config
 from logiroute.dispatch.generation import generate_state,GenerationError
+from logiroute.dispatch.time_windows import WindowGenerationError
 from logiroute.dispatch.session import Session,ConflictError
 from logiroute.graph.logistics_graph import GraphError
 
@@ -62,18 +63,23 @@ async def create(request: Request) -> Any:
         data=await body(request)
         if set(data)-{'seed','profile','window_mode'}: raise ValueError('unknown create fields')
         profile=data.get('profile','random')
-        if profile not in ('random','bjut','bjut-campus'): raise ValueError('unknown map profile')
-        if profile in ('bjut','bjut-campus'):
+        if profile not in ('random','bjut','bjut-campus','bjut-studio'): raise ValueError('unknown map profile')
+        if profile in ('bjut','bjut-campus','bjut-studio'):
             from logiroute.dispatch.real_map import map_config
-            config=map_config(profile)
+            config=map_config('bjut-campus' if profile=='bjut-studio' else profile)
         else: config=load_config()
-        seed=data.get('seed',config['default_seed']); state,attempts=generate_state(seed,config,window_mode=data.get('window_mode'))
+        seed=data.get('seed',config['default_seed'])
+        if profile=='bjut-studio':
+            from logiroute.dispatch.studio import studio_state,defaults
+            state=studio_state(seed,defaults(),data.get('window_mode','strict'));attempts=[]
+        else: state,attempts=generate_state(seed,config,window_mode=data.get('window_mode'))
         service=request.app.state.dispatch_service
         with service.lock:
             service.counter+=1; key=config['session_prefix']+str(service.counter); session=Session(state)
             service.sessions[key]=session; service.attempts[key]=attempts
             return service.snapshot(key,session)
     except GenerationError as exc: return failure(422,'generation_exhausted',str(exc),attempts=exc.attempts)
+    except WindowGenerationError as exc: return failure(422,'generation_exhausted',str(exc),attempts=exc.attempts)
     except (ValueError,TypeError,GraphError,KeyError) as exc: return failure(422,'invalid_input',str(exc))
 
 
@@ -83,6 +89,33 @@ def read(key: str,request: Request) -> Any:
     with service.lock:
         if key not in service.sessions: return failure(404,'not_found','unknown session')
         return service.snapshot(key,service.sessions[key])
+
+
+@router.post('/sessions/{key}/trial')
+async def parameter_trial(key: str,request: Request) -> Any:
+    """Fresh fork, original IDs/windows retained; no entered-action reset."""
+    from logiroute.dispatch.studio import trial_session
+    from logiroute.algorithms.window_calibration import route_structure
+    try:
+        data=await body(request);service=request.app.state.dispatch_service
+        with service.lock:
+            if key not in service.sessions:return failure(404,'not_found','unknown session')
+            original=service.sessions[key]
+            if set(data)-{'revision','parameters','objective'}:raise ValueError('unknown trial fields')
+            if isinstance(data.get('revision'),bool) or not isinstance(data.get('revision'),int):raise ValueError('integer revision required')
+            if data['revision']!=original.state.revision:raise ConflictError('stale revision; refresh session')
+            session=trial_session(original,data['parameters']);objective=data.get('objective','cost')
+            baseline=original.prepare(objective)
+            session.state.config['studio_trial']={'original_session':key,'objective':objective,
+                'before':{'distance':sum(r.total_distance for r in baseline.routes),'cost':sum(r.total_cost for r in baseline.routes),'accepted':len(baseline.accepted),'complete_all':baseline.report.complete_all},
+                'before_routes':json.loads(json.dumps(route_structure(baseline)))}
+            proposal=session.prepare(objective)
+            if not proposal.report.valid or not proposal.report.safe_to_apply:return failure(422,'unsafe_plan','parameter trial failed independent verification')
+            session.apply(proposal);service.counter+=1;new_key=session.state.config['session_prefix']+str(service.counter)
+            service.sessions[new_key]=session;service.attempts[new_key]=[]
+            return service.snapshot(new_key,session)
+    except ConflictError as exc:return failure(409,'conflict',str(exc))
+    except (ValueError,TypeError,KeyError,GraphError,InvalidOperation) as exc:return failure(422,'invalid_input',str(exc))
 
 
 @router.post('/sessions/{key}/commands')
@@ -113,7 +146,18 @@ async def command(key: str,request: Request) -> Any:
             elif kind=='automatic': session.automatic(data['count'],data['seed'],data.get('priority','normal'))
             elif kind in ('cancel','expire'): session.cancel(data['id'],expired=kind=='expire')
             elif kind=='priority': session.priority(data['id'],data['priority'])
-            elif kind=='traffic': session.traffic(data['source'],data['target'],data['status'])
+            elif kind=='traffic':
+                old_time=session.state.graph.get_edge(data['source'],data['target']).travel_time
+                session.traffic(data['source'],data['target'],data['status'])
+                if 'studio' in session.state.config and (data['status']=='blocked' or session.state.graph.get_edge(data['source'],data['target']).travel_time>=old_time*1.2):
+                    session._studio_auto_replan_pending=True
+                    session._studio_auto_replan_status='等待已进入动作完成后自动重规划'
+            if getattr(session,'_studio_auto_replan_pending',False) and not session.running:
+                session._studio_auto_replan_pending=False
+                proposal=session.prepare(session.plan.objective if session.plan else 'cost')
+                if proposal.report.safe_to_apply:
+                    session.apply(proposal);session._studio_auto_replan_status='已自动独立验证并应用续程；等待确认出发'
+                else:session._studio_auto_replan_status='自动续程无法安全应用；保留实际货物与旧历史，请人工检查'
             snapshot=service.snapshot(key,session)
             if comparison is not None: snapshot['comparison']=comparison
             service.sessions[key]=session

@@ -1,0 +1,14 @@
+{
+  "default": {
+    "hub_ids": ["T_CENTER","T_EAST","T_WEST"],
+    "capacities": {"TRUNK":"150","CENTER":"50","EAST":"50","WEST":"50","NORTH":"50","SOUTH":"50"},
+    "fuel_per_100km":"6.5", "fuel_price":"7.8", "driver_hourly":"30", "maintenance_per_km":"0.35"
+  },
+  "bounds": {"capacity":[0.1,2000],"fuel_per_100km":[0,50],"fuel_price":[0,30],"driver_hourly":[0,300],"maintenance_per_km":[0,20]},
+  "road_factors": {"primary":1,"secondary":1.05,"tertiary":1.1,"residential":1.15,"service":1.25,"default":1.15},
+  "minimum_hubs":3,
+  "late_penalty_per_order":50,
+  "presets":{"delivery_capacity_kg":"20","fuel_price_stress":"30"},
+  "official_map_url":"https://www.bjut.edu.cn/xxgk/xydt1.htm",
+  "model_note":"教学模拟：油耗=距离×道路油耗系数×单位油耗/100；成本=燃油费+行驶工时费+维护费。不含载荷油耗修正、怠速、税费和真实收费。载重为独立硬约束，统一按kg。"
+}
