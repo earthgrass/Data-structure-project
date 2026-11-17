@@ -12,6 +12,7 @@ from logiroute.dispatch.scenario import load_config
 from logiroute.dispatch.generation import generate_state,GenerationError
 from logiroute.dispatch.time_windows import WindowGenerationError
 from logiroute.dispatch.session import Session,ConflictError
+from logiroute.dispatch.admission import admit_critical,CriticalAdmissionError
 from logiroute.graph.logistics_graph import GraphError
 
 
@@ -136,8 +137,10 @@ async def command(key: str,request: Request) -> Any:
                 'priority':{'id','priority'},'traffic':{'source','target','status'}}
             mutations={'add','automatic','cancel','expire','priority','traffic'}
             optional={'auto_replan'} if kind in mutations else set()
+            if kind=='add':optional.add('protect_critical')
             if kind not in fields or set(data)-fields[kind]-{'revision','command'}-optional: raise ValueError('unknown command/fields')
             if 'auto_replan' in data and not isinstance(data['auto_replan'],bool):raise ValueError('boolean auto_replan required')
+            if 'protect_critical' in data and (not isinstance(data['protect_critical'],bool) or data['priority']!='critical'):raise ValueError('protect_critical requires a critical order and boolean value')
             session=deepcopy(original); comparison=None
             if data.get('auto_replan',False):session.enable_auto_replan()
             if kind=='plan':
@@ -148,7 +151,10 @@ async def command(key: str,request: Request) -> Any:
             elif kind=='depart': session.depart()
             elif kind=='step': session.step()
             elif kind=='pause': session.pause()
-            elif kind=='add': session.add_order(data['id'],data['destination'],Decimal(data['demand']) if isinstance(data['demand'],str) else data['demand'],number(data['earliest']),number(data['deadline']),data['priority'])
+            elif kind=='add':
+                args=(data['id'],data['destination'],Decimal(data['demand']) if isinstance(data['demand'],str) else data['demand'],number(data['earliest']),number(data['deadline']))
+                if data.get('protect_critical',False):admit_critical(session,*args)
+                else:session.add_order(*args,data['priority'])
             elif kind=='automatic': session.automatic(data['count'],data['seed'],data.get('priority','normal'))
             elif kind in ('cancel','expire'): session.cancel(data['id'],expired=kind=='expire')
             elif kind=='priority': session.priority(data['id'],data['priority'])
@@ -168,8 +174,10 @@ async def command(key: str,request: Request) -> Any:
                     session.apply(proposal);session._studio_auto_replan_status='已自动独立验证并应用续程；等待确认出发'
                 else:session._studio_auto_replan_status='自动续程无法安全应用；保留实际货物与旧历史，请人工检查'
             snapshot=service.snapshot(key,session)
+            if kind=='add' and data.get('protect_critical',False):snapshot['critical_admission']=session._critical_admission
             if comparison is not None: snapshot['comparison']=comparison
             service.sessions[key]=session
             return snapshot
+    except CriticalAdmissionError as exc: return failure(422,'critical_unavailable',str(exc),report=exc.report)
     except ConflictError as exc: return failure(409,'conflict',str(exc))
     except (ValueError,TypeError,KeyError,GraphError,OverflowError,InvalidOperation) as exc: return failure(422,'invalid_input',str(exc))
