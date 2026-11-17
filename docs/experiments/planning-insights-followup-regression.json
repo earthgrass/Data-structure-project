@@ -1,0 +1,23 @@
+{
+  "command": "python -B -m unittest discover -s tests -t .",
+  "exit_code": 0,
+  "wall_seconds": 254.4593540999922,
+  "output": "<USERPROFILE>\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\anyio\\_backends\\_asyncio.py:1100: DeprecationWarning: POST /api/plan 'algorithm' field is deprecated and ignored; use 'objective' only. Unified planner runs Dijkstra + TSP search.\n  result = context.run(func, *args)\n.................<USERPROFILE>\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\anyio\\_backends\\_asyncio.py:1100: DeprecationWarning: POST /api/plan 'algorithm' field is deprecated and ignored; use 'objective' only. Unified planner runs Dijkstra + TSP search.\n  result = context.run(func, *args)\n................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................\n----------------------------------------------------------------------\nRan 849 tests in 251.977s\n\nOK\n",
+  "baseline": "fa3f618",
+  "original_tests_preserved": 844,
+  "added_tests": 5,
+  "tests": 849,
+  "passed": 849,
+  "failures": 0,
+  "errors": 0,
+  "unittest_seconds": 251.977,
+  "frontend_assertions": 325,
+  "frontend_build_modules": 83,
+  "dependency_scan": {
+    "forbidden_imports": [],
+    "new_sorted_calls": 0,
+    "unchanged_historical_sorted_calls": 7,
+    "old_tests_changed": 0,
+    "dependency_changes": 0
+  }
+}
