@@ -1,0 +1,11 @@
+{
+  "tests_expected": 857,
+  "exit_code": 0,
+  "wall_seconds": 277.4054950000136,
+  "output": "<USERPROFILE>\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\anyio\\_backends\\_asyncio.py:1100: DeprecationWarning: POST /api/plan 'algorithm' field is deprecated and ignored; use 'objective' only. Unified planner runs Dijkstra + TSP search.\n  result = context.run(func, *args)\n.................<USERPROFILE>\\AppData\\Local\\Programs\\Python\\Python312\\Lib\\site-packages\\anyio\\_backends\\_asyncio.py:1100: DeprecationWarning: POST /api/plan 'algorithm' field is deprecated and ignored; use 'objective' only. Unified planner runs Dijkstra + TSP search.\n  result = context.run(func, *args)\n........................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................\n----------------------------------------------------------------------\nRan 857 tests in 275.019s\n\nOK\n",
+  "tests": 857,
+  "failures": 0,
+  "errors": 0,
+  "frontend_assertions": 325,
+  "build_modules": 83
+}
