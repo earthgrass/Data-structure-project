@@ -9,14 +9,16 @@ import {rejectionContext} from '../planning-insights.mjs';
 export function AddOrder({data,busy,command,close,error,destination}:{data:Snapshot;busy:boolean;command:Command;close:()=>void;error:string;destination?:string}){
   const dialog=useRef<HTMLDialogElement>(null);
   const [attempted,setAttempted]=useState(false);
+  const errorBox=useRef<HTMLParagraphElement>(null);
+  useEffect(()=>{if(attempted&&error)errorBox.current?.focus();},[attempted,error,busy]);
   useEffect(()=>{dialog.current?.showModal();},[]);
   async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setAttempted(true);const f=new FormData(e.currentTarget);
-    const success=await command('add',{id:f.get('id'),destination:f.get('destination'),demand:f.get('demand'),earliest:Number(f.get('earliest')),deadline:Number(f.get('deadline')),priority:f.get('priority')});
+    const success=await command('add',{id:f.get('id'),destination:f.get('destination'),demand:f.get('demand'),earliest:Number(f.get('earliest')),deadline:Number(f.get('deadline')),priority:f.get('priority'),...(f.get('priority')==='critical'?{protect_critical:true}:{})});
     if(success)close();
   }
-  return <dialog ref={dialog} className="d-order-dialog" aria-labelledby="new-order-title" onCancel={close}><div className="d-card-head"><div><h2 id="new-order-title">新增配送订单</h2><p>提交后自动停靠并重新规划，接纳结果会显示在地图</p></div><button onClick={close} aria-label="关闭新增订单">×</button></div>
+  return <dialog ref={dialog} className="d-order-dialog" aria-labelledby="new-order-title" onCancel={close}><div className="d-card-head"><div><h2 id="new-order-title">新增配送订单</h2><p>特急单先验证按时签收方案，通过后停靠并重新规划</p></div><button onClick={close} aria-label="关闭新增订单">×</button></div>
     <form onSubmit={e=>void submit(e)}><label>订单 ID<input name="id" autoFocus required placeholder="全生命周期唯一"/></label><label>目的地<select aria-label="目的地" name="destination" defaultValue={destination}>{data.nodes.filter(n=>n.type==='customer').map(n=><option key={n.id} value={n.id}>{n.id} · {n.name??'配送点'}</option>)}</select></label><label>原始需求量<input name="demand" required defaultValue="1" inputMode="decimal" pattern="[0-9]+(\.[0-9]+)?"/></label><label>优先级<select aria-label="订单优先级" name="priority" defaultValue="normal">{priorities.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></label><label>最早服务开始<input name="earliest" type="number" min="0" step="any" defaultValue={data.now} required/></label><label>签收完成截止<input name="deadline" type="number" min="0" step="any" defaultValue={data.now+data.settings.automatic_window_width} required/></label>
-      <p className="d-form-note">特急：同车同批可用货物优先服务；紧急：可行分配优先。进行中动作不会被打断。</p>{attempted&&error&&<p role="alert" className="d-inline-error">{error}</p>}<div className="d-actions"><button type="button" onClick={close}>返回</button><button className="d-primary" disabled={busy}>{busy?'提交中…':'加入待处理队列'}</button></div>
+      <p className="d-form-note">特急优先：冲突时尚未装车的普通／紧急订单可退回待规划，受影响订单会列出；既有特急与已进入动作的货物保持保护。预检失败不插入，可修改签收截止后重试。</p>{attempted&&error&&<p ref={errorBox} tabIndex={-1} role="alert" className="d-inline-error">{error}</p>}<div className="d-actions"><button type="button" onClick={close}>返回</button><button className="d-primary" disabled={busy}>{busy?'提交中…':'加入待处理队列'}</button></div>
     </form></dialog>;
 }
 export function OrderTable({data,busy,command,confirm,error,seed}:{data:Snapshot;busy:boolean;command:Command;confirm:(v:Confirmation)=>void;error:string;seed:string}){

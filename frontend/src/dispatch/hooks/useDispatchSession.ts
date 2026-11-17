@@ -93,7 +93,7 @@ export function useDispatchSession(){
     try{
       const incoming=await request(`/sessions/${id}/commands`,{revision:before.revision,command:kind,...orderMutationFields(kind,fields)});
       if(kind==='step'&&ticket===epoch.current)await motion.play(before,incoming);
-      receive(incoming,ticket);setMessage(messages[kind]??'操作完成。');return true;
+      receive(incoming,ticket);const admission=incoming.critical_admission;setMessage(admission?`特急 ${admission.order_id} 已通过按时签收预检。${admission.displaced_order_ids.length?`退回待规划：${admission.displaced_order_ids.join('、')}。请查看路线变化。`:'无需撤回原有配送承诺。'}`:messages[kind]??'操作完成。');return true;
     }catch(e){
       if(kind==='plan'&&e instanceof RequestError&&ticket===epoch.current&&id===active.current){
         const evidence=bindRejectedPlan(e.status,before,e.payload);
