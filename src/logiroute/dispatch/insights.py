@@ -19,6 +19,17 @@ def _delta(before: dict[str, float], after: dict[str, float]) -> dict[str, float
     return {key: after[key] - before[key] for key in before}
 
 
+def _journey_key(action: Action) -> tuple[Any, ...]:
+    """Journey facts only, excluding the evidence version. Time/Space O(1).
+
+    The manifest tuple is retained without copying. Completed-action filtering
+    separately uses full Action identity, including its original traffic version.
+    """
+    return (action.vehicle, action.kind, action.start, action.end, action.source,
+            action.target, action.ids, action.distance, action.travel_time,
+            action.cost, action.batch)
+
+
 def build_impact(state: State, before: Plan | None, after: Plan,
                  events: list[dict[str, Any]],
                  previous_statuses: dict[str, str] | None = None) -> dict[str, Any] | None:
@@ -42,7 +53,9 @@ def build_impact(state: State, before: Plan | None, after: Plan,
         old_actions, new_actions = old.get(key, []), new.get(key, [])
         a, b = _metrics(old_actions), _metrics(new_actions)
         rows.append({'vehicle': key, 'before': a, 'after': b, 'delta': _delta(a, b),
-                     'changed': old_actions != new_actions})
+                     'changed': (len(old_actions) != len(new_actions) or
+                                 any(_journey_key(x) != _journey_key(y)
+                                     for x, y in zip(old_actions, new_actions)))})
     old_ends = {oid: a.end for actions in old.values() for a in actions if a.kind == 'deliver' for oid in a.ids}
     new_ends = {oid: a.end for actions in new.values() for a in actions if a.kind == 'deliver' for oid in a.ids}
     ids = list(old_ends)
