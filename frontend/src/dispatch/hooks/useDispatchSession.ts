@@ -1,12 +1,13 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
-import type {Snapshot,Comparison,Connection,WindowMode,StudioParameters} from '../types';
+import type {Snapshot,Comparison,Connection,WindowMode,StudioParameters,RejectedPlanEvidence} from '../types';
 import {bindComparison,reconcileSnapshot,failureFeedback} from '../sync.mjs';
 import {advanceRouteChanges,summarizeRouteChanges,type RouteChangeState} from '../routeChanges.mjs';
 import {checkpointCommand,orderMutationFields} from '../auto-replan.mjs';
+import {bindRejectedPlan,retainRejectedPlan,withRejectedPlan} from '../planning-insights.mjs';
 import {useConfirmedMotion} from './useConfirmedMotion';
 
 class RequestError extends Error {
-  constructor(public status:number,message:string){super(message);}
+  constructor(public status:number,message:string,public payload?:unknown){super(message);}
 }
 async function request(path:string,payload?:unknown,base='/api/v2'):Promise<Snapshot>{
   const controller=new AbortController();
@@ -17,7 +18,7 @@ async function request(path:string,payload?:unknown,base='/api/v2'):Promise<Snap
     if(!response.ok){
       const original=value.error?.message??`请求失败（${response.status}）`;
       const translated:Record<string,string>={'order ID already used':'订单 ID 已存在，请使用新的唯一 ID。','integer seed required':'Seed 必须是整数。','deadline is not in the future':'签收截止必须晚于当前模拟时刻。'};
-      throw new RequestError(response.status,translated[original]??original);
+      throw new RequestError(response.status,translated[original]??original,value);
     }
     return value;
   }finally{clearTimeout(timer);}
@@ -26,6 +27,7 @@ const messages:Record<string,string>={plan:'新计划已独立验证并应用；
 
 export function useDispatchSession(){
   const [snapshot,setSnapshot]=useState<Snapshot|null>(null),[comparison,setComparison]=useState<Comparison|null>(null);
+  const [rejectedPlan,setRejectedPlan]=useState<RejectedPlanEvidence|null>(null);
   const [connection,setConnection]=useState<Connection>('connecting'),[busy,setBusy]=useState(''),[error,setError]=useState(''),[message,setMessage]=useState('');
   const [playing,setPlaying]=useState(false);
   const changeState=useRef<RouteChangeState|null>(null);
@@ -42,6 +44,7 @@ export function useDispatchSession(){
     changeState.current=advanceRouteChanges(changeState.current,live.current.snapshot,incoming);
     setRouteChanges(summarizeRouteChanges(changeState.current,incoming));
     if(incoming.order_control?.status==='waiting_checkpoint'||incoming.order_control?.status==='blocked')setPlaying(false);
+    setRejectedPlan(previous=>retainRejectedPlan(previous,incoming));
     live.current=next;setSnapshot(next.snapshot);setComparison(next.comparison);setConnection('connected');
   },[]);
   const failed=useCallback((exception:unknown,ticket:number)=>{
@@ -64,7 +67,7 @@ export function useDispatchSession(){
   },[refresh]);
   const create=useCallback(async(seed:string,windowMode:WindowMode='strict')=>{
     if(locked.current)return false;
-    locked.current=true;setBusy('create');setPlaying(false);setError('');setMessage('');setConnection('connecting');
+    locked.current=true;setBusy('create');setPlaying(false);setError('');setMessage('');setConnection('connecting');setRejectedPlan(null);
     const ticket=++epoch.current;
     try{
       const incoming=await request('/sessions',{profile:'bjut-studio',window_mode:windowMode,auto_replan:true,...(seed===''?{}:{seed:Number(seed)})});
@@ -74,7 +77,7 @@ export function useDispatchSession(){
   },[receive,failed]);
   const trial=useCallback(async(parameters:StudioParameters)=>{
     if(locked.current||!live.current.snapshot)return false;
-    locked.current=true;setBusy('trial');setPlaying(false);setError('');
+    locked.current=true;setBusy('trial');setPlaying(false);setError('');setRejectedPlan(null);
     const ticket=++epoch.current,id=active.current;
     try{
       const incoming=await request(`/sessions/${id}/trial`,{revision:live.current.snapshot.revision,parameters,objective:'cost'});
@@ -85,13 +88,19 @@ export function useDispatchSession(){
   const command=useCallback(async(kind:string,fields:Record<string,unknown>={})=>{
     if(locked.current||!live.current.snapshot)return false;
     const ticket=epoch.current,id=active.current;
-    locked.current=true;setBusy(kind);setError('');if(kind!=='step')setPlaying(false);
+    const before=live.current.snapshot;
+    locked.current=true;setBusy(kind);setError('');setRejectedPlan(null);if(kind!=='step')setPlaying(false);
     try{
-      const before=live.current.snapshot;
       const incoming=await request(`/sessions/${id}/commands`,{revision:before.revision,command:kind,...orderMutationFields(kind,fields)});
       if(kind==='step'&&ticket===epoch.current)await motion.play(before,incoming);
       receive(incoming,ticket);setMessage(messages[kind]??'操作完成。');return true;
-    }catch(e){if(failed(e,ticket))await refresh(false,true);return false;}
+    }catch(e){
+      if(kind==='plan'&&e instanceof RequestError&&ticket===epoch.current&&id===active.current){
+        const evidence=bindRejectedPlan(e.status,before,e.payload);
+        setRejectedPlan(retainRejectedPlan(evidence,live.current.snapshot));
+      }
+      if(failed(e,ticket))await refresh(false,true);return false;
+    }
     finally{locked.current=false;setBusy('');}
   },[receive,failed,refresh,motion.play]);
   useEffect(()=>{
@@ -110,7 +119,7 @@ export function useDispatchSession(){
     if(live.current.snapshot?.ready){if(!await command('depart'))return;}
     setPlayback(true);
   };
-  return {snapshot,comparison,routeChanges,connection,busy,error,message,playing,setPlaying:setPlayback,create,trial,command,
+  return {snapshot:withRejectedPlan(snapshot,rejectedPlan),comparison,routeChanges,connection,busy,error,message,playing,setPlaying:setPlayback,create,trial,command,
     motionClock:motion.clock,speed:motion.speed,setSpeed:motion.setSpeed,togglePlayback,
     reconnect:()=>{setConnection('connecting');void refresh();}};
 }

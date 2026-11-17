@@ -1,6 +1,7 @@
 import {useEffect,useState} from 'react';
 import type {Workspace,WindowMode} from './types';
 import {windowEvidenceCurrent} from './windows.mjs';
+import {rejectionContext} from './planning-insights.mjs';
 import {useDispatchSession} from './hooks/useDispatchSession';
 import {AppShell,workspaces} from './components/AppShell';
 import {ConfirmDialog,Empty,type Confirmation} from './components/Common';
@@ -47,7 +48,8 @@ export function DispatchDashboard(){
   const map=data&&car?<NetworkCanvas key={data.id} data={data} orderFocus={orderFocus?.sessionId===data.id?orderFocus:null} changes={session.routeChanges} routeView={routeView} selected={car.id} clock={session.motionClock} showRelaxed={showRelaxed&&windowEvidenceCurrent(data)} onVehicle={setSelected} onCandidate={id=>{session.setPlaying(false);setDestination(id);}} onRoad={r=>setRoad(r.source+'|'+r.target)}/>:null;
   const playback=data?<DemoPlayback data={data} playing={session.playing} busy={session.busy} clock={session.motionClock} speed={session.speed} setSpeed={session.setSpeed} toggle={session.togglePlayback}/>:null;
   const inspector=data&&car?<VehicleInspector data={data} car={car}/>:null;
-  if(workspace==='overview'&&data)return <><MapWorkbench mapFocusRequest={mapFocusRequest} changeKey={session.routeChanges?`${data.id}:${session.routeChanges.baselineRevision}:${session.routeChanges.appliedRevision}`:''} changes={<RouteChangesPanel data={data} changes={session.routeChanges} view={routeView} setView={v=>{setRouteView(v);setMapFocusRequest(n=>n+1);}} busy={disabled} onOrder={id=>{focusOrder(id);setMapFocusRequest(n=>n+1);}} onPlan={()=>void session.command('plan',{objective})} onVehicle={setSelected}/>} data={data} map={map} playback={playback}
+  const changeNotice=data?.rejected_proposal?`${data.id}:rejected:${data.rejected_proposal.input_revision}`:session.routeChanges?`${data?.id}:${session.routeChanges.baselineRevision}:${session.routeChanges.appliedRevision}`:data&&rejectionContext(data).items.length?`${data.id}:rejections:${rejectionContext(data).revision}`:'';
+  if(workspace==='overview'&&data)return <><MapWorkbench mapFocusRequest={mapFocusRequest} changeKey={changeNotice} changes={<RouteChangesPanel data={data} changes={session.routeChanges} view={routeView} setView={v=>{setRouteView(v);setMapFocusRequest(n=>n+1);}} busy={disabled} onOrder={id=>{focusOrder(id);setMapFocusRequest(n=>n+1);}} onPlan={()=>void session.command('plan',{objective})} onVehicle={setSelected}/>} data={data} map={map} playback={playback}
     economics={<EconomicsPanel key={data.id} data={data} busy={disabled} error={session.error} onTrial={async p=>{const ok=await session.trial(p);if(ok)setObjective('cost');return ok;}} onCreate={create}/>}
     windows={<TimeWindowPanel data={data} showRelaxed={showRelaxed} setShowRelaxed={setShowRelaxed} onVehicle={setSelected} selected={car?.id??''}/>} windowMode={windowMode} setWindowMode={setWindowMode}
     toolbar={<DispatchToolbar data={data} objective={objective} setObjective={setObjective} busy={session.busy} connection={session.connection} command={session.command} onCreate={create} onResults={()=>navigate('audit')} playing={session.playing} setPlaying={session.setPlaying}/>}

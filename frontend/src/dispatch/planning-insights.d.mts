@@ -1,7 +1,11 @@
-import type {Snapshot} from './types';
+import type {Snapshot,RejectedPlanEvidence} from './types';
 import type {TimelineOrder,RejectionExplanation} from './insight-types';
 export function signedDifference(value:number|null|undefined):string;
 export function timePosition(value:number|null|undefined,domain:{start:number;end:number}):number|null;
 export function timelineDomain(rows:TimelineOrder[],now:number):{start:number;end:number};
-export function filterTimeline(rows:TimelineOrder[],options?:{query?:string;activeOnly?:boolean;riskOnly?:boolean;threshold?:number;forecastCurrent?:boolean}):TimelineOrder[];
+export function filterTimeline(rows:TimelineOrder[],options?:{query?:string;activeOnly?:boolean;riskOnly?:boolean;threshold?:number;forecastCurrent?:boolean;nodes?:{id:string;name?:string}[]}):TimelineOrder[];
 export function explanationFor(snapshot:Snapshot,orderId:string):RejectionExplanation|null;
+export function bindRejectedPlan(status:number,snapshot:Snapshot,payload:unknown):RejectedPlanEvidence|null;
+export function retainRejectedPlan(evidence:RejectedPlanEvidence|null|undefined,snapshot:Snapshot|null):RejectedPlanEvidence|null;
+export function withRejectedPlan(snapshot:Snapshot|null,evidence:RejectedPlanEvidence|null):Snapshot|null;
+export function rejectionContext(snapshot:Snapshot):{source:'rejected_response'|'applied_plan'|'blocked_proposal'|'none';revision:number|null;traffic_version:number|null;stale:boolean;items:RejectionExplanation[]};

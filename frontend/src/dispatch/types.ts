@@ -5,6 +5,8 @@ export type Action = {vehicle:string; kind:string; start:number; end:number; sou
 export type Report = {valid:boolean;complete_all:boolean;safe_to_apply:boolean;violations:string[]};
 export type Plan = {explanations?:RejectionExplanation[];objective:string;revision:number;traffic_version:number;fingerprint:string;accepted:string[];deferred:[string,string][];report:Report;total_distance:number;total_cost:number;routes:{vehicle:string;actions:Action[];total_distance:number;total_cost:number;end_time:number}[]};
 export type Comparison={sessionId:string;revision:number;trafficVersion:number;fingerprint:string;plans:Plan[]};
+/** Client-only failed response evidence; never replaces the server's applied plan. */
+export type RejectedPlanEvidence={session_id:string;input_revision:number;traffic_version:number;report:Plan};
 export type Workspace='overview'|'fleet'|'orders'|'inventory'|'traffic'|'audit';
 export type Connection='connecting'|'connected'|'failed'|'missing';
 export type WindowMode='strict'|'relaxed';
@@ -17,6 +19,7 @@ export type Snapshot = {
   order_control?:{enabled:boolean;order_version:number;planned_order_version:number|null;status:'idle'|'waiting_checkpoint'|'applied'|'blocked';reason:string|null;change_kind:string|null};
   time_windows?:WindowEvidence;
   planning_insights?:PlanningInsights;
+  rejected_proposal?:RejectedPlanEvidence;
   studio?:{presets:{delivery_capacity_kg:string;fuel_price_stress:string};late_orders:{id:string;deadline:number;penalty:number}[];auto_replan:string|null;parameters:StudioParameters;model_note:string;official_map_url:string;available_hubs:{id:string;name:string}[];planned:CostMetrics|null;executed:CostMetrics;trial?:{original_session:string;objective:string;before:{distance:number;cost:number;accepted:number;complete_all:boolean}}|null};
   nodes:{id:string;type:string;x:number;y:number;name?:string;lon?:number;lat?:number;zone?:string;display_name?:string;approximate?:boolean;location_note?:string;snap_distance_m?:number}[];
   edges:{source:string;target:string;distance:number;travel_time:number;cost:number;status:string;geometry?:[number,number][];name?:string;osm_way?:string}[];

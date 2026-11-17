@@ -2,18 +2,19 @@ import {useState} from 'react';
 import type {Snapshot} from '../types';
 import type {InsightMetrics,TimelineOrder} from '../insight-types';
 import {fmt,labels,priorities} from '../presentation';
-import {explanationFor,filterTimeline,signedDifference,timePosition,timelineDomain} from '../planning-insights.mjs';
+import {explanationFor,filterTimeline,rejectionContext,signedDifference,timePosition,timelineDomain} from '../planning-insights.mjs';
 
 const metricLabels:[keyof InsightMetrics,string,string][]=[['distance','剩余距离','km'],['cost','剩余模拟成本','元'],['travel_time','剩余行驶时间','分']];
 const stages:Record<string,string>={load:'装货',deliver:'客户签收',unload:'中转卸货',return:'返仓',travel:'道路行驶',priority:'优先级约束',assignment:'站点分配',inventory:'库存衔接'};
 const reasonLabels:Record<string,string>={capacity:'车辆容量不足',completion_deadline:'超过完成截止',unreachable:'选定路径不可达',return_unreachable:'返程不可达',critical_precedence:'特急服务顺序冲突',inventory_not_released:'货物尚未释放',unsupported_warehouse:'仓库不受支持',missing_protected_hub:'已承诺订单缺少站点',heuristic_incomplete:'启发式未找到可行安排'};
 
 export function RejectionDetails({data,orderId}:{data:Snapshot;orderId:string}){
- const explanation=explanationFor(data,orderId),context=data.planning_insights?.explanations;
+ const explanation=explanationFor(data,orderId),context=rejectionContext(data);
  if(!explanation)return null;
  return <details className="i-rejection"><summary>为什么未接纳 {orderId}？</summary>
   {context?.stale&&<p className="i-notice">以下是上一次尝试的证据。订单、路况或模拟时间与执行进度已变化，当前结果需重新规划确认。</p>}
   {context?.source==='blocked_proposal'&&<p className="i-notice">本次续程未通过安全应用检查；原计划与载货已保留。</p>}
+  {context.source==='rejected_response'&&<p className="i-notice">失败提案，未应用。此为本次手动规划响应中的证据，原计划、位置与载货未被替换。</p>}
   <p>{explanation.summary}</p>
   {explanation.attempts.map((attempt,index)=><article key={index} className="i-attempt">
    <strong>{attempt.hub??'未选定站点'} · {attempt.vehicle??'未选定车辆'}</strong>
@@ -26,6 +27,16 @@ export function RejectionDetails({data,orderId}:{data:Snapshot;orderId:string}){
   {explanation.suggestions.length>0&&<><strong>可检查的调整</strong><ul>{explanation.suggestions.map(s=><li key={s}>{s}</li>)}</ul></>}
   <p className="i-caption">这是实际尝试的代表性失败候选，不是全路网无解证明。调整后仍需重新规划和验证；运营参数试算仅适用于未执行的新场景。</p>
  </details>;
+}
+
+export function RejectionOverview({data}:{data:Snapshot}){
+ const context=rejectionContext(data),rejected=context.source==='rejected_response'?data.rejected_proposal?.report:null;
+ if(!context.items.length&&!rejected)return null;
+ return <section className="i-impact" aria-label="未接纳原因说明"><h3>{context.stale?'上次尝试的未接纳说明':'未接纳原因说明'}</h3>
+  {rejected?<p className="i-notice">失败提案，未应用。该响应绑定会话 {data.id}、输入 v{context.revision}；原有效计划和真实执行状态保持不变。</p>:<p>以下 {context.items.length} 张订单在{context.stale?'上次':'本次'}尝试中未被接纳，可展开查看实际候选证据。</p>}
+  {rejected?.report.violations?.length?<p className="i-caption">验证结果：{rejected.report.violations.join('、')}</p>:null}
+  {context.items.map(item=><RejectionDetails key={item.order_id} data={data} orderId={item.order_id}/>)}
+ </section>;
 }
 
 export function ReplanImpactPanel({data}:{data:Snapshot}){
@@ -69,7 +80,7 @@ export function OrderTimeTimeline({data}:{data:Snapshot}){
  const [query,setQuery]=useState(''),[activeOnly,setActiveOnly]=useState(true),[riskOnly,setRiskOnly]=useState(false),[threshold,setThreshold]=useState(5);
  const timeline=data.planning_insights?.timeline;
  if(!timeline)return <section className="i-timeline"><h3>订单时间窗时间轴</h3><p>当前快照没有逐单时间证据。请连接新版后端或创建新场景。</p></section>;
- const rows=filterTimeline(timeline.orders,{query,activeOnly,riskOnly,threshold,forecastCurrent:!timeline.stale}),domain=timelineDomain(rows,timeline.now);
+ const rows=filterTimeline(timeline.orders,{query,activeOnly,riskOnly,threshold,forecastCurrent:!timeline.stale,nodes:data.nodes}),domain=timelineDomain(rows,timeline.now);
  const riskCount=filterTimeline(timeline.orders,{riskOnly:true,threshold,forecastCurrent:!timeline.stale}).length;
  return <section className="i-timeline" aria-label="订单时间窗时间轴"><div className="i-timeline-heading"><div><span className="i-eyebrow">ORDER TIME WINDOWS</span><h3>订单时间窗时间轴</h3></div><span className="i-clock">当前 {fmt(timeline.now)} 分</span></div>
   <p>窗口左端限制服务开始，右端限制签收完成。每张订单独立展示；全部时间均为模拟分钟。</p>

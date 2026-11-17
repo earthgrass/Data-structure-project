@@ -4,6 +4,7 @@ import {Badge,type Confirmation} from './Common';
 import {labels,priorities,fmt} from '../presentation';
 import {matchesOrder,locationText} from '../product.mjs';
 import {RejectionDetails} from './PlanningInsights';
+import {rejectionContext} from '../planning-insights.mjs';
 
 export function AddOrder({data,busy,command,close,error,destination}:{data:Snapshot;busy:boolean;command:Command;close:()=>void;error:string;destination?:string}){
   const dialog=useRef<HTMLDialogElement>(null);
@@ -21,7 +22,7 @@ export function AddOrder({data,busy,command,close,error,destination}:{data:Snaps
 export function OrderTable({data,busy,command,confirm,error,seed}:{data:Snapshot;busy:boolean;command:Command;confirm:(v:Confirmation)=>void;error:string;seed:string}){
   const [search,setSearch]=useState(''),[status,setStatus]=useState('all'),[priority,setPriority]=useState('all'),[adding,setAdding]=useState(false);
   const deferred=new Map(data.plan?.deferred??[]);
-  for(const item of data.planning_insights?.explanations.items??[])deferred.set(item.order_id,item.reason);
+  for(const item of rejectionContext(data).items)deferred.set(item.order_id,item.reason);
   const rows=data.orders.filter(o=>(status==='all'||status==='deferred'&&deferred.has(o.id)||o.status===status)&&(priority==='all'||o.priority===priority)&&matchesOrder(o,data.nodes,search));
   function reason(o:Snapshot['orders'][number]){
     if(['delivered','cancelled','expired'].includes(o.status))return '订单为终态，保留身份记录。';
