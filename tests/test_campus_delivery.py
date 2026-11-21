@@ -53,6 +53,23 @@ class TestCampusDelivery(unittest.TestCase):
             if signature is None: signature=roads
             self.assertEqual(roads,signature)
 
+    def test_heavy_campus_orders_keep_exact_vehicle_limits(self) -> None:
+        from logiroute.dispatch.studio import studio_state,defaults
+        for seed in (0,1,42,100,2026):
+            state=studio_state(seed,defaults(),'relaxed',operational=True)
+            demands=[o.demand for o in state.orders.values()]
+            self.assertEqual(demands.count(Decimal('20')),1)
+            self.assertEqual(demands.count(Decimal('30')),1)
+            self.assertEqual(state.vehicles['TRUNK'].capacity,Decimal('150'))
+            self.assertTrue(all(v.capacity==Decimal('50') for v in state.vehicles.values() if v.role=='delivery'))
+            self.assertEqual(state.fingerprint(),studio_state(seed,defaults(),'relaxed',operational=True).fingerprint())
+
+    def test_invalid_heavy_order_quota_is_rejected(self) -> None:
+        from logiroute.dispatch.scenario import make_state
+        for heavy in ({'missing':[20]},{'surrounding':[20,30,20,30,20]},{'campus':[-1]},{'campus':['NaN']}):
+            config=self.config();config['heavy_order_demands_by_zone']=heavy
+            with self.assertRaises(ValueError): make_state(42,config)
+
     def test_bad_quotas_are_rejected_without_silent_fallback(self) -> None:
         from logiroute.dispatch.scenario import make_state
         for quotas in ({'campus':25,'surrounding':0},{'campus':23,'surrounding':1},{'campus':True,'surrounding':23},{'unknown':24},{'campus':-1,'surrounding':25}):

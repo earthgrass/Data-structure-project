@@ -50,20 +50,33 @@ def configure(state: State,parameters: dict[str,Any]) -> State:
     trial.vehicles={v['id']:VehicleSpec(**{**v,'capacity':capacity.get(v['id'],Decimal(str(v['capacity'])))}) for v in rows}
     trial.positions={k:v.base for k,v in trial.vehicles.items()};trial.config['vehicles']=[{**v,'capacity':str(trial.vehicles[v['id']].capacity)} for v in rows]
     trial.config['hub_ids']=list(hubs);trial.config['traffic']['cost_per_delay']=float(numeric['driver_hourly']/60)
+    factors=trial.config.get('road_fuel_factors',p['road_factors'])
+    speeds=trial.config.get('road_speed_kmh',{})
     for e in list(trial.graph.edges):
-        factor=p['road_factors'].get(e.metadata.get('highway'),p['road_factors']['default'])
+        kind=e.metadata.get('highway');factor=factors.get(kind,factors['default'])
+        base_time=e.metadata.get('base_travel_time',e.travel_time)
+        speed=speeds.get(kind)
+        travel_time=base_time
+        if speed and base_time>0 and abs(e.distance/base_time*60-float(speed['baseline']))<0.000001:
+            travel_time=e.distance/float(speed['operational'])*60
         fuel=e.distance*float(numeric['fuel_per_100km'])/100*factor
-        cost=fuel*float(numeric['fuel_price'])+e.travel_time/60*float(numeric['driver_hourly'])+e.distance*float(numeric['maintenance_per_km'])
-        trial.graph.remove_edge(*e.key);trial.graph.add_edge(Edge(*e.key,e.distance,e.travel_time,cost,e.traffic_status,{**e.metadata,'fuel_liters':fuel}))
+        cost=fuel*float(numeric['fuel_price'])+travel_time/60*float(numeric['driver_hourly'])+e.distance*float(numeric['maintenance_per_km'])
+        metadata={**e.metadata,'fuel_liters':fuel}
+        if speeds: metadata['base_travel_time']=base_time
+        trial.graph.remove_edge(*e.key);trial.graph.add_edge(Edge(*e.key,e.distance,travel_time,cost,e.traffic_status,metadata))
     normalized={**parameters,**{k:str(v) for k,v in numeric.items()},'capacities':{k:str(v.capacity) for k,v in trial.vehicles.items()}}
-    trial.config['studio']={'parameters':normalized,'model_note':p['model_note'],'official_map_url':p['official_map_url'],
+    note=p['model_note']+(' '+trial.config['road_model_note'] if 'road_model_note' in trial.config else '')
+    trial.config['studio']={'variant':trial.config.get('scenario_variant','legacy'),'parameters':normalized,'model_note':note,'official_map_url':p['official_map_url'],
                             'available_hubs':[{'id':h,'name':trial.graph.get_node(h).name} for h in base['hub_ids']]}
     trial.graph.validate();return trial
 
 
-def studio_state(seed: int,parameters: dict[str,Any],window_mode: str = 'strict') -> State:
+def studio_state(seed: int,parameters: dict[str,Any],window_mode: str = 'strict',operational: bool = False) -> State:
     """Explicit opt-in profile. Time bounded window construction; space O(state+plans)."""
-    c=map_config('bjut-campus');s=configure(make_state(seed,c),parameters)
+    c=map_config('bjut-campus')
+    if operational:
+        c.update(json.loads((Path(__file__).resolve().parents[3]/'config/dispatch_bjut_operational.json').read_text(encoding='utf-8')))
+    s=configure(make_state(seed,c),parameters)
     return calibrate_windows(s,load_window_policy(c),window_mode)
 
 

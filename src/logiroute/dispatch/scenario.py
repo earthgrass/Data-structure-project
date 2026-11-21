@@ -1,8 +1,8 @@
 """Private physical state for the opt-in completion-deadline workflow."""
 from __future__ import annotations
 from copy import deepcopy
-from dataclasses import dataclass,field
-from decimal import Decimal
+from dataclasses import dataclass,field,replace
+from decimal import Decimal,InvalidOperation
 import hashlib
 import json
 from pathlib import Path
@@ -95,4 +95,21 @@ def make_state(seed: int,config: dict[str,Any] | None = None) -> State:
         if c.get('sample_unique_destinations'): customers.remove(destination)
         orders[key]=Parcel(key,destination,rng.choice(c['demand_choices']),t['window_start'],t['window_end'],priority)
         locations[key]=('warehouse',c['warehouse_ids'][0])
+    heavy=c.get('heavy_order_demands_by_zone',{})
+    if not isinstance(heavy,dict) or (heavy and regional is None) or set(heavy)-set(c.get('candidate_groups',{})):
+        raise ValueError('heavy order demands require configured destination regions')
+    assigned=set()
+    for zone in ordered_strings(heavy):
+        demands=heavy[zone]
+        if not isinstance(demands,list) or len(demands)>c['destination_quotas'][zone]:
+            raise ValueError('heavy order demand quota exceeds destination region')
+        candidates=[key for key,o in orders.items() if o.destination in c['candidate_groups'][zone]]
+        for index,demand in enumerate(demands):
+            if isinstance(demand,bool): raise ValueError('invalid heavy order demand')
+            try: quantity=Decimal(str(demand))
+            except InvalidOperation as exc: raise ValueError('invalid heavy order demand') from exc
+            if not quantity.is_finite() or quantity<=0: raise ValueError('invalid heavy order demand')
+            key=candidates[index]
+            if key in assigned: raise ValueError('heavy order regions overlap')
+            assigned.add(key);orders[key]=replace(orders[key],demand=quantity)
     return State(graph,c,orders,locations,vehicles,{k:v.base for k,v in vehicles.items()},t['initial'])

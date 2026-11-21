@@ -1,0 +1,11 @@
+{
+  "scenario_variant": "heavy_slow_roads",
+  "heavy_order_demands_by_zone": {"campus": [20], "surrounding": [30]},
+  "road_speed_kmh": {
+    "residential": {"baseline": 20, "operational": 15},
+    "service": {"baseline": 15, "operational": 8},
+    "living_street": {"baseline": 10, "operational": 5}
+  },
+  "road_fuel_factors": {"primary": 1, "secondary": 1.05, "tertiary": 1.1, "residential": 1.2, "service": 1.4, "living_street": 1.5, "default": 1.15},
+  "road_model_note": "校内演示速度为模拟值；仅对原始速度等于路类默认值的机动车可通行边降速。步行专用、禁止机动车和私有道路不进入车辆路网。拥堵再乘以状态系数，工时和油耗进入成本。"
+}
