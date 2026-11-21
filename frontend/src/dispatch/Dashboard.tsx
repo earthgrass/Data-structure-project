@@ -1,4 +1,4 @@
-import {useEffect,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import type {Workspace,WindowMode} from './types';
 import {windowEvidenceCurrent} from './windows.mjs';
 import {rejectionContext} from './planning-insights.mjs';
@@ -22,6 +22,7 @@ import './dashboard.css';
 export function DispatchDashboard(){
   const session=useDispatchSession(),data=session.snapshot;
   const [workspace,setWorkspace]=useState<Workspace>('overview'),[seed,setSeed]=useState(''),[objective,setObjective]=useState('distance');
+  const lastWorkspace=useRef<Workspace>('fleet');
   const [selected,setSelected]=useState(''),[road,setRoad]=useState(''),[confirmation,setConfirmation]=useState<Confirmation|null>(null);
   const [destination,setDestination]=useState('');
   const [orderFocus,setOrderFocus]=useState<{id:string;request:number;sessionId:string}|null>(null);
@@ -34,11 +35,11 @@ export function DispatchDashboard(){
   const [windowMode,setWindowMode]=useState<WindowMode>('strict'),[showRelaxed,setShowRelaxed]=useState(false);
   useEffect(()=>setShowRelaxed(false),[data?.id]);
   useEffect(()=>{
-    const read=()=>{const value=window.location.hash.slice(1);if(workspaces.some(w=>w.id===value))setWorkspace(value as Workspace);};
+    const read=()=>{const value=window.location.hash.slice(1);if(workspaces.some(w=>w.id===value)){setWorkspace(value as Workspace);if(value!=='overview')lastWorkspace.current=value as Workspace;}};
     read();window.addEventListener('hashchange',read);return()=>window.removeEventListener('hashchange',read);
   },[]);
   useEffect(()=>{if(data&&!data.vehicles.some(v=>v.id===selected))setSelected(data.vehicles[0]?.id??'');},[data,selected]);
-  function navigate(value:Workspace){setWorkspace(value);window.history.replaceState(null,'','#'+value);}
+  function navigate(value:Workspace){if(value!=='overview')lastWorkspace.current=value;setWorkspace(value);window.history.replaceState(null,'','#'+value);}
   function create(){
     const run=()=>{void session.create(seed,windowMode).then(success=>{if(success){navigate('overview');setRoad('');}});};
     if(!data)run();else setConfirmation({title:'切换到新场景？',description:'当前工作区将切换到新会话，自动推进会停止。当前会话在后端的物理记录不会被改写。',confirm:'创建并切换',action:run});
@@ -56,7 +57,7 @@ export function DispatchDashboard(){
     toolbar={<DispatchToolbar data={data} objective={objective} setObjective={setObjective} busy={session.busy} connection={session.connection} command={session.command} onCreate={create} onResults={()=>navigate('audit')} playing={session.playing} setPlaying={session.setPlaying}/>}
     orders={<OrderTable seed={seed} data={data} busy={disabled} command={session.command} confirm={setConfirmation} error={session.error}/>}
     fleet={<FleetList data={data} selected={car?.id??''} onSelect={setSelected} compact/>} inspector={inspector}
-    seed={seed} setSeed={setSeed} create={create} disabled={createDisabled} selected={car?.id??''} onVehicle={setSelected} navigate={navigate} error={session.error} message={session.message} reconnect={session.reconnect} pausePlayback={()=>session.setPlaying(false)}/>
+    seed={seed} setSeed={setSeed} create={create} disabled={createDisabled} selected={car?.id??''} onVehicle={setSelected} navigate={navigate} exitMap={()=>navigate(lastWorkspace.current)} error={session.error} message={session.message} reconnect={session.reconnect} pausePlayback={()=>session.setPlaying(false)}/>
     <div className="dispatch"><ConfirmDialog value={confirmation} close={()=>setConfirmation(null)}/>{destination&&<AddOrder data={data} busy={disabled} command={session.command} close={()=>setDestination('')} error={session.error} destination={destination}/>}</div></>;
   return <AppShell workspace={workspace} onWorkspace={navigate} connection={session.connection} data={data} reconnect={session.reconnect}
     headerActions={<div className="d-scene-controls"><label className="d-sr-only" htmlFor="scene-seed">场景 Seed</label><input id="scene-seed" type="number" step="1" placeholder="Seed · 默认配置" value={seed} onChange={e=>setSeed(e.target.value)}/><button disabled={createDisabled} onClick={create}>{session.busy==='create'?'创建中…':'新建场景'}</button></div>}>
