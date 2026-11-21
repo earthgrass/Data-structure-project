@@ -1,6 +1,6 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
 import type {Snapshot} from '../types';
-import {projectNodes} from '../viewport.mjs';
+import {projectNodes,fitViewport} from '../viewport.mjs';
 import {mapProjection} from '../geography.mjs';
 
 /** One O(V) projection per graph/size change; edges use O(1) lookups. UI geometry only. */
@@ -18,7 +18,13 @@ export function useNetworkViewport(nodes:Snapshot['nodes'],bounds?:number[],mobi
   const points=useMemo(()=>project?new Map(nodes.map(n=>[n.id,project([n.x,n.y])])):projectNodes(nodes,size.width,size.height),[nodes,size,project]);
   const [cx,cy]=center??[size.width/2,size.height/2];
   return {frame,size,points,project,zoom,offset:[size.width/2-cx*zoom,size.height/2-cy*zoom],transform:`translate(${size.width/2} ${size.height/2}) scale(${zoom}) translate(${-cx} ${-cy})`,
-    zoomBy:(delta:number)=>setZoom(z=>Math.max(1,Math.min(8,z+delta))),
+    zoomBy:(delta:number)=>setZoom(z=>Math.max(.001,Math.min(8,z+delta))),
     panBy:(dx:number,dy:number)=>setCenter(current=>{const [x,y]=current??[cx,cy];return [x-dx/zoom,y-dy/zoom];}),
+    fit:(ids:string[],insets:{left:number;right:number;top:number;bottom:number})=>{
+      const result=fitViewport(ids.map(id=>points.get(id)).filter((p):p is [number,number]=>!!p),size.width,size.height,insets);
+      setZoom(result.zoom);setCenter(result.center as [number,number]);
+    },
+    panTo:(point:[number,number])=>setCenter(current=>current&&Math.abs(current[0]-point[0])<.001&&Math.abs(current[1]-point[1])<.001?current:point),
+    focusPoint:(point:[number,number],level=2)=>{setCenter(point);setZoom(level);},
     reset:()=>{setZoom(1);setCenter(null);},focus:(id:string)=>{setCenter(points.get(id)??null);setZoom(1.5);}};
 }

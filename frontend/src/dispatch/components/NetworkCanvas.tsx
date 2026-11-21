@@ -13,9 +13,9 @@ import type {RouteView} from './RouteChanges';
 import {labels,priorities} from '../presentation';
 import {layoutVehicleBadges} from '../markers.mjs';
 
-export function NetworkCanvas({data,orderFocus=null,changes=null,routeView='changes',selected,onVehicle,onRoad,onCandidate,showRelaxed=false,clock=null}:{data:Snapshot;orderFocus?:{id:string;request:number}|null;changes?:RouteChangeSummary|null;routeView?:RouteView;selected:string;onVehicle:(id:string)=>void;onRoad?:(road:Road)=>void;onCandidate?:(id:string)=>void;showRelaxed?:boolean;clock?:number|null}){
+export function NetworkCanvas({data,orderFocus=null,changes=null,routeView='changes',selected,viewMode,onViewMode,onVehicle,onRoad,onCandidate,showRelaxed=false,clock=null}:{data:Snapshot;orderFocus?:{id:string;request:number}|null;changes?:RouteChangeSummary|null;routeView?:RouteView;selected:string;viewMode:string;onViewMode:(mode:string)=>void;onVehicle:(id:string)=>void;onRoad?:(road:Road)=>void;onCandidate?:(id:string)=>void;showRelaxed?:boolean;clock?:number|null}){
   const view=useNetworkViewport(data.nodes,data.map?.bounds,data.map?.campus_profile?1.4:1.7),[node,setNode]=useState(''),[edge,setEdge]=useState('');
-  useEffect(()=>{if(orderFocus){view.focus(orderFocus.id);setNode(orderFocus.id);setEdge('');}},[orderFocus]);
+  useEffect(()=>{if(orderFocus){onViewMode('free');view.focus(orderFocus.id);setNode(orderFocus.id);setEdge('');}},[orderFocus]);
   useEffect(()=>{if(orderFocus)view.focus(orderFocus.id);},[view.size.width,view.size.height]);
   const drag=useRef<{x:number;y:number}|null>(null);
   const chosenNode=data.nodes.find(n=>n.id===node),chosenEdge=data.edges.find(r=>r.source+'|'+r.target===edge);
@@ -23,6 +23,31 @@ export function NetworkCanvas({data,orderFocus=null,changes=null,routeView='chan
   const roads=useMemo(()=>physicalRoads(data.edges),[data.edges]);
   const geometry=useMemo(()=>new Map(data.edges.map(r=>[r.source+'|'+r.target,r.geometry&&view.project?r.geometry.map(view.project):[view.points.get(r.source)!,view.points.get(r.target)!]])),[data.edges,view.project,view.points]);
   const [focusMap,setFocusMap]=useState(false);
+  useEffect(()=>{if(view.size.width<760&&view.frame.current?.closest('.d-map-workbench'))setFocusMap(true);},[view.size.width]);
+  const previousMode=useRef(viewMode);
+  const fitIds=useMemo(()=>{
+    const ids=new Set(data.nodes.filter(n=>!n.routing_only).map(n=>n.id));
+    for(const car of data.vehicles)ids.add(car.position);
+    for(const route of data.plan?.routes??[])for(const action of route.actions)if(action.kind==='drive'){ids.add(action.source);ids.add(action.target);}
+    return [...ids];
+  },[data.nodes,data.vehicles,data.plan]);
+  const globalInsets=()=>{
+    const fullscreen=!!view.frame.current?.closest('.d-map-workbench'),mobile=view.size.width<760;
+    return fullscreen?focusMap?{left:35,right:35,top:mobile?210:160,bottom:mobile?85:90}:{left:45,right:45,top:mobile?300:245,bottom:mobile?300:245}:{left:45,right:45,top:60,bottom:70};
+  };
+  const fitGlobal=()=>view.fit(fitIds,globalInsets());
+  useEffect(()=>{
+    if(previousMode.current!==viewMode&&viewMode!=='free'&&view.frame.current?.closest('.d-map-workbench'))setFocusMap(true);
+    previousMode.current=viewMode;
+  },[viewMode]);
+  useEffect(()=>{if(viewMode==='global')setShowAllRoutes(true);else if(viewMode!=='free')setShowAllRoutes(false);},[viewMode]);
+  useEffect(()=>{
+    if(viewMode==='global')fitGlobal();
+    else if(viewMode!=='free'){
+      const vehicle=data.vehicles.find(v=>v.id===viewMode);
+      if(vehicle)view.focusPoint(vehiclePoint(vehicle,clock??data.now,view.points,vehicle.current?.kind==='drive'?geometry.get(vehicle.current.source+'|'+vehicle.current.target):undefined),2);
+    }
+  },[viewMode,data.id,data.plan?.fingerprint,view.size.width,view.size.height,focusMap]);
   const [showRoads,setShowRoads]=useState(true),[showPool,setShowPool]=useState(false),[showBackups,setShowBackups]=useState(false),[showAllRoutes,setShowAllRoutes]=useState(true);
   const visualClock=clock??data.now;
   const deliveries=useMemo(()=>{
@@ -44,6 +69,7 @@ export function NetworkCanvas({data,orderFocus=null,changes=null,routeView='chan
   },[data.nodes,data.map?.campus_profile,deliveries,node,view.points,view.zoom,showBackups]);
   const orderLabels=useMemo(()=>buildOrderMapLabels(orderGroups,view.points,view.zoom,node,[...nodeLabels.values()].map(l=>l.box)),[orderGroups,view.points,view.zoom,node,nodeLabels]);
   const carPoints=data.vehicles.map(v=>({vehicle:v,point:vehiclePoint(v,visualClock,view.points,v.current?.kind==='drive'?geometry.get(v.current.source+'|'+v.current.target):undefined)}));
+  useEffect(()=>{if(viewMode!=='global'&&viewMode!=='free'){const car=carPoints.find(c=>c.vehicle.id===viewMode);if(car)view.panTo(car.point);}},[viewMode,visualClock,data.vehicles,view.points]);
   const badgeItems=[...carPoints.filter(c=>c.vehicle.id===selected),...carPoints.filter(c=>c.vehicle.id!==selected)].map(c=>({id:c.vehicle.id,point:c.point.map(n=>n*view.zoom),text:c.vehicle.id+' '+c.vehicle.load+'kg'}));
   const badges=layoutVehicleBadges(badgeItems,[...nodeLabels.values(),...orderLabels.values()].map(l=>l.box),{left:12-view.offset[0],right:view.size.width-12-view.offset[0],top:(view.size.width<760?296:222)-view.offset[1],bottom:view.size.height-(view.size.width<760?288:228)-view.offset[1]});
   const background=useMemo(()=>{
@@ -78,8 +104,8 @@ export function NetworkCanvas({data,orderFocus=null,changes=null,routeView='chan
     <div className="d-map-frame" ref={view.frame}>
       <svg viewBox={`0 0 ${view.size.width} ${view.size.height}`} aria-label={data.map?'北工大周边真实道路配送地图':'真实场景配送地图'} role="group"
         onPointerDown={e=>{if((e.target as Element).closest('[role="button"]'))return;drag.current={x:e.clientX,y:e.clientY};e.currentTarget.setPointerCapture(e.pointerId);}}
-        onPointerMove={e=>{if(!drag.current)return;view.panBy(e.clientX-drag.current.x,e.clientY-drag.current.y);drag.current={x:e.clientX,y:e.clientY};}}
-        onPointerUp={()=>{drag.current=null;}} onPointerCancel={()=>{drag.current=null;}} onWheel={e=>view.zoomBy(e.deltaY<0?.2:-.2)}>
+        onPointerMove={e=>{if(!drag.current)return;onViewMode('free');view.panBy(e.clientX-drag.current.x,e.clientY-drag.current.y);drag.current={x:e.clientX,y:e.clientY};}}
+        onPointerUp={()=>{drag.current=null;}} onPointerCancel={()=>{drag.current=null;}} onWheel={e=>{onViewMode('free');view.zoomBy(e.deltaY<0?.2:-.2);}}>
         <defs><pattern id="map-grid" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".8" fill="#dae2ec"/></pattern><marker id="route-direction" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" refX="5" refY="4" orient="auto"><path d="M0 0 8 4 0 8" fill="context-stroke"/></marker></defs>
         <rect width="100%" height="100%" fill={data.map?'#f3f1ea':'url(#map-grid)'}/>
         <g transform={view.transform}>
@@ -103,7 +129,7 @@ export function NetworkCanvas({data,orderFocus=null,changes=null,routeView='chan
 
         </g>
       </svg>
-      <div className="d-map-tools" aria-label="地图视口控制"><button className="r-focus-map" aria-pressed={focusMap} onClick={()=>setFocusMap(v=>!v)} title="收起车队和播放面板，让地图更完整">{focusMap?'退出专注':'专注地图'}</button><button aria-label="放大地图" onClick={()=>view.zoomBy(.5)} disabled={view.zoom>=8}>＋</button><span>{Math.round(view.zoom*100)}%</span><button aria-label="缩小地图" onClick={()=>view.zoomBy(-.5)} disabled={view.zoom<=1}>−</button><button aria-label="重置地图视口" onClick={view.reset}>适配</button><button aria-label="定位选中车辆" onClick={()=>view.focus(data.vehicles.find(v=>v.id===selected)?.position??'')}><Icon name="pin" size={18}/></button></div>
+      <div className="d-map-tools" aria-label="地图视口控制"><label className="d-map-view-picker"><span className="d-sr-only">地图视图</span><select aria-label="地图视图" value={viewMode} onChange={e=>{const mode=e.target.value;onViewMode(mode);if(mode!=='global'&&mode!=='free')onVehicle(mode);}}>{viewMode==='free'&&<option value="free">自由浏览</option>}<option value="global">全局视图</option>{data.vehicles.map(v=><option key={v.id} value={v.id}>{v.id} 车辆视图</option>)}</select></label><button className="r-focus-map" aria-pressed={focusMap} onClick={()=>setFocusMap(v=>!v)} title="收起车队和播放面板，让地图更完整">{focusMap?'退出专注':'专注地图'}</button><button aria-label="放大地图" onClick={()=>{onViewMode('free');view.zoomBy(.5);}} disabled={view.zoom>=8}>＋</button><span>{Math.round(view.zoom*100)}%</span><button aria-label="缩小地图" onClick={()=>{onViewMode('free');view.zoomBy(-.5);}} disabled={view.zoom<=.001}>−</button><button aria-label="重置地图视口" onClick={()=>{onViewMode('global');fitGlobal();setShowAllRoutes(true);}}>全局适配</button><button aria-label="定位选中车辆" onClick={()=>{onViewMode(selected);const car=carPoints.find(c=>c.vehicle.id===selected);if(car)view.focusPoint(car.point,2);setShowAllRoutes(false);}}><Icon name="pin" size={18}/></button></div>
       {info&&<div className={'d-map-info'+(orderGroups.has(node)?' r-order-info':'')} role="status"><strong>{chosenNode?.name??info}</strong>{orderGroups.has(node)&&<div className="r-node-orders">{orderGroups.get(node)!.orders.map(o=><div key={o.id} className={'r-node-order '+o.priority}><b>{o.id} · {priorities.find(([id])=>id===o.priority)?.[1]}{changes?.addedOrderIds.includes(o.id)?' · 新增':''}</b><small>{labels[o.status]} · {o.demand} kg · 签收窗 {fmt(o.earliest)}–{fmt(o.deadline)}</small><small>{data.plan?.deferred.find(([id])=>id===o.id)?.[1]??(o.hub?`中转站 ${o.hub}`:'尚未分配')}</small></div>)}</div>}{chosenNode?.type==='customer'&&onCandidate&&<button onClick={()=>onCandidate(chosenNode.id)}>在此新增订单</button>}<button aria-label="关闭地图详情" onClick={()=>{setNode('');setEdge('');}}>×</button></div>}
 
     </div>

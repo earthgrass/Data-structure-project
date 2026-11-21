@@ -25,11 +25,13 @@ export function DispatchDashboard(){
   const [workspace,setWorkspace]=useState<Workspace>('overview'),[seed,setSeed]=useState(''),[objective,setObjective]=useState('cost');
   const lastWorkspace=useRef<Workspace>('fleet');
   const [selected,setSelected]=useState(''),[road,setRoad]=useState(''),[confirmation,setConfirmation]=useState<Confirmation|null>(null);
+  const [mapView,setMapView]=useState('global');
   const [destination,setDestination]=useState('');
   const [orderFocus,setOrderFocus]=useState<{id:string;request:number;sessionId:string}|null>(null);
   const [mapFocusRequest,setMapFocusRequest]=useState(0);
   const focusOrder=(id:string)=>setOrderFocus(previous=>({id,request:(previous?.request??0)+1,sessionId:data?.id??''}));
   useEffect(()=>setOrderFocus(null),[data?.id]);
+  useEffect(()=>setMapView('global'),[data?.id]);
   useEffect(()=>{const id=session.routeChanges?.addedOrderIds[0];const order=data?.orders.find(o=>o.id===id);if(order)focusOrder(order.destination);},[data?.id,session.routeChanges?.baselineRevision]);
   const [routeView,setRouteView]=useState<'before'|'after'|'changes'>('changes');
   useEffect(()=>setRouteView(session.routeChanges&&!session.routeChanges.hasBaseline?'after':'changes'),[data?.id,session.routeChanges?.baselineRevision,session.routeChanges?.appliedRevision]);
@@ -48,7 +50,8 @@ export function DispatchDashboard(){
   const disabled=!!session.busy||session.connection!=='connected';
   const createDisabled=!!session.busy||session.connection==='failed'||session.connection==='connecting';
   const car=data?.vehicles.find(v=>v.id===selected)??data?.vehicles[0];
-  const map=data&&car?<NetworkCanvas key={data.id} data={data} orderFocus={orderFocus?.sessionId===data.id?orderFocus:null} changes={session.routeChanges} routeView={routeView} selected={car.id} clock={session.motionClock} showRelaxed={showRelaxed&&windowEvidenceCurrent(data)} onVehicle={setSelected} onCandidate={id=>{session.setPlaying(false);setDestination(id);}} onRoad={r=>setRoad(r.source+'|'+r.target)}/>:null;
+  const selectVehicleView=(id:string)=>{setSelected(id);setMapView(id);};
+  const map=data&&car?<NetworkCanvas key={data.id} data={data} orderFocus={orderFocus?.sessionId===data.id?orderFocus:null} changes={session.routeChanges} routeView={routeView} selected={car.id} viewMode={mapView} onViewMode={setMapView} clock={session.motionClock} showRelaxed={showRelaxed&&windowEvidenceCurrent(data)} onVehicle={selectVehicleView} onCandidate={id=>{session.setPlaying(false);setDestination(id);}} onRoad={r=>setRoad(r.source+'|'+r.target)}/>:null;
   const playback=data?<DemoPlayback data={data} playing={session.playing} busy={session.busy} clock={session.motionClock} speed={session.speed} setSpeed={session.setSpeed} toggle={session.togglePlayback}/>:null;
   const transportControl=<GlobalPlaybackControl data={data} playing={session.playing} busy={session.busy} connected={session.connection==='connected'} objective={objective} toggle={session.togglePlayback} plan={()=>session.command('plan',{objective})}/>;
   const inspector=data&&car?<VehicleInspector data={data} car={car}/>:null;
@@ -58,8 +61,8 @@ export function DispatchDashboard(){
     windows={<TimeWindowPanel data={data} showRelaxed={showRelaxed} setShowRelaxed={setShowRelaxed} onVehicle={setSelected} selected={car?.id??''}/>} windowMode={windowMode} setWindowMode={setWindowMode}
     toolbar={<DispatchToolbar data={data} objective={objective} setObjective={setObjective} busy={session.busy} connection={session.connection} command={session.command} onCreate={create} onResults={()=>navigate('audit')} playing={session.playing} setPlaying={session.setPlaying}/>}
     orders={<OrderTable seed={seed} data={data} busy={disabled} command={session.command} confirm={setConfirmation} error={session.error}/>}
-    fleet={<FleetList data={data} selected={car?.id??''} onSelect={setSelected} compact/>} inspector={inspector}
-    seed={seed} setSeed={setSeed} create={create} disabled={createDisabled} selected={car?.id??''} onVehicle={setSelected} navigate={navigate} exitMap={()=>navigate(lastWorkspace.current)} error={session.error} message={session.message} reconnect={session.reconnect} pausePlayback={()=>session.setPlaying(false)}/>
+    fleet={<FleetList data={data} selected={car?.id??''} onSelect={selectVehicleView} compact/>} inspector={inspector}
+    seed={seed} setSeed={setSeed} create={create} disabled={createDisabled} viewMode={mapView} onViewMode={setMapView} onVehicle={selectVehicleView} navigate={navigate} exitMap={()=>navigate(lastWorkspace.current)} error={session.error} message={session.message} reconnect={session.reconnect} pausePlayback={()=>session.setPlaying(false)}/>
     <div className="dispatch"><ConfirmDialog value={confirmation} close={()=>setConfirmation(null)}/>{destination&&<AddOrder data={data} busy={disabled} command={session.command} close={()=>setDestination('')} error={session.error} destination={destination}/>}</div></>;
   return <AppShell workspace={workspace} onWorkspace={navigate} connection={session.connection} data={data} reconnect={session.reconnect}
     headerActions={<>{transportControl}<div className="d-scene-controls"><label className="d-sr-only" htmlFor="scene-seed">场景 Seed</label><input id="scene-seed" type="number" step="1" placeholder="Seed · 默认配置" value={seed} onChange={e=>setSeed(e.target.value)}/><button disabled={createDisabled} onClick={create}>{session.busy==='create'?'创建中…':'新建场景'}</button></div></>}>
