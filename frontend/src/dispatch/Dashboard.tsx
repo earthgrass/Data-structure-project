@@ -9,6 +9,7 @@ import {KPIStrip,DispatchToolbar,PlanCoverage} from './components/Operations';
 import {NetworkCanvas} from './components/NetworkCanvas';
 import {FleetList,VehicleInspector} from './components/Fleet';
 import {DemoPlayback} from './components/DemoPlayback';
+import {GlobalPlaybackControl} from './components/GlobalPlaybackControl';
 import {OrderTable,AddOrder} from './components/OrderTable';
 import {MapWorkbench} from './components/MapWorkbench';
 import {TimeWindowPanel} from './components/TimeWindows';
@@ -21,7 +22,7 @@ import './dashboard.css';
 
 export function DispatchDashboard(){
   const session=useDispatchSession(),data=session.snapshot;
-  const [workspace,setWorkspace]=useState<Workspace>('overview'),[seed,setSeed]=useState(''),[objective,setObjective]=useState('distance');
+  const [workspace,setWorkspace]=useState<Workspace>('overview'),[seed,setSeed]=useState(''),[objective,setObjective]=useState('cost');
   const lastWorkspace=useRef<Workspace>('fleet');
   const [selected,setSelected]=useState(''),[road,setRoad]=useState(''),[confirmation,setConfirmation]=useState<Confirmation|null>(null);
   const [destination,setDestination]=useState('');
@@ -49,9 +50,10 @@ export function DispatchDashboard(){
   const car=data?.vehicles.find(v=>v.id===selected)??data?.vehicles[0];
   const map=data&&car?<NetworkCanvas key={data.id} data={data} orderFocus={orderFocus?.sessionId===data.id?orderFocus:null} changes={session.routeChanges} routeView={routeView} selected={car.id} clock={session.motionClock} showRelaxed={showRelaxed&&windowEvidenceCurrent(data)} onVehicle={setSelected} onCandidate={id=>{session.setPlaying(false);setDestination(id);}} onRoad={r=>setRoad(r.source+'|'+r.target)}/>:null;
   const playback=data?<DemoPlayback data={data} playing={session.playing} busy={session.busy} clock={session.motionClock} speed={session.speed} setSpeed={session.setSpeed} toggle={session.togglePlayback}/>:null;
+  const transportControl=<GlobalPlaybackControl data={data} playing={session.playing} busy={session.busy} connected={session.connection==='connected'} objective={objective} toggle={session.togglePlayback} plan={()=>session.command('plan',{objective})}/>;
   const inspector=data&&car?<VehicleInspector data={data} car={car}/>:null;
   const changeNotice=data?.rejected_proposal?`${data.id}:rejected:${data.rejected_proposal.input_revision}`:session.routeChanges?`${data?.id}:${session.routeChanges.baselineRevision}:${session.routeChanges.appliedRevision}`:data&&rejectionContext(data).items.length?`${data.id}:rejections:${rejectionContext(data).revision}`:'';
-  if(workspace==='overview'&&data)return <><MapWorkbench mapFocusRequest={mapFocusRequest} changeKey={changeNotice} changes={<RouteChangesPanel data={data} changes={session.routeChanges} view={routeView} setView={v=>{setRouteView(v);setMapFocusRequest(n=>n+1);}} busy={disabled} onOrder={id=>{focusOrder(id);setMapFocusRequest(n=>n+1);}} onPlan={()=>void session.command('plan',{objective})} onVehicle={setSelected}/>} data={data} map={map} playback={playback}
+  if(workspace==='overview'&&data)return <><MapWorkbench mapFocusRequest={mapFocusRequest} changeKey={changeNotice} changes={<RouteChangesPanel data={data} changes={session.routeChanges} view={routeView} setView={v=>{setRouteView(v);setMapFocusRequest(n=>n+1);}} busy={disabled} onOrder={id=>{focusOrder(id);setMapFocusRequest(n=>n+1);}} onPlan={()=>void session.command('plan',{objective})} onVehicle={setSelected}/>} data={data} map={map} playback={playback} transportControl={transportControl}
     economics={<EconomicsPanel key={data.id} data={data} busy={disabled} error={session.error} onTrial={async p=>{const ok=await session.trial(p);if(ok)setObjective('cost');return ok;}} onCreate={create}/>}
     windows={<TimeWindowPanel data={data} showRelaxed={showRelaxed} setShowRelaxed={setShowRelaxed} onVehicle={setSelected} selected={car?.id??''}/>} windowMode={windowMode} setWindowMode={setWindowMode}
     toolbar={<DispatchToolbar data={data} objective={objective} setObjective={setObjective} busy={session.busy} connection={session.connection} command={session.command} onCreate={create} onResults={()=>navigate('audit')} playing={session.playing} setPlaying={session.setPlaying}/>}
@@ -60,9 +62,10 @@ export function DispatchDashboard(){
     seed={seed} setSeed={setSeed} create={create} disabled={createDisabled} selected={car?.id??''} onVehicle={setSelected} navigate={navigate} exitMap={()=>navigate(lastWorkspace.current)} error={session.error} message={session.message} reconnect={session.reconnect} pausePlayback={()=>session.setPlaying(false)}/>
     <div className="dispatch"><ConfirmDialog value={confirmation} close={()=>setConfirmation(null)}/>{destination&&<AddOrder data={data} busy={disabled} command={session.command} close={()=>setDestination('')} error={session.error} destination={destination}/>}</div></>;
   return <AppShell workspace={workspace} onWorkspace={navigate} connection={session.connection} data={data} reconnect={session.reconnect}
-    headerActions={<div className="d-scene-controls"><label className="d-sr-only" htmlFor="scene-seed">场景 Seed</label><input id="scene-seed" type="number" step="1" placeholder="Seed · 默认配置" value={seed} onChange={e=>setSeed(e.target.value)}/><button disabled={createDisabled} onClick={create}>{session.busy==='create'?'创建中…':'新建场景'}</button></div>}>
+    headerActions={<>{transportControl}<div className="d-scene-controls"><label className="d-sr-only" htmlFor="scene-seed">场景 Seed</label><input id="scene-seed" type="number" step="1" placeholder="Seed · 默认配置" value={seed} onChange={e=>setSeed(e.target.value)}/><button disabled={createDisabled} onClick={create}>{session.busy==='create'?'创建中…':'新建场景'}</button></div></>}>
     {session.error&&<div className="d-error-banner" role="alert"><b>操作未完成</b><span>{session.error}</span><button onClick={session.reconnect}>重试连接</button></div>}
     {session.connection==='missing'&&<p className="d-inline-warn">显示的是上次会话快照，当前会话已不存在；请使用“新建场景”恢复。</p>}
+    {data?.studio&&data.studio.variant!=='heavy_slow_roads'&&<p className="d-inline-warn">当前会话使用旧重量和路速。新建场景后可体验 20/30 kg 大件订单和校内慢速路；原会话记录仍保留。</p>}
     {!data?<div className="d-card d-welcome"><Empty title="创建你的第一个配送场景">在一张地图上掌握干线补货、站点配送和逐单签收。系统将先验证两个目标的完整可行方案。</Empty><button className="d-primary" disabled={createDisabled} onClick={create}>{session.busy?'正在创建…':'创建配送场景'}</button><p className="d-muted">{session.connection==='connected'?'也可以在顶部指定 Seed，复现相同场景。':'请先连接后端，再创建场景。'}</p></div>:<>
       {workspace==='overview'&&<><KPIStrip data={data}/>{playback}<DispatchToolbar data={data} objective={objective} setObjective={setObjective} busy={session.busy} connection={session.connection} command={session.command} onCreate={create} onResults={()=>navigate('audit')} playing={session.playing} setPlaying={session.setPlaying}/><div className="d-overview-grid">{map}{inspector}</div><FleetList data={data} selected={car?.id??''} onSelect={setSelected} compact/><PlanCoverage data={data}/></>}
       {workspace==='fleet'&&<><FleetStage data={data} clock={session.motionClock??data.now} selected={car?.id??''} onSelect={setSelected}/>{playback}<DispatchToolbar data={data} objective={objective} setObjective={setObjective} busy={session.busy} connection={session.connection} command={session.command} onCreate={create} onResults={()=>navigate('audit')} playing={session.playing} setPlaying={session.setPlaying}/><FleetList data={data} selected={car?.id??''} onSelect={setSelected}/><div className="d-fleet-workspace">{map}{inspector}</div></>}

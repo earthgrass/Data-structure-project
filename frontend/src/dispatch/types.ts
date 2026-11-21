@@ -21,9 +21,9 @@ export type Snapshot = {
   time_windows?:WindowEvidence;
   planning_insights?:PlanningInsights;
   rejected_proposal?:RejectedPlanEvidence;
-  studio?:{presets:{delivery_capacity_kg:string;fuel_price_stress:string};late_orders:{id:string;deadline:number;penalty:number}[];auto_replan:string|null;parameters:StudioParameters;model_note:string;official_map_url:string;available_hubs:{id:string;name:string}[];planned:CostMetrics|null;executed:CostMetrics;trial?:{original_session:string;objective:string;before:{distance:number;cost:number;accepted:number;complete_all:boolean}}|null};
+  studio?:{variant?:string;presets:{delivery_capacity_kg:string;fuel_price_stress:string};late_orders:{id:string;deadline:number;penalty:number}[];auto_replan:string|null;parameters:StudioParameters;model_note:string;official_map_url:string;available_hubs:{id:string;name:string}[];planned:CostMetrics|null;executed:CostMetrics;trial?:{original_session:string;objective:string;before:{distance:number;cost:number;accepted:number;complete_all:boolean}}|null};
   nodes:{id:string;type:string;x:number;y:number;name?:string;lon?:number;lat?:number;zone?:string;display_name?:string;approximate?:boolean;location_note?:string;snap_distance_m?:number}[];
-  edges:{source:string;target:string;distance:number;travel_time:number;cost:number;status:string;geometry?:[number,number][];name?:string;osm_way?:string}[];
+  edges:{source:string;target:string;distance:number;travel_time:number;cost:number;status:string;geometry?:[number,number][];name?:string;osm_way?:string;highway?:string;fuel_liters?:number}[];
   map?:{source:string;title:string;download_date:string;license:string;bounds:number[];candidate_count:number;campus_profile?:boolean;campus_candidate_count?:number;initial_campus_orders?:number;initial_orders?:number;outline?:[number,number][];location_note?:string;features:{kind:string;name:string;geometry:[number,number][]}[];background_roads:{name:string;kind:string;geometry:[number,number][]}[]};
   vehicles:{id:string;courier_id:string;role:string;base:string;capacity:string;position:string;current:Action|null;cargo:string[];load:string}[];
   orders:{id:string;destination:string;demand:string;earliest:number;deadline:number;priority:string;status:string;hub:string;location:[string,string]}[];
