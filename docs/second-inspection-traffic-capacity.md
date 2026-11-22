@@ -13,7 +13,7 @@
 | 逐车载重 | `dispatch/models.py` 中 `VehicleSpec.capacity` 与 `Parcel.demand` 均为 Decimal。`dispatch/algorithms/planning.py` 和 `dispatch/algorithms/__init__.py` 在装货及候选路线检查单车容量；`dispatch/validation.py` 与 `dispatch/audit.py` 分别独立验证计划和实际历史。车队总容量不能代替单车容量。 |
 | 参数试算 | `config/operations_studio.json` 设置干线150kg、末端50kg及模拟油耗/工时/维护费。Dashboard 的运营参数可逐车改容量；`dispatch/studio.py` 在独立会话重算道路成本和完整计划，原会话不被试算修改。 |
 
-题目中的“耗时增加20%以上”已经涵盖：`light` 恰为20%，`moderate` 为50%，`congested` 为100%；Dashboard 的自动重规划对交通变更在检查点触发。另一个未启用自动重规划的运营入口仍有20%阈值判断。封路在两个目标下均排除，拥堵只改变时间及相应模拟成本，方向和距离不变。
+题目中的“耗时增加20%以上”已经涵盖：`light` 恰为20%，`moderate` 为50%，`congested` 为100%。Dashboard 将新增、取消订单及每次**实际道路状态变化**统一接入自动检查点重规划；轻度拥堵、严重拥堵、封路和恢复畅通都适用。道路选择器拒绝将道路重复设为当前状态。直接调用旧 API 且未启用 `auto_replan` 的运营会话仍保留历史20%阈值行为，应与当前 Dashboard 演示口径区分。封路在两个目标下均排除，拥堵只改变时间及相应模拟成本，方向和距离不变。已进入的动作完成后才应用新计划；重规划可能得到相同的道路几何，也可能因容量或时间窗只产生安全的部分计划。
 
 ## 可复现实例
 

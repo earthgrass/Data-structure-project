@@ -27,12 +27,12 @@ for(const status of ['idle','applied','blocked','unknown']){
 equal(JSON.stringify(waiting),before);
 
 const fields=Object.freeze({id:'URGENT',demand:'0.10000000000000000000001',auto_replan:false});
-for(const kind of ['add','automatic','cancel','expire','priority']){
+for(const kind of ['add','automatic','cancel','expire','priority','traffic']){
  equal(orderMutationFields(kind,fields),{...fields,auto_replan:true});
 }
 equal(fields.auto_replan,false);
 equal(orderMutationFields('add'),{auto_replan:true});
-for(const kind of ['step','depart','pause','plan','compare','traffic','unknown']){
+for(const kind of ['step','depart','pause','plan','compare','unknown']){
  equal(orderMutationFields(kind,fields),fields);
 }
 equal(orderMutationFields('step'),{});

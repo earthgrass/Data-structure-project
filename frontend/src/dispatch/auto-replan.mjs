@@ -8,8 +8,8 @@ export function checkpointCommand(snapshot,{busy,connection}){
   control?.enabled===true&&control.status==='waiting_checkpoint'?'step':null;
 }
 
-/** Dashboard order mutations opt in atomically with the mutation. Time/Space O(F). */
+/** Dashboard planning-input mutations opt in atomically. Time/Space O(F). */
 export function orderMutationFields(kind,fields={}){
- return kind==='add'||kind==='automatic'||kind==='cancel'||kind==='expire'||kind==='priority'
+ return kind==='add'||kind==='automatic'||kind==='cancel'||kind==='expire'||kind==='priority'||kind==='traffic'
   ?{...fields,auto_replan:true}:fields;
 }

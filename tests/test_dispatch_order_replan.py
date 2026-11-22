@@ -131,6 +131,22 @@ class TestDispatchOrderReplan(unittest.TestCase):
         self.assertEqual(self.snapshot['plan']['traffic_version'],self.snapshot['traffic_version'])
         self.assertTrue(self.snapshot['audit']['valid']);self.assertTrue(self.snapshot['ready'])
 
+    def test_traffic_change_from_legacy_session_replans_even_when_road_clears(self) -> None:
+        self.ok('plan');before=self.snapshot
+        edge=before['edges'][0];plans=len([e for e in before['events'] if e['kind']=='plan'])
+        positions=[(v['id'],v['position'],v['load'],v['cargo']) for v in before['vehicles']]
+        for index,status in enumerate(('light','clear'),start=1):
+            self.ok('traffic',source=edge['source'],target=edge['target'],status=status,auto_replan=True)
+            self.assertTrue(self.snapshot['order_control']['enabled'])
+            self.assertEqual(self.snapshot['order_control']['status'],'applied')
+            self.assertEqual(self.snapshot['order_control']['change_kind'],'traffic')
+            self.assertEqual(self.snapshot['traffic_version'],index)
+            self.assertEqual(self.snapshot['plan']['traffic_version'],index)
+            self.assertEqual(len([e for e in self.snapshot['events'] if e['kind']=='plan']),plans+index)
+            self.assertEqual(self.snapshot['order_control']['order_version'],0)
+            self.assertTrue(self.snapshot['plan']['report']['valid'])
+            self.assertEqual(positions,[(v['id'],v['position'],v['load'],v['cargo']) for v in self.snapshot['vehicles']])
+
     def test_unsafe_continuation_keeps_new_order_old_plan_and_actual_cargo(self) -> None:
         self.moving();self.ok('pause')
         while self.snapshot['running']:self.ok('step')
