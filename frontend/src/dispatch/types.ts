@@ -15,7 +15,7 @@ export type Command=(command:string,fields?:Record<string,unknown>)=>Promise<boo
 export type Vehicle=Snapshot['vehicles'][number];
 export type Road=Snapshot['edges'][number];
 export type Snapshot = {
-  critical_admission?:{order_id:string;checked_at:number;input_revision:number;displaced_order_ids:string[];expected_signoff:number};
+  critical_admission?:{order_id:string;checked_at:number;input_revision:number;displaced_order_ids:string[];expected_signoff:number;assigned_vehicle?:string;lateness_minutes?:number};
   id:string;revision:number;traffic_version:number;now:number;running:boolean;ready:boolean;needs_replan:boolean;
   order_control?:{enabled:boolean;order_version:number;planned_order_version:number|null;status:'idle'|'waiting_checkpoint'|'applied'|'blocked';reason:string|null;change_kind:string|null};
   time_windows?:WindowEvidence;
@@ -26,7 +26,7 @@ export type Snapshot = {
   edges:{source:string;target:string;distance:number;travel_time:number;cost:number;status:string;geometry?:[number,number][];name?:string;osm_way?:string;highway?:string;fuel_liters?:number}[];
   map?:{source:string;title:string;download_date:string;license:string;bounds:number[];candidate_count:number;campus_profile?:boolean;campus_candidate_count?:number;initial_campus_orders?:number;initial_orders?:number;outline?:[number,number][];location_note?:string;features:{kind:string;name:string;geometry:[number,number][]}[];background_roads:{name:string;kind:string;geometry:[number,number][]}[]};
   vehicles:{id:string;courier_id:string;role:string;base:string;capacity:string;position:string;current:Action|null;cargo:string[];load:string}[];
-  orders:{id:string;destination:string;demand:string;earliest:number;deadline:number;priority:string;status:string;hub:string;location:[string,string]}[];
+  orders:{id:string;destination:string;demand:string;earliest:number;deadline:number;priority:string;status:string;hub:string;allow_late?:boolean;location:[string,string]}[];
   plan:Plan|null;audit:Report;comparison?:Plan[];
   events:{kind:string;time:number;action?:Action;id?:string;status?:string;priority?:string}[];
   settings:{automatic_window_width:number};

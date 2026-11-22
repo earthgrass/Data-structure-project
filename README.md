@@ -86,6 +86,8 @@ npm --prefix frontend run dev -- --host 127.0.0.1
 
 重规划后可在“路线变化”查看影响摘要，在未接纳订单上展开“为什么未接纳”，并在“时间窗”搜索逐单时刻和筛选低余量任务。提示阈值只影响展示，不放宽签收约束；详情见[解释工作台说明](docs/planning-insights.md)。
 
+手动特急可选择允许迟到，地图可直接取消未装车订单并查看最近路况变更；规则与限制见[特急迟到接纳与地图操作](docs/late-critical-map-controls.md)。
+
 ## 测试与实验
 
 ```powershell

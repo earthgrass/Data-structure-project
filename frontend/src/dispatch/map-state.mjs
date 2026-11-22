@@ -29,3 +29,14 @@ export function mapPlanIsStale(snapshot){
 export function congestedMapRoads(edges){
  return edges.filter(road=>road.status!=='clear'&&['light','moderate','congested','blocked'].includes(road.status));
 }
+
+/** The latest actual road mutation, including a return to clear. O(events + edges). */
+export function latestTrafficRoad(snapshot){
+ for(let i=snapshot.events.length-1;i>=0;i--){
+  const event=snapshot.events[i];
+  if(event.kind!=='traffic')continue;
+  const road=snapshot.edges.find(edge=>edge.source===event.source&&edge.target===event.target);
+  return road?{road,event}:null;
+ }
+ return null;
+}

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {liveDriveActions,mapPlanIsStale,congestedMapRoads} from '../src/dispatch/map-state.mjs';
+import {liveDriveActions,mapPlanIsStale,congestedMapRoads,latestTrafficRoad} from '../src/dispatch/map-state.mjs';
 
 const drive=(source,target)=>({vehicle:'V',kind:'drive',source,target,start:0,end:1,ids:[],batch:0,traffic_version:0});
 const old=drive('A','B'),next=drive('A','C');
@@ -15,4 +15,6 @@ assert.equal(mapPlanIsStale({...scene,order_control:{status:'waiting_checkpoint'
 assert.equal(mapPlanIsStale({...scene,order_control:{status:'applied',order_version:2,planned_order_version:1}}),true);
 assert.equal(mapPlanIsStale({...scene,order_control:{status:'applied',order_version:2,planned_order_version:2}}),false);
 assert.deepEqual(congestedMapRoads(['clear','light','moderate','congested','blocked'].map(status=>({status}))).map(road=>road.status),['light','moderate','congested','blocked']);
-console.log('11 live-map plan, checkpoint and directional congestion assertions passed');
+assert.equal(latestTrafficRoad({...scene,edges:[]}),null);
+assert.deepEqual(latestTrafficRoad({...scene,events:[{kind:'traffic',source:'A',target:'B'},{kind:'action'},{kind:'traffic',source:'B',target:'A'}],edges:[{source:'A',target:'B',status:'congested'},{source:'B',target:'A',status:'clear'}]}).road,{source:'B',target:'A',status:'clear'});
+console.log('13 live-map plan, checkpoint and directional congestion assertions passed');
