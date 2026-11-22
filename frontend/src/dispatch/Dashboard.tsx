@@ -35,7 +35,7 @@ export function DispatchDashboard(){
   useEffect(()=>{const id=session.routeChanges?.addedOrderIds[0];const order=data?.orders.find(o=>o.id===id);if(order)focusOrder(order.destination);},[data?.id,session.routeChanges?.baselineRevision]);
   const [routeView,setRouteView]=useState<'before'|'after'|'changes'>('changes');
   useEffect(()=>setRouteView(session.routeChanges&&!session.routeChanges.hasBaseline?'after':'changes'),[data?.id,session.routeChanges?.baselineRevision,session.routeChanges?.appliedRevision]);
-  const [windowMode,setWindowMode]=useState<WindowMode>('strict'),[showRelaxed,setShowRelaxed]=useState(false);
+  const [windowMode,setWindowMode]=useState<WindowMode>('pressure'),[showRelaxed,setShowRelaxed]=useState(false);
   useEffect(()=>setShowRelaxed(false),[data?.id]);
   useEffect(()=>{
     const read=()=>{const value=window.location.hash.slice(1);if(workspaces.some(w=>w.id===value)){setWorkspace(value as Workspace);if(value!=='overview')lastWorkspace.current=value as Workspace;}};
@@ -69,7 +69,7 @@ export function DispatchDashboard(){
     {session.error&&<div className="d-error-banner" role="alert"><b>操作未完成</b><span>{session.error}</span><button onClick={session.reconnect}>重试连接</button></div>}
     {session.connection==='missing'&&<p className="d-inline-warn">显示的是上次会话快照，当前会话已不存在；请使用“新建场景”恢复。</p>}
     {data?.studio&&data.studio.variant!=='heavy_slow_roads'&&<p className="d-inline-warn">当前会话使用旧重量和路速。新建场景后可体验 20/30 kg 大件订单和校内慢速路；原会话记录仍保留。</p>}
-    {!data?<div className="d-card d-welcome"><Empty title="创建你的第一个配送场景">在一张地图上掌握干线补货、站点配送和逐单签收。系统将先验证两个目标的完整可行方案。</Empty><button className="d-primary" disabled={createDisabled} onClick={create}>{session.busy?'正在创建…':'创建配送场景'}</button><p className="d-muted">{session.connection==='connected'?'也可以在顶部指定 Seed，复现相同场景。':'请先连接后端，再创建场景。'}</p></div>:<>
+    {!data?<div className="d-card d-welcome"><Empty title="创建你的第一个配送场景">在一张地图上掌握干线补货、站点配送和逐单签收。创建后可规划并查看逐单按时或超时结果。</Empty><button className="d-primary" disabled={createDisabled} onClick={create}>{session.busy?'正在创建…':'创建配送场景'}</button><p className="d-muted">{session.connection==='connected'?'也可以在顶部指定 Seed，复现相同场景。':'请先连接后端，再创建场景。'}</p></div>:<>
       {workspace==='overview'&&<><KPIStrip data={data}/>{playback}<DispatchToolbar data={data} objective={objective} setObjective={setObjective} busy={session.busy} connection={session.connection} command={session.command} onCreate={create} onResults={()=>navigate('audit')} playing={session.playing} setPlaying={session.setPlaying}/><div className="d-overview-grid">{map}{inspector}</div><FleetList data={data} selected={car?.id??''} onSelect={setSelected} compact/><PlanCoverage data={data}/></>}
       {workspace==='fleet'&&<><FleetStage data={data} clock={session.motionClock??data.now} selected={car?.id??''} onSelect={setSelected}/>{playback}<DispatchToolbar data={data} objective={objective} setObjective={setObjective} busy={session.busy} connection={session.connection} command={session.command} onCreate={create} onResults={()=>navigate('audit')} playing={session.playing} setPlaying={session.setPlaying}/><FleetList data={data} selected={car?.id??''} onSelect={setSelected}/><div className="d-fleet-workspace">{map}{inspector}</div></>}
       {workspace==='orders'&&<><OrderDispatchBoard data={data}/><OrderTable seed={seed} data={data} busy={disabled} command={session.command} confirm={setConfirmation} error={session.error}/></>}

@@ -9,7 +9,7 @@ export type Comparison={sessionId:string;revision:number;trafficVersion:number;f
 export type RejectedPlanEvidence={session_id:string;input_revision:number;traffic_version:number;report:Plan};
 export type Workspace='overview'|'fleet'|'orders'|'inventory'|'traffic'|'audit';
 export type Connection='connecting'|'connected'|'failed'|'missing';
-export type WindowMode='strict'|'relaxed';
+export type WindowMode='strict'|'relaxed'|'pressure';
 export type WindowEvidence={mode:WindowMode;initial_only:boolean;initial_time:number;initial_traffic_version:number;comparison_objective?:string;changed_vehicles:string[];baseline_late_orders:{order_id:string;baseline_end:number;deadline:number}[];window_min_minutes:number;window_max_minutes:number;minimum_completion_slack_minutes?:number;probe_order_id?:string;probe_old_end?:number;probe_deadline?:number;relaxed_routes?:{vehicle:string;edges:{source:string;target:string}[];service_order:string[]}[];orders?:{id:string;destination:string;demand:string;priority:string;earliest:number;deadline:number;baseline_end:number;strict_end:number}[]};
 export type Command=(command:string,fields?:Record<string,unknown>)=>Promise<boolean>;
 export type Vehicle=Snapshot['vehicles'][number];
@@ -21,7 +21,7 @@ export type Snapshot = {
   time_windows?:WindowEvidence;
   planning_insights?:PlanningInsights;
   rejected_proposal?:RejectedPlanEvidence;
-  studio?:{variant?:string;presets:{delivery_capacity_kg:string;fuel_price_stress:string};late_orders:{id:string;deadline:number;penalty:number}[];auto_replan:string|null;parameters:StudioParameters;model_note:string;official_map_url:string;available_hubs:{id:string;name:string}[];planned:CostMetrics|null;executed:CostMetrics;trial?:{original_session:string;objective:string;before:{distance:number;cost:number;accepted:number;complete_all:boolean}}|null};
+  studio?:{variant?:string;presets:{delivery_capacity_kg:string;fuel_price_stress:string};late_orders:{id:string;deadline:number;penalty:number;status?:string;delay_minutes?:number;signed_at?:number|null}[];planned_late_orders?:{id:string;deadline:number;signoff:number;delay_minutes:number;priority:string;penalty:number}[];late_penalty_total?:number;planned_late_penalty_total?:number;auto_replan:string|null;parameters:StudioParameters;model_note:string;official_map_url:string;available_hubs:{id:string;name:string}[];planned:CostMetrics|null;executed:CostMetrics;trial?:{original_session:string;objective:string;before:{distance:number;cost:number;accepted:number;complete_all:boolean}}|null};
   nodes:{id:string;type:string;x:number;y:number;name?:string;lon?:number;lat?:number;zone?:string;display_name?:string;approximate?:boolean;location_note?:string;snap_distance_m?:number;routing_only?:boolean}[];
   edges:{source:string;target:string;distance:number;travel_time:number;cost:number;status:string;geometry?:[number,number][];name?:string;osm_way?:string;highway?:string;fuel_liters?:number}[];
   map?:{source:string;title:string;download_date:string;license:string;bounds:number[];candidate_count:number;campus_profile?:boolean;campus_candidate_count?:number;initial_campus_orders?:number;initial_orders?:number;outline?:[number,number][];location_note?:string;features:{kind:string;name:string;geometry:[number,number][]}[];background_roads:{name:string;kind:string;geometry:[number,number][]}[]};

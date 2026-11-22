@@ -24,13 +24,13 @@ export function dispatchQueue(snapshot){
   const time=timeline.get(order.id);
   const actual=time?.actual??null,expected=stale?null:time?.expected??null;
   const terminal=['cancelled','expired'].includes(order.status);
-  const delivery=actual?'signed':terminal?'terminal':expected?'scheduled':deferred.has(order.id)?'deferred':'unknown';
+  const delivery=actual?(actual.signoff>order.deadline?'late_signed':'signed'):terminal?'terminal':expected?(expected.signoff>order.deadline?'late_expected':'scheduled'):deferred.has(order.id)?'deferred':'unknown';
   return {order,expected,actual,delivery,reason:deferred.get(order.id)??time?.deferred_reason??null};
  });
  // Hand insertion sort: priority, completion deadline, original ID. Terminal history last.
  for(let i=1;i<rows.length;i++){
   const item=rows[i];let j=i-1;
-  const key=row=>[row.delivery==='signed'||row.delivery==='terminal'?1:0,rank[row.order.priority]??3,row.order.deadline,row.order.id];
+  const key=row=>[row.delivery==='signed'||row.delivery==='late_signed'||row.delivery==='terminal'?1:0,rank[row.order.priority]??3,row.order.deadline,row.order.id];
   const less=(a,b)=>{const x=key(a),y=key(b);for(let k=0;k<x.length;k++){if(x[k]<y[k])return true;if(x[k]>y[k])return false;}return false;};
   while(j>=0&&less(item,rows[j])){rows[j+1]=rows[j];j--;}
   rows[j+1]=item;

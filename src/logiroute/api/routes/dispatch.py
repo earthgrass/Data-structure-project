@@ -73,7 +73,7 @@ async def create(request: Request) -> Any:
         seed=data.get('seed',config['default_seed'])
         if profile in ('bjut-studio','bjut-studio-operational'):
             from logiroute.dispatch.studio import studio_state,defaults
-            state=studio_state(seed,defaults(),data.get('window_mode','strict'),operational=profile=='bjut-studio-operational');attempts=[]
+            state=studio_state(seed,defaults(),data.get('window_mode','pressure' if profile=='bjut-studio-operational' else 'strict'),operational=profile=='bjut-studio-operational');attempts=[]
         else: state,attempts=generate_state(seed,config,window_mode=data.get('window_mode'))
         service=request.app.state.dispatch_service
         with service.lock:

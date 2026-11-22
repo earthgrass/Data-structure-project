@@ -8,6 +8,7 @@ from logiroute.dispatch.explanations import explain_order
 from logiroute.dispatch.algorithms import Paths,build_route,RouteUnavailableError
 from logiroute.dispatch.scenario import State
 from logiroute.dispatch.validation import validate_plan
+from logiroute.dispatch.deadlines import hard_deadline,fleet_lateness_score
 
 
 def _jobs(state: State,ids: list[str],assign: dict[str,str],kind: str) -> list[Job]:
@@ -20,9 +21,10 @@ def _jobs(state: State,ids: list[str],assign: dict[str,str],kind: str) -> list[J
     for key in ordered_strings(groups):
         items=groups[key]; orders=[state.orders[k] for k in items]
         priority=min(orders,key=lambda o:RANK[o.priority]).priority
+        deadlines=[o.deadline for o in orders if hard_deadline(state.config,o.priority)] if kind=='unload' else []
         result.append(Job(kind+':'+key,assign[items[0]] if kind=='unload' else orders[0].destination,
                           kind,tuple(items),exact_sum(o.demand for o in orders),priority,
-                          0.0 if kind=='unload' else orders[0].earliest,min(o.deadline for o in orders),
+                          0.0 if kind=='unload' else orders[0].earliest,min(deadlines) if deadlines else min(o.deadline for o in orders),
                           t['unloading' if kind=='unload' else 'service']))
     return result
 
@@ -47,7 +49,8 @@ def _schedule(state: State,assign: dict[str,str],objective: str,paths: Paths,
             end=begin+t['loading']; actions.append(Action(car_id,'load',begin,end,start,start,tuple(ids),batch=batch)); begin=end
         kind='unload' if car.role=='trunk' else 'deliver'
         failures={} if details is not None else None
-        try:route,failed=build_route(paths,car,_jobs(state,ids,assign,kind),begin,start_node=start,objective=objective,batch=batch,failure_details=failures)
+        try:route,failed=build_route(paths,car,_jobs(state,ids,assign,kind),begin,start_node=start,objective=objective,batch=batch,failure_details=failures,
+                                     soft_lower='late_delivery' in state.config)
         except RouteUnavailableError as exc:
             if details is not None:details.append(exc.detail or FailureEvidence('return_unreachable','return',vehicle=car_id,source=start,target=car.base))
             return 'return_unreachable'
@@ -96,7 +99,9 @@ def _schedule(state: State,assign: dict[str,str],objective: str,paths: Paths,
 def plan_dispatch(state: State,objective: str = 'distance') -> Plan:
     """Greedy admission, exact full downstream replay for every trial.
 
-    Hand insertion orders admissions by priority/deadline/ID; hubs by travel-time/ID.
+    Hand insertion orders admissions by priority/deadline/ID. Historical hubs use
+    travel-time/ID; pressure mode compares feasible whole-fleet lateness before
+    distance or cost and hub ID.
     Each trial uses hand feasible insertion and shared original Dijkstra closure.
     Time O(N*H*N⁴*D + closure); Space O(ND+U²V+HN²), including failure IDs.
     Each rejected hub keeps one representative candidate, not every attempted
@@ -137,14 +142,22 @@ def plan_dispatch(state: State,objective: str = 'distance') -> Plan:
                 item=hubs[i]; j=i-1
                 while j>=0 and item<hubs[j]: hubs[j+1]=hubs[j]; j-=1
                 hubs[j+1]=item
-            reason='unreachable'
+            reason='unreachable';best_choice=None
             for _,hub in hubs:
                 details=[];trial={**assign,key:hub}; proposed,reason=_schedule(state,trial,objective,paths,details)
-                if proposed is not None: assign=trial; routes=proposed; break
+                if proposed is not None:
+                    if 'late_delivery' not in state.config:
+                        assign=trial;routes=proposed;break
+                    main=sum(r.total_distance if objective=='distance' else r.total_cost for r in proposed)
+                    choice=(*fleet_lateness_score(proposed,state.orders),main,hub)
+                    if best_choice is None or choice<best_choice[0]:best_choice=(choice,trial,proposed)
+                    continue
                 attempts.extend(replace(item,hub=hub) for item in details)
             else:
-                deferred[key]=reason or 'heuristic_incomplete'
-                explanations[key]=explain_order(key,deferred[key],tuple(attempts))
+                if best_choice is not None:assign=best_choice[1];routes=best_choice[2]
+                else:
+                    deferred[key]=reason or 'heuristic_incomplete'
+                    explanations[key]=explain_order(key,deferred[key],tuple(attempts))
     plan=Plan(objective,state.revision,state.traffic_version,tuple((k,assign[k]) for k in ordered_strings(assign)),routes,
               tuple(ordered_strings(assign)),tuple((k,deferred[k]) for k in ordered_strings(deferred)),fingerprint=state.fingerprint(),
               explanations=tuple(explanations[k] for k in ordered_strings(explanations)))

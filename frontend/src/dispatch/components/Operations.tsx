@@ -9,7 +9,7 @@ export function KPIStrip({data}:{data:Snapshot}){
   const transit=data.orders.filter(o=>o.status==='in_transit').length;
   const moving=data.vehicles.filter(v=>v.current!==null).length;
   const entries=[{icon:'orders',title:'客户签收',value:`${delivered}`,unit:`/ ${active} 单`,caption:'实际签收，区别于计划接纳'},
-    {icon:'inventory',title:'待处理订单',value:String(pending),unit:'单',caption:`运输中 ${transit} 单 · 已规划 ${data.orders.filter(o=>o.status==='planned').length} 单`},
+    {icon:'inventory',title:'待处理订单',value:String(pending),unit:'单',caption:`运输中 ${transit} 单 · 预计超时 ${data.studio?.planned_late_orders?.length??0} 单`},
     {icon:'fleet',title:'执行中车辆',value:String(moving),unit:`/ ${data.vehicles.length} 辆`,caption:'含行驶、装卸、服务及等待'},
     {icon:'clock',title:'模拟时刻',value:fmt(data.now),unit:'分钟',caption:data.needs_replan?'需要重规划':data.running?'按原子动作执行中':data.ready?'有效计划待出发':data.audit.complete_all?'客户已全部签收':'当前已停靠'}];
   return <section className="d-kpis" aria-label="调度核心指标">{entries.map(e=><article key={e.title}><div><span>{e.title}</span><strong>{e.value}<small>{e.unit}</small></strong><p>{e.caption}</p></div><span className="d-kpi-icon"><Icon name={e.icon} size={22}/></span></article>)}</section>;

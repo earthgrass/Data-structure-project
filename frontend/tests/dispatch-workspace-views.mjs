@@ -20,8 +20,13 @@ assert.equal(dispatchQueue(snapshot)[2].delivery,'deferred');
 assert.equal(dispatchQueue(snapshot)[2].reason,'capacity');
 assert.equal(dispatchQueue(snapshot)[4].delivery,'signed');
 assert.equal(dispatchQueue({...snapshot,planning_insights:{timeline:{...timeline,stale:true}}})[0].delivery,'unknown');
+const lateSnapshot={...snapshot,planning_insights:{timeline:{...timeline,orders:[
+ ...timeline.orders,{order_id:'N',expected:{vehicle:'V',signoff:13,slack:-3},actual:null},
+ {order_id:'DONE',expected:null,actual:{vehicle:'V',signoff:2,slack:-1}}]}}};
+assert.equal(dispatchQueue(lateSnapshot).find(row=>row.order.id==='N').delivery,'late_expected');
+assert.equal(dispatchQueue(lateSnapshot).find(row=>row.order.id==='DONE').delivery,'late_signed');
 assert.deepEqual(orderRoute(snapshot,'C1'),[{vehicle:'TRUNK',kind:'unload',points:['W','H']},{vehicle:'V',kind:'deliver',points:['H','P']}]);
 assert.equal(roadSummary(snapshot).counts.blocked,1);
 assert.equal(roadSummary(snapshot).affected,2);
 assert.deepEqual(roadSummary(snapshot).used.get('W\0H'),['TRUNK']);
-console.log('10 shared-snapshot road, order, timing and route view assertions passed');
+console.log('12 shared-snapshot road, order, timing, lateness and route view assertions passed');

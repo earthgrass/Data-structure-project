@@ -87,14 +87,14 @@ export function OrderTimeTimeline({data}:{data:Snapshot}){
   {timeline.stale&&<p className="i-notice" role="status">{timeline.plan_revision===null?'尚无有效预测':'当前计划已过时'}：{timeline.stale_reason??'等待重规划'}。{timeline.plan_revision===null?'应用有效计划后显示预计时刻。':'已隐藏旧预测；实际签收记录仍然有效。'}</p>}
   <div className="i-timeline-controls"><label>搜索订单 / 地点 / 车辆<input value={query} onChange={e=>setQuery(e.target.value)} placeholder="例如 O12、P27、EAST"/></label><label>余量提醒阈值（分钟）<input type="number" min="0" step="any" value={threshold} onChange={e=>{const value=Number(e.target.value);if(Number.isFinite(value)&&value>=0)setThreshold(value);}}/></label></div>
   <div className="i-timeline-filters"><label><input type="checkbox" checked={activeOnly} onChange={e=>setActiveOnly(e.target.checked)}/>只看待完成</label><label><input type="checkbox" checked={riskOnly} onChange={e=>setRiskOnly(e.target.checked)}/>只看余量 ≤ {threshold} 分（{riskCount} 单）</label></div>
-  <p className="i-caption">提醒阈值只筛选展示，不放宽容量或签收截止。未规划订单没有可计算的计划余量。</p>
+  <p className="i-caption">提醒阈值只筛选展示。压力场景中特急按时是硬约束；紧急和普通可以迟到并显示负余量。未规划订单没有可计算的计划余量。</p>
   <div className="i-timeline-legend"><span>浅色区间：服务窗口</span><span>○ 预计到达</span><span>▪ 服务开始</span><span>△ 预计签收</span><span>● 实际签收</span><span>竖虚线：当前时刻</span></div>
   <div className="i-timeline-scale"><span>{fmt(domain.start)} 分</span><span>{fmt(domain.end)} 分</span></div>
   <p className="i-caption">{rows.length} 张订单，共用同一时间刻度。</p>
   <div className="i-timeline-orders">{rows.map(row=>{
    const expected=timeline.stale?null:row.expected,actual=row.actual;
    return <article className={'i-timeline-order'+(expected&&expected.slack<=threshold?' is-tight':'')} key={row.order_id}>
-    <header><div><b>{row.order_id}</b><span>{priorities.find(([key])=>key===row.priority)?.[1]??row.priority} · {labels[row.status]??row.status}</span></div><strong>{actual?'已签收':expected?`预计余量 ${fmt(expected.slack)} 分`:row.deferred_reason?'未接纳':'暂无预测'}</strong></header>
+    <header><div><b>{row.order_id}</b><span>{priorities.find(([key])=>key===row.priority)?.[1]??row.priority} · {labels[row.status]??row.status}</span></div><strong>{actual?(actual.slack<0?`超时签收 ${fmt(-actual.slack)} 分`:'已按时签收'):expected?(expected.slack<0?`预计超时 ${fmt(-expected.slack)} 分`:`预计余量 ${fmt(expected.slack)} 分`):row.deferred_reason?'未接纳':'暂无预测'}</strong></header>
     <p className="i-order-place">{data.nodes.find(n=>n.id===row.destination)?.name??row.destination} · {actual?.vehicle??expected?.vehicle??'尚无配送车辆'}</p>
     <OrderTimeGraphic row={{...row,expected}} domain={domain} now={timeline.now}/>
     <div className="i-window-values"><span>服务开始 ≥ {fmt(row.earliest)}</span><span>签收完成 ≤ {fmt(row.deadline)}</span></div>

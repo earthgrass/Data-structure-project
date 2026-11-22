@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 import math
 from logiroute.core.quantities import exact_sum
 from logiroute.dispatch.models import Report,RANK
+from logiroute.dispatch.deadlines import hard_deadline
 if TYPE_CHECKING:
     from logiroute.dispatch.session import Session
 
@@ -59,7 +60,7 @@ def _audit_session(session: Session) -> Report:
                         loc[oid]=('hub',pos[key]); released[oid]=a.end
                     else:
                         o=orders[oid]
-                        if car.role!='delivery' or pos[key]!=o.destination or a.start<o.earliest or a.end>o.deadline or a.end!=a.start+state.config['timing']['service'] or oid in delivered: errors.append('history_signoff')
+                        if car.role!='delivery' or pos[key]!=o.destination or a.start<o.earliest or (a.end>o.deadline and hard_deadline(state.config,o.priority)) or a.end!=a.start+state.config['timing']['service'] or oid in delivered: errors.append('history_signoff')
                         loc[oid]=('delivered',oid); delivered.add(oid)
             elif a.kind=='finish' and (pos[key]!=car.base or any(l==('vehicle',key) for l in loc.values())): errors.append('history_return')
             clock[key]=a.end

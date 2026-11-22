@@ -1,5 +1,7 @@
 {
   "scenario_variant": "heavy_slow_roads",
+  "pressure_windows": {"critical": [30, 45], "urgent": [28, 48], "normal": [23, 37]},
+  "pressure_deadline_policy": {"mode": "pressure", "hard_priorities": ["critical"]},
   "heavy_order_demands_by_zone": {"campus": [20], "surrounding": [30]},
   "road_speed_kmh": {
     "residential": {"baseline": 20, "operational": 15},

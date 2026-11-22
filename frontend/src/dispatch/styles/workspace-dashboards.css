@@ -8,3 +8,4 @@
 @media(max-width:700px){.w-dashboard{padding:14px}.w-heading h2{font-size:19px}.w-heading>strong{font-size:23px}.w-kpis{gap:7px}.w-kpis article{padding:11px}.w-road-list button{grid-template-columns:12px minmax(100px,1fr) 78px}.w-road-list button>span:nth-last-child(2){display:none}.w-order-grid{display:block}.w-order-queue{max-height:380px;margin-bottom:12px}.w-order-queue button{grid-template-columns:20px minmax(65px,1fr) 42px 70px}.w-order-queue em{grid-column:2/-1}.w-order-detail dl{grid-template-columns:1fr 1fr}}
 @media(prefers-reduced-motion:reduce){.w-truck{transition:none}}
 .w-lane{width:100%;flex:0 0 94px}
+.w-delivery-state.late_expected,.w-delivery-state.late_signed{background:var(--status-warn-soft);color:var(--status-warn)}

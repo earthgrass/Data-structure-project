@@ -8,6 +8,7 @@ from logiroute.core.enums import TrafficStatus
 from logiroute.core.quantities import exact_sum
 from logiroute.graph import LogisticsGraph
 from logiroute.dispatch.models import Job,VehicleSpec,Action,Route,RANK,FailureEvidence
+from logiroute.dispatch.deadlines import lateness_score
 
 
 class RouteUnavailableError(ValueError):
@@ -40,7 +41,8 @@ class Paths:
 
 
 def _evaluate(paths: Paths,car: VehicleSpec,jobs: list[Job],ready: float,start: str,
-              objective: str,batch: int,details: list[FailureEvidence] | None = None) -> tuple[Route | None,str]:
+              objective: str,batch: int,details: list[FailureEvidence] | None = None,
+              soft_lower: bool = False) -> tuple[Route | None,str]:
     def reject(code: str,stage: str,*,ids: tuple[str,...] = (),source: str | None = None,
                target: str | None = None,service_end: float | None = None,
                deadline: float | None = None) -> tuple[None,str]:
@@ -74,7 +76,8 @@ def _evaluate(paths: Paths,car: VehicleSpec,jobs: list[Job],ready: float,start: 
             if begin>now: actions.append(Action(car.id,'wait',now,begin,current,current,batch=batch))
             end=begin+job.duration
             if not math.isfinite(end):return reject('nonfinite_time',job.kind,ids=job.ids)
-            if end>job.deadline:return reject('completion_deadline',job.kind,ids=job.ids,service_end=end,deadline=job.deadline,source=current,target=current)
+            if end>job.deadline and (not soft_lower or job.priority=='critical'):
+                return reject('completion_deadline',job.kind,ids=job.ids,service_end=end,deadline=job.deadline,source=current,target=current)
             actions.append(Action(car.id,job.kind,begin,end,current,current,job.ids,
                                   traffic_version=paths.version,batch=batch)); now=end
     actions.append(Action(car.id,'finish',now,now,current,current,batch=batch))
@@ -85,12 +88,14 @@ def _evaluate(paths: Paths,car: VehicleSpec,jobs: list[Job],ready: float,start: 
 
 def build_route(paths: Paths,car: VehicleSpec,jobs: list[Job],ready: float,*,
                 start_node: str | None = None,objective: str = 'distance',batch: int = 0,
-                failure_details: dict[str,FailureEvidence] | None = None
+                failure_details: dict[str,FailureEvidence] | None = None,soft_lower: bool = False
                 ) -> tuple[Route,dict[str,str]]:
     """All-job/all-position feasible insertion. Time O(M⁴D + cache misses), Space O(MD).
 
     Critical precedence is a feasibility rule. Urgent admission outranks normal,
-    but normal may be served earlier to preserve both completion windows.
+    but normal may be served earlier when the route improves higher-tier deadlines.
+    Pressure mode compares urgent then normal late counts and minutes before the
+    route main objective. Historical strict mode keeps every deadline hard.
     Failed critical jobs never block feasible lower-level jobs. Return is real.
     Optional evidence retains only the last rejected insertion for each failed job;
     it does not participate in candidate comparison. Extra space O(M²) for IDs.
@@ -101,7 +106,7 @@ def build_route(paths: Paths,car: VehicleSpec,jobs: list[Job],ready: float,*,
     by_id={j.id:j for j in jobs}; pending=ordered_strings(by_id)
     selected=[]; start=car.base if start_node is None else start_node
     initial=[] if failure_details is not None else None
-    old,reason=_evaluate(paths,car,[],ready,start,objective,batch,initial)
+    old,reason=_evaluate(paths,car,[],ready,start,objective,batch,initial,soft_lower)
     if old is None:raise RouteUnavailableError('vehicle cannot return to base: '+reason,initial[0] if initial else None)
     failed={}
     while pending:
@@ -112,20 +117,21 @@ def build_route(paths: Paths,car: VehicleSpec,jobs: list[Job],ready: float,*,
             for index in range(len(selected)+1):
                 trial=selected[:index]+[job]+selected[index:]
                 evidence=[] if failure_details is not None else None
-                route,error=_evaluate(paths,car,trial,ready,start,objective,batch,evidence)
+                route,error=_evaluate(paths,car,trial,ready,start,objective,batch,evidence,soft_lower)
                 if error:
                     failed[key]=error
                     if evidence:recorded[key]=evidence[0]
                     continue
                 main=route.total_distance if objective=='distance' else route.total_cost
-                candidate=(RANK[job.priority],job.deadline,main-old_main,job.id,index)
+                late=lateness_score(route,trial) if soft_lower else ()
+                candidate=(RANK[job.priority],job.deadline,*late,main-old_main,job.id,index)
                 better=best is None
                 if best is not None:
-                    for field in range(5):
+                    for field in range(len(candidate)):
                         if candidate[field]!=best[field]: better=candidate[field]<best[field]; break
                 if better: best=candidate; best_route=route; best_jobs=trial
         if best is None: break
-        old=best_route; selected=best_jobs; pending.remove(best[3])
+        old=best_route; selected=best_jobs; pending.remove(best[-2])
     if failure_details is not None:
         for key in pending:
             if key in recorded:failure_details[key]=recorded[key]

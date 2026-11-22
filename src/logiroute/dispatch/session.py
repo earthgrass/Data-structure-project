@@ -10,6 +10,7 @@ from logiroute.dispatch.scenario import State
 from logiroute.dispatch.planner import plan_dispatch
 from logiroute.dispatch.traffic import Network
 from logiroute.dispatch.validation import validate_plan
+from logiroute.dispatch.deadlines import hard_deadline
 
 
 class ConflictError(ValueError):
@@ -148,7 +149,7 @@ class Session:
                 self.state.locations[oid]=('hub',a.target)
         elif a.kind=='deliver':
             for oid in a.ids:
-                if self.state.locations[oid]!=('vehicle',key) or a.end>self.state.orders[oid].deadline: raise ValueError('signoff conflict')
+                if self.state.locations[oid]!=('vehicle',key) or (a.end>self.state.orders[oid].deadline and hard_deadline(self.state.config,self.state.orders[oid].priority)): raise ValueError('signoff conflict')
                 self.state.locations[oid]=('delivered',oid); self.state.orders[oid]=replace(self.state.orders[oid],status='delivered'); self.state.protected.discard(oid)
         self.events.append({'kind':'action','time':a.end,'action':a})
         self.current[key]=None; self._enter(key); self.state.revision+=1

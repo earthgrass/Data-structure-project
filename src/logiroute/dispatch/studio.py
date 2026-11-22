@@ -1,4 +1,4 @@
-"""Explicit parameter experiments; unchanged production planner and immutable old sessions."""
+"""Operational parameters and pressure windows; immutable prior sessions."""
 from __future__ import annotations
 from copy import deepcopy
 from dataclasses import replace
@@ -11,6 +11,8 @@ from logiroute.dispatch.scenario import State,make_state
 from logiroute.dispatch.real_map import map_config
 from logiroute.dispatch.session import Session,ConflictError
 from logiroute.dispatch.time_windows import calibrate_windows,load_window_policy
+from logiroute.algorithms.ordering import ordered_strings
+from logiroute.scenario_generator.random_source import RandomSource
 
 
 def policy() -> dict[str,Any]:
@@ -77,6 +79,25 @@ def studio_state(seed: int,parameters: dict[str,Any],window_mode: str = 'strict'
     if operational:
         c.update(json.loads((Path(__file__).resolve().parents[3]/'config/dispatch_bjut_operational.json').read_text(encoding='utf-8')))
     s=configure(make_state(seed,c),parameters)
+    if window_mode=='pressure':
+        if not operational:raise ValueError('pressure windows require operational campus profile')
+        bounds=s.config['pressure_windows'];rng=RandomSource(seed)
+        for priority in ('critical','urgent','normal'):
+            limits=bounds[priority]
+            if (not isinstance(limits,list) or len(limits)!=2 or any(isinstance(x,bool) or not isinstance(x,int) for x in limits)
+                    or limits[0]<=0 or limits[1]<limits[0]):raise ValueError('invalid pressure window bounds')
+        deadline_policy=s.config['pressure_deadline_policy']
+        if deadline_policy.get('mode')!='pressure' or deadline_policy.get('hard_priorities')!=['critical']:
+            raise ValueError('invalid pressure deadline policy')
+        s.config['late_delivery']=deepcopy(deadline_policy)
+        for key in ordered_strings(s.orders):
+            order=s.orders[key];width=rng.randint(*bounds[order.priority])
+            s.orders[key]=replace(order,earliest=s.now,deadline=s.now+width)
+        s.config['window_evidence']={'mode':'pressure','initial_only':True,'initial_time':s.now,
+                                     'initial_traffic_version':s.traffic_version,'changed_vehicles':[],
+                                     'baseline_late_orders':[],'window_min_minutes':min(o.deadline-o.earliest for o in s.orders.values()),
+                                     'window_max_minutes':max(o.deadline-o.earliest for o in s.orders.values())}
+        return s
     return calibrate_windows(s,load_window_policy(c),window_mode)
 
 
@@ -99,8 +120,29 @@ def metrics(session: Session) -> dict[str,Any]:
         return {'distance':distance,'fuel_liters':fuel,'fuel_cost':fuel*float(rates['fuel_price']),
                 'labor_cost':time/60*float(rates['driver_hourly']),'maintenance_cost':distance*float(rates['maintenance_per_km']),
                 'total_cost':sum(a.cost for a in drives),'travel_time':time}
+    signed={oid:event['action'].end for event in session.events if event['kind']=='action' and event['action'].kind=='deliver'
+            for oid in event['action'].ids}
+    forecast_current=(plan is not None and not session._pausing and
+                      session._planned_order_version==session._order_version and
+                      plan.traffic_version==session.state.traffic_version)
+    planned={oid:action.end for route in plan.routes for action in route.actions if action.kind=='deliver'
+             for oid in action.ids} if forecast_current else {}
+    late=[];predicted=[]
+    for oid in ordered_strings(session.state.orders):
+        order=session.state.orders[oid]
+        if oid in signed and signed[oid]>order.deadline:
+            late.append({'id':oid,'deadline':order.deadline,'signed_at':signed[oid],
+                         'delay_minutes':signed[oid]-order.deadline,'status':'delivered','penalty':late_penalty})
+        elif oid not in signed and order.status not in ('cancelled','expired') and session.state.now>order.deadline:
+            late.append({'id':oid,'deadline':order.deadline,'signed_at':None,
+                         'delay_minutes':session.state.now-order.deadline,'status':order.status,'penalty':late_penalty})
+        if oid in planned and oid not in signed and order.status not in ('cancelled','expired') and planned[oid]>order.deadline:
+            predicted.append({'id':oid,'deadline':order.deadline,'signoff':planned[oid],
+                              'delay_minutes':planned[oid]-order.deadline,'priority':order.priority,'penalty':late_penalty})
     return {**p,'presets':settings['presets'],'planned':summary([a for r in plan.routes for a in r.actions]) if plan else None,
             'executed':summary([e['action'] for e in session.events if e['kind']=='action']),
-            'late_orders':[{'id':o.id,'deadline':o.deadline,'penalty':late_penalty} for o in session.state.orders.values() if o.status not in ('delivered','cancelled','expired') and session.state.now>o.deadline],
+            'late_orders':late,'planned_late_orders':predicted,
+            'late_penalty_total':sum(row['penalty'] for row in late),
+            'planned_late_penalty_total':sum(row['penalty'] for row in predicted),
             'auto_replan':getattr(session,'_studio_auto_replan_status',None),
             'trial':session.state.config.get('studio_trial')}
