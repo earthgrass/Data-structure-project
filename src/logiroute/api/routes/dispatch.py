@@ -137,10 +137,11 @@ async def command(key: str,request: Request) -> Any:
                 'priority':{'id','priority'},'traffic':{'source','target','status'}}
             mutations={'add','automatic','cancel','expire','priority','traffic'}
             optional={'auto_replan'} if kind in mutations else set()
-            if kind=='add':optional.add('protect_critical')
+            if kind=='add':optional.update({'protect_critical','allow_late'})
             if kind not in fields or set(data)-fields[kind]-{'revision','command'}-optional: raise ValueError('unknown command/fields')
             if 'auto_replan' in data and not isinstance(data['auto_replan'],bool):raise ValueError('boolean auto_replan required')
             if 'protect_critical' in data and (not isinstance(data['protect_critical'],bool) or data['priority']!='critical'):raise ValueError('protect_critical requires a critical order and boolean value')
+            if 'allow_late' in data and (not isinstance(data['allow_late'],bool) or data['priority']!='critical' or not data.get('protect_critical',False)):raise ValueError('allow_late requires protected critical admission')
             session=deepcopy(original); comparison=None
             if data.get('auto_replan',False):session.enable_auto_replan()
             if kind=='plan':
@@ -153,7 +154,7 @@ async def command(key: str,request: Request) -> Any:
             elif kind=='pause': session.pause()
             elif kind=='add':
                 args=(data['id'],data['destination'],Decimal(data['demand']) if isinstance(data['demand'],str) else data['demand'],number(data['earliest']),number(data['deadline']))
-                if data.get('protect_critical',False):admit_critical(session,*args)
+                if data.get('protect_critical',False):admit_critical(session,*args,allow_late=data.get('allow_late',False))
                 else:session.add_order(*args,data['priority'])
             elif kind=='automatic': session.automatic(data['count'],data['seed'],data.get('priority','normal'))
             elif kind in ('cancel','expire'): session.cancel(data['id'],expired=kind=='expire')

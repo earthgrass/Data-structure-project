@@ -76,7 +76,7 @@ def _evaluate(paths: Paths,car: VehicleSpec,jobs: list[Job],ready: float,start: 
             if begin>now: actions.append(Action(car.id,'wait',now,begin,current,current,batch=batch))
             end=begin+job.duration
             if not math.isfinite(end):return reject('nonfinite_time',job.kind,ids=job.ids)
-            if end>job.deadline and (not soft_lower or job.priority=='critical'):
+            if end>job.deadline and job.hard_deadline and (not soft_lower or job.priority=='critical'):
                 return reject('completion_deadline',job.kind,ids=job.ids,service_end=end,deadline=job.deadline,source=current,target=current)
             actions.append(Action(car.id,job.kind,begin,end,current,current,job.ids,
                                   traffic_version=paths.version,batch=batch)); now=end
@@ -124,7 +124,8 @@ def build_route(paths: Paths,car: VehicleSpec,jobs: list[Job],ready: float,*,
                     continue
                 main=route.total_distance if objective=='distance' else route.total_cost
                 late=lateness_score(route,trial) if soft_lower else ()
-                candidate=(RANK[job.priority],job.deadline,*late,main-old_main,job.id,index)
+                expedited_end=next((a.end for a in route.actions if a.kind=='deliver' and a.ids==job.ids),0.0) if job.priority=='critical' and not job.hard_deadline else 0.0
+                candidate=(RANK[job.priority],job.deadline,expedited_end,*late,main-old_main,job.id,index)
                 better=best is None
                 if best is not None:
                     for field in range(len(candidate)):

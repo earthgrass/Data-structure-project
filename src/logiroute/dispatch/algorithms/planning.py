@@ -21,11 +21,12 @@ def _jobs(state: State,ids: list[str],assign: dict[str,str],kind: str) -> list[J
     for key in ordered_strings(groups):
         items=groups[key]; orders=[state.orders[k] for k in items]
         priority=min(orders,key=lambda o:RANK[o.priority]).priority
-        deadlines=[o.deadline for o in orders if hard_deadline(state.config,o.priority)] if kind=='unload' else []
+        deadlines=[o.deadline for o in orders if hard_deadline(state.config,o.priority,o.allow_late)] if kind=='unload' else []
+        hard=bool(deadlines) if kind=='unload' else hard_deadline(state.config,orders[0].priority,orders[0].allow_late)
         result.append(Job(kind+':'+key,assign[items[0]] if kind=='unload' else orders[0].destination,
                           kind,tuple(items),exact_sum(o.demand for o in orders),priority,
                           0.0 if kind=='unload' else orders[0].earliest,min(deadlines) if deadlines else min(o.deadline for o in orders),
-                          t['unloading' if kind=='unload' else 'service']))
+                          t['unloading' if kind=='unload' else 'service'],hard))
     return result
 
 
@@ -146,10 +147,15 @@ def plan_dispatch(state: State,objective: str = 'distance') -> Plan:
             for _,hub in hubs:
                 details=[];trial={**assign,key:hub}; proposed,reason=_schedule(state,trial,objective,paths,details)
                 if proposed is not None:
-                    if 'late_delivery' not in state.config:
+                    expedite=state.orders[key].priority=='critical' and state.orders[key].allow_late
+                    if 'late_delivery' not in state.config and not expedite:
                         assign=trial;routes=proposed;break
                     main=sum(r.total_distance if objective=='distance' else r.total_cost for r in proposed)
-                    choice=(*fleet_lateness_score(proposed,state.orders),main,hub)
+                    if expedite:
+                        signoff=next(a.end for r in proposed for a in r.actions
+                                     if a.kind=='deliver' and key in a.ids)
+                        choice=(signoff,*fleet_lateness_score(proposed,state.orders),main,hub)
+                    else:choice=(*fleet_lateness_score(proposed,state.orders),main,hub)
                     if best_choice is None or choice<best_choice[0]:best_choice=(choice,trial,proposed)
                     continue
                 attempts.extend(replace(item,hub=hub) for item in details)

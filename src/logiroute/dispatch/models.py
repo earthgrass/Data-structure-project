@@ -49,12 +49,14 @@ class Parcel:
     priority: str = 'normal'
     status: str = 'pending'
     hub: str = ''
+    allow_late: bool = False
 
     def __post_init__(self) -> None:
         identifier(self.id); identifier(self.destination)
         object.__setattr__(self,'demand',decimal_quantity(self.demand))
         finite_time(self.earliest,'earliest',nonnegative=True); finite_time(self.deadline,'deadline',nonnegative=True)
         if self.earliest>=self.deadline or self.priority not in RANK: raise ValueError('invalid order window/priority')
+        if not isinstance(self.allow_late,bool) or (self.allow_late and self.priority!='critical'): raise ValueError('late override requires a critical order')
         if self.status not in ('pending','planned','in_transit','delivered','cancelled','expired'):
             raise ValueError('invalid order status')
 
@@ -70,6 +72,7 @@ class Job:
     earliest: float
     deadline: float
     duration: float
+    hard_deadline: bool = True
 
     def __post_init__(self) -> None:
         identifier(self.id); identifier(self.node)
@@ -77,6 +80,7 @@ class Job:
         object.__setattr__(self,'demand',decimal_quantity(self.demand))
         for x in (self.earliest,self.deadline,self.duration): finite_time(x,'job time',nonnegative=True)
         if not isinstance(self.ids,tuple) or len(self.ids)!=len(set(self.ids)): raise ValueError('invalid manifest')
+        if not isinstance(self.hard_deadline,bool): raise ValueError('invalid deadline mode')
 
 
 @dataclass(frozen=True,slots=True)

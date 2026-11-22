@@ -79,7 +79,7 @@ def validate_plan(state: State,plan: Plan) -> Report:
                             if car.role!='trunk' or assigned.get(oid)!=positions[key] or not duration_is(t['unloading']): errors.append('hub_unload')
                             locations[oid]=('hub',positions[key]); release[oid]=a.end
                         else:
-                            if car.role!='delivery' or car.base!=assigned.get(oid) or positions[key]!=order.destination or a.start<order.earliest or (a.end>order.deadline and hard_deadline(state.config,order.priority)) or not duration_is(t['service']) or len(a.ids)!=1 or oid in seen: errors.append('customer_service')
+                            if car.role!='delivery' or car.base!=assigned.get(oid) or positions[key]!=order.destination or a.start<order.earliest or (a.end>order.deadline and hard_deadline(state.config,order.priority,order.allow_late)) or not duration_is(t['service']) or len(a.ids)!=1 or oid in seen: errors.append('customer_service')
                             locations[oid]=('delivered',oid); seen.add(oid)
                 elif a.kind=='finish':
                     if positions[key]!=car.base or duration!=0 or a.ids or any(loc==('vehicle',key) for loc in locations.values()): errors.append('return_with_cargo')

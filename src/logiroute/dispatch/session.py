@@ -149,18 +149,18 @@ class Session:
                 self.state.locations[oid]=('hub',a.target)
         elif a.kind=='deliver':
             for oid in a.ids:
-                if self.state.locations[oid]!=('vehicle',key) or (a.end>self.state.orders[oid].deadline and hard_deadline(self.state.config,self.state.orders[oid].priority)): raise ValueError('signoff conflict')
+                if self.state.locations[oid]!=('vehicle',key) or (a.end>self.state.orders[oid].deadline and hard_deadline(self.state.config,self.state.orders[oid].priority,self.state.orders[oid].allow_late)): raise ValueError('signoff conflict')
                 self.state.locations[oid]=('delivered',oid); self.state.orders[oid]=replace(self.state.orders[oid],status='delivered'); self.state.protected.discard(oid)
         self.events.append({'kind':'action','time':a.end,'action':a})
         self.current[key]=None; self._enter(key); self.state.revision+=1
 
-    def add_order(self,key: str,destination: str,demand: Decimal | int | float,earliest: float,deadline: float,priority: str) -> None:
+    def add_order(self,key: str,destination: str,demand: Decimal | int | float,earliest: float,deadline: float,priority: str,*,allow_late: bool = False) -> None:
         if key in self.state.orders: raise ValueError('order ID already used')
         if self.state.graph.get_node(destination).node_type is not NodeType.CUSTOMER: raise ValueError('customer destination required')
         if 'candidate_ids' in self.state.config and destination not in self.state.config['candidate_ids']: raise ValueError('destination must be a candidate stop')
         if any(isinstance(x,bool) or not isinstance(x,(int,float,Decimal)) for x in (earliest,deadline)): raise ValueError('numeric times required')
-        order=Parcel(key,destination,demand,float(earliest),float(deadline),priority)
-        if deadline<=self.state.now: raise ValueError('deadline is not in the future')
+        order=Parcel(key,destination,demand,float(earliest),float(deadline),priority,allow_late=allow_late)
+        if deadline<=self.state.now and not allow_late: raise ValueError('deadline is not in the future')
         self.state.orders[key]=order; location=('warehouse',self.state.config['warehouse_ids'][0]); self.state.locations[key]=location
         self.events.append({'kind':'create','time':self.state.now,'order':order,'location':location}); self.state.revision+=1
         self._order_changed('add')
@@ -191,7 +191,7 @@ class Session:
     def priority(self,key: str,value: str) -> None:
         order=self.state.orders[key]
         if self.state.locations[key][0]!='warehouse' or order.status in ('cancelled','expired','delivered') or any(a and a.kind=='load' and key in a.ids for a in self.current.values()): raise ConflictError('priority update requires unentered warehouse order')
-        changed=replace(order,priority=value); self.pause(); self.state.orders[key]=changed
+        changed=replace(order,priority=value,allow_late=order.allow_late if value=='critical' else False); self.pause(); self.state.orders[key]=changed
         self.events.append({'kind':'priority','time':self.state.now,'id':key,'priority':value})
         self._order_changed('priority')
 
