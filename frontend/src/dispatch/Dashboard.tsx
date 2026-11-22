@@ -33,8 +33,9 @@ export function DispatchDashboard(){
   useEffect(()=>setOrderFocus(null),[data?.id]);
   useEffect(()=>setMapView('global'),[data?.id]);
   useEffect(()=>{const id=session.routeChanges?.addedOrderIds[0];const order=data?.orders.find(o=>o.id===id);if(order)focusOrder(order.destination);},[data?.id,session.routeChanges?.baselineRevision]);
-  const [routeView,setRouteView]=useState<'before'|'after'|'changes'>('changes');
-  useEffect(()=>setRouteView(session.routeChanges&&!session.routeChanges.hasBaseline?'after':'changes'),[data?.id,session.routeChanges?.baselineRevision,session.routeChanges?.appliedRevision]);
+  const [routeView,setRouteView]=useState<'before'|'after'|'changes'>('after');
+  // Every applied plan opens on the live route. Historical overlays are opt-in.
+  useEffect(()=>setRouteView('after'),[data?.id,session.routeChanges?.baselineRevision,session.routeChanges?.appliedRevision]);
   const [windowMode,setWindowMode]=useState<WindowMode>('pressure'),[showRelaxed,setShowRelaxed]=useState(false);
   useEffect(()=>setShowRelaxed(false),[data?.id]);
   useEffect(()=>{
