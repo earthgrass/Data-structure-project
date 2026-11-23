@@ -94,7 +94,8 @@ class Session:
         self._last_attempt=self.plan; self._last_attempt_order_version=self._order_version; self._last_attempt_at=self.state.now
         for key in plan.accepted:
             o=self.state.orders[key]
-            self.state.orders[key]=replace(o,hub=assigned[key],status='planned' if o.status=='pending' else o.status)
+            hub = '' if self.state.config.get('single_vehicle') else assigned[key]
+            self.state.orders[key]=replace(o,hub=hub,status='planned' if o.status=='pending' else o.status)
         self.state.protected.update(plan.accepted)
         self._applied_order_statuses={key:order.status for key,order in self.state.orders.items()}
         self._programs={r.vehicle:list(r.actions) for r in plan.routes}; self._ready=True; self._pausing=False
@@ -252,6 +253,7 @@ class Session:
             from logiroute.dispatch.studio import metrics
             studio={'studio':metrics(self)}
         return {**studio,'schema_version':SCHEMA,'revision':state.revision,'traffic_version':state.traffic_version,'now':state.now,
+                **({'single_vehicle':True} if state.config.get('single_vehicle') else {}),
                 'planning_insights':planning_insights(self),
                 'order_control':{'enabled':self._order_control_enabled,'order_version':self._order_version,
                                  'planned_order_version':self._planned_order_version,'status':self._order_control_status,

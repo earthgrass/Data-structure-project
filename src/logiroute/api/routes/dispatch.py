@@ -65,15 +65,21 @@ async def create(request: Request) -> Any:
         if set(data)-{'seed','profile','window_mode','auto_replan'}: raise ValueError('unknown create fields')
         if 'auto_replan' in data and not isinstance(data['auto_replan'],bool):raise ValueError('boolean auto_replan required')
         profile=data.get('profile','random')
-        if profile not in ('random','bjut','bjut-campus','bjut-studio','bjut-studio-operational'): raise ValueError('unknown map profile')
-        if profile in ('bjut','bjut-campus','bjut-studio','bjut-studio-operational'):
+        studio_profiles=('bjut-studio','bjut-studio-operational','bjut-studio-single')
+        if profile not in ('random','bjut','bjut-campus',*studio_profiles): raise ValueError('unknown map profile')
+        if profile in ('bjut','bjut-campus',*studio_profiles):
             from logiroute.dispatch.real_map import map_config
-            config=map_config('bjut-campus' if profile in ('bjut-studio','bjut-studio-operational') else profile)
+            config=map_config('bjut-campus' if profile in studio_profiles else profile)
         else: config=load_config()
         seed=data.get('seed',config['default_seed'])
-        if profile in ('bjut-studio','bjut-studio-operational'):
+        if profile in studio_profiles:
             from logiroute.dispatch.studio import studio_state,defaults
-            state=studio_state(seed,defaults(),data.get('window_mode','pressure' if profile=='bjut-studio-operational' else 'strict'),operational=profile=='bjut-studio-operational');attempts=[]
+            single = profile == 'bjut-studio-single'
+            operational = profile != 'bjut-studio'
+            default_window = 'rush' if single else ('pressure' if operational else 'strict')
+            state = studio_state(seed, defaults(), data.get('window_mode', default_window),
+                                 operational=operational, single_vehicle=single)
+            attempts = []
         else: state,attempts=generate_state(seed,config,window_mode=data.get('window_mode'))
         service=request.app.state.dispatch_service
         with service.lock:

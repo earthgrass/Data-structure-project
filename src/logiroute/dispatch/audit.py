@@ -19,6 +19,7 @@ def audit_session(session: Session) -> Report:
 def _audit_session(session: Session) -> Report:
     """Replay completed actions only, independently of program cursors. O(A*N), Space O(N+K)."""
     state=session.state; orders=dict(session._initial_orders); loc=dict(session._initial_locations)
+    single = state.config.get('single_vehicle', False)
     pos=dict(session._initial_positions); clock={k:0.0 for k in pos}; released={k:0.0 for k in loc}; lower={k:False for k in pos}
     errors=[]; delivered=set(); cancelled=set(); cancelled_at={}
     for event in session.events:
@@ -56,11 +57,11 @@ def _audit_session(session: Session) -> Report:
                 for oid in a.ids:
                     if loc[oid]!=('vehicle',key): errors.append('history_service_inventory')
                     if a.kind=='unload':
-                        if car.role!='trunk' or pos[key] not in state.config['hub_ids'] or a.end!=a.start+state.config['timing']['unloading']: errors.append('history_unload')
+                        if single or car.role!='trunk' or pos[key] not in state.config['hub_ids'] or a.end!=a.start+state.config['timing']['unloading']: errors.append('history_unload')
                         loc[oid]=('hub',pos[key]); released[oid]=a.end
                     else:
                         o=orders[oid]
-                        direct=(car.role=='trunk' and state.config.get('direct_critical_delivery') and o.priority=='critical')
+                        direct=(car.role=='trunk' and (single or state.config.get('direct_critical_delivery') and o.priority=='critical'))
                         if not (car.role=='delivery' or direct) or pos[key]!=o.destination or a.start<o.earliest or (a.end>o.deadline and hard_deadline(state.config,o.priority,o.allow_late)) or a.end!=a.start+state.config['timing']['service'] or oid in delivered: errors.append('history_signoff')
                         loc[oid]=('delivered',oid); delivered.add(oid)
             elif a.kind=='return_cancelled':

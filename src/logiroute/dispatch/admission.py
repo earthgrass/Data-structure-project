@@ -52,7 +52,8 @@ def admit_critical(session: Session, key: str, destination: str,
     for oid in released:
         session.state.protected.discard(oid)
         session.state.orders[oid] = replace(session.state.orders[oid], status='pending', hub='')
-    session.state.orders[key] = replace(session.state.orders[key], hub=dict(proposal.assignments)[key])
+    if not session.state.config.get('single_vehicle'):
+        session.state.orders[key] = replace(session.state.orders[key], hub=dict(proposal.assignments)[key])
     session.state.protected.add(key)
     displaced = [oid for oid in released if oid not in proposal.accepted]
     delivery=next((r.vehicle,a.end) for r in proposal.routes for a in r.actions

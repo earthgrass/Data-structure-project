@@ -17,7 +17,7 @@ function actionText(data:Snapshot,car:Vehicle):string{
 export function FleetList({data,selected,onSelect,compact=false}:{data:Snapshot;selected:string;onSelect:(id:string)=>void;compact?:boolean}){
   return <div className={'d-fleet-list '+(compact?'compact':'')} aria-label="车辆选择">{data.vehicles.map(v=><button key={v.id} className={'d-vehicle '+(v.id===selected?'selected':'')} aria-pressed={v.id===selected} onClick={()=>onSelect(v.id)} style={{'--car-color':vehicleColor(data,v.id)} as React.CSSProperties}>
     <div className="d-vehicle-top"><span className="d-vehicle-icon"><Icon name="fleet" size={22}/></span><strong>{v.id}</strong><Badge tone={v.current?'info':'neutral'}>{v.current?labels[v.current.kind]:'停靠'}</Badge></div>
-    <div className="d-vehicle-role">{v.role==='trunk'?'干线补货':'末端配送'} · 基地 {v.base}</div>
+    <div className="d-vehicle-role">{data.single_vehicle?'单车直送':v.role==='trunk'?'干线补货':'末端配送'} · 基地 {v.base}</div>
     <div className="d-load-label"><span>实际装载</span><b>{v.load} <small>/ {v.capacity}</small></b></div><LoadBar car={v}/>
     <div className="d-vehicle-position"><Icon name="pin" size={16}/>{v.position}<span>{v.cargo.length} 单在车</span></div>
     <p className="d-vehicle-next">{actionText(data,v)}</p>
@@ -33,7 +33,7 @@ export function RouteTimeline({data,car}:{data:Snapshot;car:Vehicle}){
 }
 export function VehicleInspector({data,car}:{data:Snapshot;car:Vehicle}){
   const route=data.plan?.routes.find(r=>r.vehicle===car.id);
-  return <aside className="d-card d-inspector" aria-label="选中车辆详情"><div className="d-card-head"><div><span className="d-eyebrow">VEHICLE INSPECTOR</span><h2>{car.id}<small>{car.role==='trunk'?'干线车辆':'末端车辆'}</small></h2></div><span className="d-vehicle-icon" style={{color:vehicleColor(data,car.id)}}><Icon name="fleet" size={26}/></span></div>
+  return <aside className="d-card d-inspector" aria-label="选中车辆详情"><div className="d-card-head"><div><span className="d-eyebrow">VEHICLE INSPECTOR</span><h2>{car.id}<small>{data.single_vehicle?'配送车辆':car.role==='trunk'?'干线车辆':'末端车辆'}</small></h2></div><span className="d-vehicle-icon" style={{color:vehicleColor(data,car.id)}}><Icon name="fleet" size={26}/></span></div>
     <div className="d-inspector-body"><dl><div><dt>配送员 / 基地</dt><dd>{car.courier_id} / {car.base}</dd></div><div><dt>最近到达节点</dt><dd>{car.position}</dd></div><div><dt>当前模拟时刻</dt><dd>{fmt(data.now)} 分钟</dd></div></dl>
       <div className="d-load-label"><span>真实载货</span><b>{car.load} / {car.capacity}</b></div><LoadBar car={car}/>
       <p className="d-current-action"><Icon name="clock" size={17}/>{actionText(data,car)}</p>

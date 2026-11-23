@@ -42,8 +42,15 @@ def configure(state: State,parameters: dict[str,Any]) -> State:
     """
     p=policy();base=map_config('bjut-campus');expected=set(p['default'])
     if not isinstance(parameters,dict) or set(parameters)!=expected:raise ValueError('complete known parameter fields required')
-    hubs=parameters['hub_ids'];caps=parameters['capacities'];known={v['id'] for v in base['vehicles']}
-    if not isinstance(hubs,list) or any(not isinstance(h,str) for h in hubs) or len(hubs)!=len(set(hubs)) or len(hubs)<p['minimum_hubs'] or any(h not in base['hub_ids'] for h in hubs):raise ValueError('at least three distinct known hubs required')
+    hubs=parameters['hub_ids'];caps=parameters['capacities']
+    single = state.config.get('single_vehicle', False)
+    if single:
+        if hubs != []:
+            raise ValueError('single vehicle does not use transfer hubs')
+        known = {v['id'] for v in base['vehicles'] if v['role'] == 'trunk'}
+    else:
+        known = {v['id'] for v in base['vehicles']}
+        if not isinstance(hubs,list) or any(not isinstance(h,str) for h in hubs) or len(hubs)!=len(set(hubs)) or len(hubs)<p['minimum_hubs'] or any(h not in base['hub_ids'] for h in hubs):raise ValueError('at least three distinct known hubs required')
     if not isinstance(caps,dict) or set(caps)-known:raise ValueError('unknown vehicle capacities')
     numeric={k:_number(parameters[k],p['bounds'][k]) for k in ('fuel_per_100km','fuel_price','driver_hourly','maintenance_per_km')}
     capacity={k:_number(v,p['bounds']['capacity']) for k,v in caps.items()}
@@ -70,16 +77,24 @@ def configure(state: State,parameters: dict[str,Any]) -> State:
     normalized={**parameters,**{k:str(v) for k,v in numeric.items()},'capacities':{k:str(v.capacity) for k,v in trial.vehicles.items()}}
     note=p['model_note']+(' '+trial.config['road_model_note'] if 'road_model_note' in trial.config else '')
     trial.config['studio']={'variant':trial.config.get('scenario_variant','legacy'),'parameters':normalized,'model_note':note,'official_map_url':p['official_map_url'],
-                            'available_hubs':[{'id':h,'name':trial.graph.get_node(h).name} for h in base['hub_ids']]}
+                            'available_hubs':[] if single else [{'id':h,'name':trial.graph.get_node(h).name} for h in base['hub_ids']]}
     trial.graph.validate();return trial
 
 
-def studio_state(seed: int,parameters: dict[str,Any],window_mode: str = 'strict',operational: bool = False) -> State:
+def studio_state(seed: int,parameters: dict[str,Any],window_mode: str = 'strict',operational: bool = False,
+                 *,single_vehicle: bool = False) -> State:
     """Explicit opt-in profile. Time bounded window construction; space O(state+plans)."""
     c=map_config('bjut-campus')
     if operational:
         c.update(json.loads((Path(__file__).resolve().parents[3]/'config/dispatch_bjut_operational.json').read_text(encoding='utf-8')))
-    s=configure(make_state(seed,c),parameters)
+    initial = make_state(seed, c)
+    if single_vehicle:
+        initial.config['single_vehicle'] = True
+        warehouse_car = next(v for v in initial.vehicles.values() if v.role == 'trunk')
+        parameters = {**parameters, 'hub_ids': [],
+                      'capacities': {key: value for key, value in parameters['capacities'].items()
+                                     if key == warehouse_car.id}}
+    s=configure(initial,parameters)
     if operational:
         schedule=s.config['simulated_traffic']
         if (not isinstance(schedule,dict) or set(schedule)!={'interval_seconds','seed'}

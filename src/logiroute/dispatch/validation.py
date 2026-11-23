@@ -19,10 +19,14 @@ def validate_plan(state: State,plan: Plan) -> Report:
     if any(k!=o.id for k,o in state.orders.items()) or len({o.id for o in state.orders.values()})!=len(state.orders): errors.append('input_order_identity')
     if set(state.locations)!=set(state.orders): errors.append('input_inventory_partition')
     assigned=dict(plan.assignments); accepted=set(plan.accepted); deferred=dict(plan.deferred)
+    single = state.config.get('single_vehicle', False)
+    if single and (len(state.vehicles) != 1 or any(v.role != 'trunk' for v in state.vehicles.values())):
+        errors.append('single_vehicle_binding')
+    allowed_assignments = {v.base for v in state.vehicles.values()} if single else state.config['hub_ids']
     if plan.objective not in ('distance','cost'): errors.append('objective')
     if (plan.revision,plan.traffic_version,plan.fingerprint)!=(state.revision,state.traffic_version,state.fingerprint()): errors.append('stale_input')
     if len(accepted)!=len(plan.accepted) or len(deferred)!=len(plan.deferred) or accepted & deferred.keys() or accepted|deferred.keys()!=active: errors.append('order_partition')
-    if set(assigned)!=accepted or len(assigned)!=len(plan.assignments) or any(h not in state.config['hub_ids'] for h in assigned.values()): errors.append('assignments')
+    if set(assigned)!=accepted or len(assigned)!=len(plan.assignments) or any(h not in allowed_assignments for h in assigned.values()): errors.append('assignments')
     if any(not reason for reason in deferred.values()): errors.append('missing_reason')
     if len({r.vehicle for r in plan.routes})!=len(plan.routes) or {r.vehicle for r in plan.routes}!=set(state.vehicles): errors.append('vehicle_partition')
     if len({v.courier_id for v in state.vehicles.values()})!=len(state.vehicles): errors.append('courier_binding')
@@ -78,10 +82,10 @@ def validate_plan(state: State,plan: Plan) -> Report:
                         order=state.orders[oid]
                         if locations.get(oid)!=('vehicle',key): errors.append('cargo_not_onboard')
                         if a.kind=='unload':
-                            if car.role!='trunk' or assigned.get(oid)!=positions[key] or not duration_is(t['unloading']): errors.append('hub_unload')
+                            if single or car.role!='trunk' or assigned.get(oid)!=positions[key] or not duration_is(t['unloading']): errors.append('hub_unload')
                             locations[oid]=('hub',positions[key]); release[oid]=a.end
                         else:
-                            direct=(car.role=='trunk' and state.config.get('direct_critical_delivery') and order.priority=='critical')
+                            direct=(car.role=='trunk' and (single or state.config.get('direct_critical_delivery') and order.priority=='critical'))
                             terminal=(car.role=='delivery' and car.base==assigned.get(oid))
                             if not (direct or terminal) or positions[key]!=order.destination or a.start<order.earliest or (a.end>order.deadline and hard_deadline(state.config,order.priority,order.allow_late)) or not duration_is(t['service']) or len(a.ids)!=1 or oid in seen: errors.append('customer_service')
                             locations[oid]=('delivered',oid); seen.add(oid)

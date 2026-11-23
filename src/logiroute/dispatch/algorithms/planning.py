@@ -39,9 +39,12 @@ def _schedule(state: State,assign: dict[str,str],objective: str,paths: Paths,
     """
     t=state.config['timing']; programs={k:[] for k in state.vehicles}; ready={k:state.now for k in state.vehicles}
     trunk=next(v for v in state.vehicles.values() if v.role=='trunk')
-    direct={k for k in assign if state.config.get('direct_critical_delivery')
-            and state.orders[k].priority=='critical'
-            and (state.locations[k][0]=='warehouse' or state.locations[k]==('vehicle',trunk.id))}
+    single = state.config.get('single_vehicle', False)
+    direct = set(assign) if single else {
+        k for k in assign if state.config.get('direct_critical_delivery')
+        and state.orders[k].priority == 'critical'
+        and (state.locations[k][0] == 'warehouse' or state.locations[k] == ('vehicle', trunk.id))
+    }
     release={k:state.now for k in assign if state.locations[k][0]=='hub'}
     def append_trip(car_id: str,ids: list[str],start: str,begin: float,batch: int,load: bool) -> str:
         car=state.vehicles[car_id]; actions=programs[car_id]
@@ -126,8 +129,10 @@ def plan_dispatch(state: State,objective: str = 'distance') -> Plan:
     """
     if objective not in ('distance','cost'): raise ValueError('invalid objective')
     paths=Paths(state.graph,state.traffic_version); active=[k for k in ordered_strings(state.orders) if state.orders[k].status not in ('delivered','cancelled','expired')]
+    single = state.config.get('single_vehicle', False)
+    depot = next(iter(state.vehicles.values())).base if single else None
     required={k for k in active if k in state.protected or state.locations[k][0]!='warehouse'}
-    assign={k:state.orders[k].hub for k in active if k in required}; deferred={}; explanations={}
+    assign={k:depot if depot is not None else state.orders[k].hub for k in active if k in required}; deferred={}; explanations={}
     for key in required:
         if not assign[key] and state.locations[key][0]=='hub': assign[key]=state.locations[key][1]
     protected_details=[]
@@ -148,6 +153,16 @@ def plan_dispatch(state: State,objective: str = 'distance') -> Plan:
             while j>=0 and rank(key)<rank(pending[j]): pending[j+1]=pending[j]; j-=1
             pending[j+1]=key
         for key in pending:
+            if depot is not None:
+                trial = {**assign, key: depot}
+                details: list[FailureEvidence] = []
+                proposal, reason = _schedule(state, trial, objective, paths, details)
+                if proposal is None:
+                    deferred[key] = reason
+                    explanations[key] = explain_order(key, reason, tuple(details))
+                else:
+                    assign, routes = trial, proposal
+                continue
             hubs=[]; attempts=[]
             for hub in ordered_strings(state.config['hub_ids']):
                 path=paths.get(hub,state.orders[key].destination,'travel_time')

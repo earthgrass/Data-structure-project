@@ -6,6 +6,9 @@ import { App } from './App';
 import { DispatchDashboard } from './dispatch/Dashboard';
 import { ErrorBoundary } from './components/shared/ErrorBoundary';
 
+const singleVehicle = window.location.pathname === '/single';
+if (singleVehicle) document.title = 'LogiRoute Dispatch — 单车配送';
+
 // Phase 5 —— design tokens + 全局 reset + 组件布局
 // 拆分到多个 CSS 文件以避免单一巨型样式文件。
 //
@@ -16,7 +19,8 @@ import { ErrorBoundary } from './components/shared/ErrorBoundary';
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ErrorBoundary>
-      {window.location.pathname === '/legacy' ? <App /> : <DispatchDashboard />}
+      {window.location.pathname === '/legacy' ? <App /> :
+        <DispatchDashboard singleVehicle={singleVehicle} />}
     </ErrorBoundary>
   </React.StrictMode>,
 );

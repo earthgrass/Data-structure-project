@@ -15,6 +15,7 @@ export type Command=(command:string,fields?:Record<string,unknown>)=>Promise<boo
 export type Vehicle=Snapshot['vehicles'][number];
 export type Road=Snapshot['edges'][number];
 export type Snapshot = {
+  single_vehicle?:true;
   critical_admission?:{order_id:string;checked_at:number;input_revision:number;displaced_order_ids:string[];expected_signoff:number;assigned_vehicle?:string;lateness_minutes?:number};
   id:string;revision:number;traffic_version:number;now:number;running:boolean;ready:boolean;needs_replan:boolean;
   order_control?:{enabled:boolean;order_version:number;planned_order_version:number|null;status:'idle'|'waiting_checkpoint'|'applied'|'blocked';reason:string|null;change_kind:string|null};
