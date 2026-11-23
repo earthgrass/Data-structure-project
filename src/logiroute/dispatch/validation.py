@@ -34,6 +34,7 @@ def validate_plan(state: State,plan: Plan) -> Report:
     clock={k:state.now for k in positions}; lower={k:False for k in positions}; seen=set(); cursors=[0]*len(plan.routes)
     pending=sum(len(r.actions) for r in plan.routes)
     try:
+        pending_critical = {oid for oid in accepted if state.orders[oid].priority == 'critical'} if single else set()
         for r in plan.routes:
             car=state.vehicles[r.vehicle]
             expected=NodeType.WAREHOUSE if car.role=='trunk' else NodeType.TRANSFER
@@ -78,6 +79,8 @@ def validate_plan(state: State,plan: Plan) -> Report:
                     priority=min((RANK[state.orders[k].priority] for k in a.ids),default=2)
                     if priority==0 and lower[key]: errors.append('critical_precedence')
                     if priority!=0: lower[key]=True
+                    if single and a.kind == 'deliver' and priority != 0 and pending_critical:
+                        errors.append('single_critical_precedence')
                     for oid in a.ids:
                         order=state.orders[oid]
                         if locations.get(oid)!=('vehicle',key): errors.append('cargo_not_onboard')
@@ -89,6 +92,7 @@ def validate_plan(state: State,plan: Plan) -> Report:
                             terminal=(car.role=='delivery' and car.base==assigned.get(oid))
                             if not (direct or terminal) or positions[key]!=order.destination or a.start<order.earliest or (a.end>order.deadline and hard_deadline(state.config,order.priority,order.allow_late)) or not duration_is(t['service']) or len(a.ids)!=1 or oid in seen: errors.append('customer_service')
                             locations[oid]=('delivered',oid); seen.add(oid)
+                            pending_critical.discard(oid)
                 elif a.kind=='finish':
                     if positions[key]!=car.base or duration!=0 or a.ids or any(loc==('vehicle',key) for loc in locations.values()): errors.append('return_with_cargo')
                 elif a.kind=='return_cancelled':

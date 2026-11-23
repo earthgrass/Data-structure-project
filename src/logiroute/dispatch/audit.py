@@ -22,13 +22,18 @@ def _audit_session(session: Session) -> Report:
     single = state.config.get('single_vehicle', False)
     pos=dict(session._initial_positions); clock={k:0.0 for k in pos}; released={k:0.0 for k in loc}; lower={k:False for k in pos}
     errors=[]; delivered=set(); cancelled=set(); cancelled_at={}
+    pending_critical: set[str] = set()
     for event in session.events:
         kind=event['kind']
         if kind=='create':
             o=event['order']
             if o.id in orders: errors.append('reused_order_id')
             orders[o.id]=o; loc[o.id]=event['location']; released[o.id]=event['time']
-        elif kind=='cancel': cancelled.add(event['id']);cancelled_at[event['id']]=event['time']
+        elif kind=='plan' and single:
+            pending_critical = {oid for oid in event['accepted'] if orders[oid].priority == 'critical'}
+        elif kind=='cancel':
+            cancelled.add(event['id']);cancelled_at[event['id']]=event['time']
+            pending_critical.discard(event['id'])
         elif kind=='priority':
             from dataclasses import replace
             orders[event['id']]=replace(orders[event['id']],priority=event['priority'])
@@ -54,6 +59,8 @@ def _audit_session(session: Session) -> Report:
                 priority=min((RANK[orders[o].priority] for o in a.ids),default=2)
                 if priority==0 and lower[key]: errors.append('history_priority')
                 if priority!=0: lower[key]=True
+                if single and a.kind == 'deliver' and priority != 0 and pending_critical:
+                    errors.append('history_single_critical_precedence')
                 for oid in a.ids:
                     if loc[oid]!=('vehicle',key): errors.append('history_service_inventory')
                     if a.kind=='unload':
@@ -64,6 +71,7 @@ def _audit_session(session: Session) -> Report:
                         direct=(car.role=='trunk' and (single or state.config.get('direct_critical_delivery') and o.priority=='critical'))
                         if not (car.role=='delivery' or direct) or pos[key]!=o.destination or a.start<o.earliest or (a.end>o.deadline and hard_deadline(state.config,o.priority,o.allow_late)) or a.end!=a.start+state.config['timing']['service'] or oid in delivered: errors.append('history_signoff')
                         loc[oid]=('delivered',oid); delivered.add(oid)
+                        pending_critical.discard(oid)
             elif a.kind=='return_cancelled':
                 if pos[key]!=car.base or a.end!=a.start+state.config['timing']['unloading'] or not a.ids: errors.append('history_cancelled_return')
                 for oid in a.ids:

@@ -8,7 +8,7 @@ import unittest
 from fastapi.testclient import TestClient
 
 from logiroute.api import create_app
-from logiroute.dispatch.admission import admit_critical
+from logiroute.dispatch.admission import CriticalAdmissionError, admit_critical
 from logiroute.dispatch.session import Session
 from logiroute.dispatch.studio import defaults, studio_state
 from logiroute.dispatch.validation import validate_plan
@@ -58,11 +58,34 @@ class TestSingleVehicleDispatch(unittest.TestCase):
                             if action.kind == 'deliver' and 'NEW' in action.ids)
         self.assertLess(new_load, new_delivery)
         self.assertEqual(route.actions[new_load].source, session.state.vehicles[vehicle_id].base)
+        lower_deliveries = [i for i, action in enumerate(route.actions)
+                            if action.kind == 'deliver'
+                            and session.state.orders[action.ids[0]].priority != 'critical']
+        self.assertTrue(lower_deliveries)
+        self.assertLess(new_delivery, min(lower_deliveries))
+        self.assertTrue(all(action.kind == 'drive' for action in route.actions[:new_load]))
         session.depart()
         while session.running:
             session.step()
         self.assertTrue(session.audit().complete_all, session.audit().violations)
         self.assertEqual(session.state.positions[vehicle_id], session.state.vehicles[vehicle_id].base)
+
+    def test_priority_pickup_rejects_overload_without_delaying_critical_behind_old_cargo(self) -> None:
+        session = self.make_session()
+        session.apply(session.prepare('cost'))
+        session.depart()
+        session.step()
+        (vehicle,) = session.state.vehicles.values()
+        destination = next(iter(session.state.orders.values())).destination
+        plan_before = session.plan
+        fingerprint = session.state.fingerprint()
+        actions_before = dict(session.current)
+        with self.assertRaises(CriticalAdmissionError):
+            admit_critical(session, 'FULL', destination, vehicle.capacity,
+                           session.state.now, session.state.now + 14, allow_late=True)
+        self.assertEqual(session.state.fingerprint(), fingerprint)
+        self.assertEqual(session.current, actions_before)
+        self.assertIs(session.plan, plan_before)
 
     def test_validator_rejects_forged_handoff(self) -> None:
         session = self.make_session()

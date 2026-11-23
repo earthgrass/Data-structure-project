@@ -46,17 +46,18 @@ def _schedule(state: State,assign: dict[str,str],objective: str,paths: Paths,
         and (state.locations[k][0] == 'warehouse' or state.locations[k] == ('vehicle', trunk.id))
     }
     release={k:state.now for k in assign if state.locations[k][0]=='hub'}
-    def append_trip(car_id: str,ids: list[str],start: str,begin: float,batch: int,load: bool) -> str:
+    def append_trip(car_id: str,ids: list[str],start: str,begin: float,batch: int,
+                    load_ids: tuple[str, ...] = (), *, continue_at_base: bool = False) -> str:
         car=state.vehicles[car_id]; actions=programs[car_id]
         returned=[k for k in ordered_strings(state.orders)
                   if state.locations[k]==('vehicle',car_id) and state.orders[k].status in ('cancelled','expired')] if batch==0 else []
-        if load:
+        if load_ids:
             demand=exact_sum(state.orders[k].demand for k in ids)
             if demand>car.capacity:
                 if details is not None:details.append(FailureEvidence('capacity','load',vehicle=car_id,order_ids=tuple(ids),load=demand,capacity=car.capacity,source=start,target=start))
                 return 'capacity'
             if begin>ready[car_id]: actions.append(Action(car_id,'wait',ready[car_id],begin,start,start,batch=batch))
-            end=begin+t['loading']; actions.append(Action(car_id,'load',begin,end,start,start,tuple(ids),batch=batch)); begin=end
+            end=begin+t['loading']; actions.append(Action(car_id,'load',begin,end,start,start,load_ids,batch=batch)); begin=end
         kind='unload' if car.role=='trunk' else 'deliver'
         jobs=(_jobs(state,[k for k in ids if k not in direct],assign,'unload')+
               _jobs(state,[k for k in ids if k in direct],assign,'deliver')) if car.role=='trunk' else _jobs(state,ids,assign,kind)
@@ -76,32 +77,47 @@ def _schedule(state: State,assign: dict[str,str],objective: str,paths: Paths,
                     detail=replace(detail,order_ids=tuple(k for k in detail.order_ids if state.orders[k].deadline<detail.service_end))
                 details.append(detail)
             return failed[first]
+        actions.extend(route.actions[:-1])
+        finish = route.actions[-1]
         if returned:
-            actions.extend(route.actions[:-1])
-            back=route.actions[-1]
-            end=back.end+t['unloading']
-            actions.append(Action(car_id,'return_cancelled',back.start,end,car.base,car.base,tuple(returned),batch=batch))
-            actions.append(Action(car_id,'finish',end,end,car.base,car.base,batch=batch))
-            ready[car_id]=end
-        else:
-            actions.extend(route.actions);ready[car_id]=route.end_time
+            end = finish.end + t['unloading']
+            actions.append(Action(car_id,'return_cancelled',finish.start,end,car.base,car.base,tuple(returned),batch=batch))
+            finish = replace(finish, start=end, end=end)
+        if not continue_at_base:
+            actions.append(finish)
+        ready[car_id] = finish.end
         for a in route.actions:
             if a.kind=='unload':
                 for oid in a.ids: release[oid]=a.end
         return ''
-    # Existing cargo first: it cannot be re-created at the warehouse or reassigned.
-    for key in ordered_strings(state.vehicles):
-        ids=[k for k in ordered_strings(assign) if state.locations[k]==('vehicle',key)]
-        returned=any(state.locations[k]==('vehicle',key) and state.orders[k].status in ('cancelled','expired') for k in state.orders)
-        if ids or returned or state.positions[key]!=state.vehicles[key].base:
-            error=append_trip(key,ids,state.positions[key],state.now,0,False)
-            if error: return None,error
     warehouse=[k for k in ordered_strings(assign) if state.locations[k][0]=='warehouse']
     if any(state.locations[k][1]!=trunk.base for k in warehouse):
         if details is not None:details.append(FailureEvidence('unsupported_warehouse','load',vehicle=trunk.id,order_ids=tuple(k for k in warehouse if state.locations[k][1]!=trunk.base),target=trunk.base))
         return None,'unsupported_warehouse'
+    warehouse_batch = 1
+    for key in ordered_strings(state.vehicles):
+        car = state.vehicles[key]
+        onboard = [oid for oid in ordered_strings(assign) if state.locations[oid] == ('vehicle',key)]
+        returned = any(state.locations[oid] == ('vehicle',key) and state.orders[oid].status in ('cancelled','expired')
+                       for oid in state.orders)
+        if not (onboard or returned or state.positions[key] != car.base):
+            continue
+        pickups = tuple(oid for oid in warehouse if state.orders[oid].priority == 'critical') if single else ()
+        if pickups:
+            # Return immediately with live cargo in place. At the depot load only
+            # the critical pickups, then let critical deliveries lead the route.
+            error = append_trip(key, [], state.positions[key], state.now, 0, continue_at_base=True)
+            if error:
+                return None,error
+            error = append_trip(key, onboard + list(pickups), car.base, ready[key], 1, pickups)
+            warehouse = [oid for oid in warehouse if state.orders[oid].priority != 'critical']
+            warehouse_batch = 2
+        else:
+            error = append_trip(key, onboard, state.positions[key], state.now, 0)
+        if error:
+            return None,error
     if warehouse:
-        error=append_trip(trunk.id,warehouse,trunk.base,ready[trunk.id],1,True)
+        error=append_trip(trunk.id,warehouse,trunk.base,ready[trunk.id],warehouse_batch,tuple(warehouse))
         if error: return None,error
     for key in ordered_strings(state.vehicles):
         car=state.vehicles[key]
@@ -111,7 +127,7 @@ def _schedule(state: State,assign: dict[str,str],objective: str,paths: Paths,
             if any(k not in release for k in ids):
                 if details is not None:details.append(FailureEvidence('inventory_not_released','inventory',vehicle=key,order_ids=tuple(k for k in ids if k not in release),target=car.base))
                 return None,'inventory_not_released'
-            error=append_trip(key,ids,car.base,max(ready[key],max(release[k] for k in ids)),1,True)
+            error=append_trip(key,ids,car.base,max(ready[key],max(release[k] for k in ids)),1,tuple(ids))
             if error: return None,error
     return tuple(Route(key,state.positions[key],state.vehicles[key].base,tuple(programs[key])) for key in ordered_strings(state.vehicles)),''
 
