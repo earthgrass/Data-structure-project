@@ -38,6 +38,10 @@ def _schedule(state: State,assign: dict[str,str],objective: str,paths: Paths,
     for the first rejected trip. Diagnostic output never affects route selection.
     """
     t=state.config['timing']; programs={k:[] for k in state.vehicles}; ready={k:state.now for k in state.vehicles}
+    trunk=next(v for v in state.vehicles.values() if v.role=='trunk')
+    direct={k for k in assign if state.config.get('direct_critical_delivery')
+            and state.orders[k].priority=='critical'
+            and (state.locations[k][0]=='warehouse' or state.locations[k]==('vehicle',trunk.id))}
     release={k:state.now for k in assign if state.locations[k][0]=='hub'}
     def append_trip(car_id: str,ids: list[str],start: str,begin: float,batch: int,load: bool) -> str:
         car=state.vehicles[car_id]; actions=programs[car_id]
@@ -51,8 +55,10 @@ def _schedule(state: State,assign: dict[str,str],objective: str,paths: Paths,
             if begin>ready[car_id]: actions.append(Action(car_id,'wait',ready[car_id],begin,start,start,batch=batch))
             end=begin+t['loading']; actions.append(Action(car_id,'load',begin,end,start,start,tuple(ids),batch=batch)); begin=end
         kind='unload' if car.role=='trunk' else 'deliver'
+        jobs=(_jobs(state,[k for k in ids if k not in direct],assign,'unload')+
+              _jobs(state,[k for k in ids if k in direct],assign,'deliver')) if car.role=='trunk' else _jobs(state,ids,assign,kind)
         failures={} if details is not None else None
-        try:route,failed=build_route(paths,car,_jobs(state,ids,assign,kind),begin,start_node=start,objective=objective,batch=batch,failure_details=failures,
+        try:route,failed=build_route(paths,car,jobs,begin,start_node=start,objective=objective,batch=batch,failure_details=failures,
                                      soft_lower='late_delivery' in state.config)
         except RouteUnavailableError as exc:
             if details is not None:details.append(exc.detail or FailureEvidence('return_unreachable','return',vehicle=car_id,source=start,target=car.base))
@@ -87,7 +93,6 @@ def _schedule(state: State,assign: dict[str,str],objective: str,paths: Paths,
         if ids or returned or state.positions[key]!=state.vehicles[key].base:
             error=append_trip(key,ids,state.positions[key],state.now,0,False)
             if error: return None,error
-    trunk=next(v for v in state.vehicles.values() if v.role=='trunk')
     warehouse=[k for k in ordered_strings(assign) if state.locations[k][0]=='warehouse']
     if any(state.locations[k][1]!=trunk.base for k in warehouse):
         if details is not None:details.append(FailureEvidence('unsupported_warehouse','load',vehicle=trunk.id,order_ids=tuple(k for k in warehouse if state.locations[k][1]!=trunk.base),target=trunk.base))
@@ -98,7 +103,7 @@ def _schedule(state: State,assign: dict[str,str],objective: str,paths: Paths,
     for key in ordered_strings(state.vehicles):
         car=state.vehicles[key]
         if car.role!='delivery': continue
-        ids=[k for k in ordered_strings(assign) if assign[k]==car.base and state.locations[k]!=('vehicle',key)]
+        ids=[k for k in ordered_strings(assign) if k not in direct and assign[k]==car.base and state.locations[k]!=('vehicle',key)]
         if ids:
             if any(k not in release for k in ids):
                 if details is not None:details.append(FailureEvidence('inventory_not_released','inventory',vehicle=key,order_ids=tuple(k for k in ids if k not in release),target=car.base))

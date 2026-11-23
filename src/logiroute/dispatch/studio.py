@@ -98,6 +98,8 @@ def studio_state(seed: int,parameters: dict[str,Any],window_mode: str = 'strict'
                         or due[0]<=0 or due[1]<due[0]):raise ValueError('invalid pressure window bounds')
         else:
             lengths=s.config['rush_window_lengths_minutes'];starts=s.config['rush_earliest_offsets_minutes']
+            if not isinstance(s.config['rush_direct_critical_delivery'],bool):raise ValueError('invalid rush direct critical delivery setting')
+            s.config['direct_critical_delivery']=s.config['rush_direct_critical_delivery']
             if not isinstance(lengths,dict) or not isinstance(starts,dict) or set(lengths)!=set(RANK) or set(starts)!=set(RANK):raise ValueError('invalid rush priority windows')
             for priority in ('critical','urgent','normal'):
                 length=lengths[priority];start=starts[priority]

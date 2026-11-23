@@ -60,7 +60,8 @@ def _audit_session(session: Session) -> Report:
                         loc[oid]=('hub',pos[key]); released[oid]=a.end
                     else:
                         o=orders[oid]
-                        if car.role!='delivery' or pos[key]!=o.destination or a.start<o.earliest or (a.end>o.deadline and hard_deadline(state.config,o.priority,o.allow_late)) or a.end!=a.start+state.config['timing']['service'] or oid in delivered: errors.append('history_signoff')
+                        direct=(car.role=='trunk' and state.config.get('direct_critical_delivery') and o.priority=='critical')
+                        if not (car.role=='delivery' or direct) or pos[key]!=o.destination or a.start<o.earliest or (a.end>o.deadline and hard_deadline(state.config,o.priority,o.allow_late)) or a.end!=a.start+state.config['timing']['service'] or oid in delivered: errors.append('history_signoff')
                         loc[oid]=('delivered',oid); delivered.add(oid)
             elif a.kind=='return_cancelled':
                 if pos[key]!=car.base or a.end!=a.start+state.config['timing']['unloading'] or not a.ids: errors.append('history_cancelled_return')
