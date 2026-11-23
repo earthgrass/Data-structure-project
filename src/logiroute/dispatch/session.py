@@ -142,7 +142,9 @@ class Session:
             car=self.state.vehicles[key]; source=('warehouse' if car.role=='trunk' else 'hub',car.base)
             if any(self.state.locations[k]!=source for k in a.ids): raise ValueError('inventory conflict')
             for oid in a.ids:
-                self.state.locations[oid]=('vehicle',key); self.state.orders[oid]=replace(self.state.orders[oid],status='in_transit')
+                self.state.locations[oid]=('vehicle',key)
+                if self.state.orders[oid].status not in ('cancelled','expired'):
+                    self.state.orders[oid]=replace(self.state.orders[oid],status='in_transit')
         elif a.kind=='unload':
             for oid in a.ids:
                 if self.state.locations[oid]!=('vehicle',key): raise ValueError('unload inventory conflict')
@@ -151,6 +153,11 @@ class Session:
             for oid in a.ids:
                 if self.state.locations[oid]!=('vehicle',key) or (a.end>self.state.orders[oid].deadline and hard_deadline(self.state.config,self.state.orders[oid].priority,self.state.orders[oid].allow_late)): raise ValueError('signoff conflict')
                 self.state.locations[oid]=('delivered',oid); self.state.orders[oid]=replace(self.state.orders[oid],status='delivered'); self.state.protected.discard(oid)
+        elif a.kind=='return_cancelled':
+            for oid in a.ids:
+                if self.state.locations[oid]!=('vehicle',key) or self.state.orders[oid].status not in ('cancelled','expired'):
+                    raise ValueError('cancelled return inventory conflict')
+                self.state.locations[oid]=('returned',a.target)
         self.events.append({'kind':'action','time':a.end,'action':a})
         self.current[key]=None; self._enter(key); self.state.revision+=1
 
@@ -197,6 +204,22 @@ class Session:
         self.pause(); self.state.orders[key]=replace(order,status='expired' if expired else 'cancelled'); self.state.protected.discard(key)
         self.events.append({'kind':'cancel','time':self.state.now,'id':key,'status':self.state.orders[key].status})
         self._order_changed('expire' if expired else 'cancel')
+
+    def remove_order(self,key: str) -> None:
+        """Cancel an unfinished order; loaded goods return to the vehicle base.
+
+        Entered delivery is irreversible. Other entered actions complete before
+        replanning; the return action keeps physical load in the Decimal model.
+        Time O(K), Space O(1), excluding the subsequent planner.
+        """
+        order=self.state.orders[key]
+        if order.status in ('delivered','cancelled','expired'):
+            raise ConflictError('cannot remove a terminal order')
+        if any(a and a.kind=='deliver' and key in a.ids for a in self.current.values()):
+            raise ConflictError('signoff has already started; this order cannot be removed')
+        self.pause();self.state.orders[key]=replace(order,status='cancelled');self.state.protected.discard(key)
+        self.events.append({'kind':'cancel','time':self.state.now,'id':key,'status':'cancelled'})
+        self._order_changed('cancel')
 
     def priority(self,key: str,value: str) -> None:
         order=self.state.orders[key]

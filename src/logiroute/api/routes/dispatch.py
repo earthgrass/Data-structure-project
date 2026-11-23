@@ -133,9 +133,9 @@ async def command(key: str,request: Request) -> Any:
             kind=data['command']; fields={
                 'plan':{'objective'},'compare':set(),'depart':set(),'step':set(),'pause':set(),
                 'add':{'id','destination','demand','earliest','deadline','priority'},
-                'automatic':{'count','seed','priority'},'cancel':{'id'},'expire':{'id'},
+                'automatic':{'count','seed','priority'},'cancel':{'id'},'remove':{'id'},'expire':{'id'},
                 'priority':{'id','priority'},'traffic':{'source','target','status'}}
-            mutations={'add','automatic','cancel','expire','priority','traffic'}
+            mutations={'add','automatic','cancel','remove','expire','priority','traffic'}
             optional={'auto_replan'} if kind in mutations else set()
             if kind=='add':optional.update({'protect_critical','allow_late'})
             if kind not in fields or set(data)-fields[kind]-{'revision','command'}-optional: raise ValueError('unknown command/fields')
@@ -158,6 +158,7 @@ async def command(key: str,request: Request) -> Any:
                 else:session.add_order(*args,data['priority'])
             elif kind=='automatic': session.automatic(data['count'],data['seed'],data.get('priority','normal'))
             elif kind in ('cancel','expire'): session.cancel(data['id'],expired=kind=='expire')
+            elif kind=='remove': session.remove_order(data['id'])
             elif kind=='priority': session.priority(data['id'],data['priority'])
             elif kind=='traffic':
                 old_time=session.state.graph.get_edge(data['source'],data['target']).travel_time

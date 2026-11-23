@@ -47,7 +47,9 @@ def validate_plan(state: State,plan: Plan) -> Report:
             r=plan.routes[picked]; a=r.actions[cursors[picked]]; car=state.vehicles[r.vehicle]; key=car.id
             cursors[picked]+=1; pending-=1
             if a.vehicle!=key or not all(math.isfinite(float(x)) and x>=0 for x in (a.start,a.end,a.distance,a.travel_time,a.cost)) or a.end<a.start or a.start!=clock[key] or a.source!=positions[key]: errors.append('action_time_position')
-            if len(set(a.ids))!=len(a.ids) or any(k not in accepted for k in a.ids): errors.append('manifest_ids')
+            if len(set(a.ids))!=len(a.ids) or any(k not in accepted and
+                    not (a.kind=='return_cancelled' and k in state.orders and state.orders[k].status in ('cancelled','expired'))
+                    for k in a.ids): errors.append('manifest_ids')
             if a.kind=='drive':
                 edge=state.graph.get_edge(a.source,a.target)
                 if edge.traffic_status is TrafficStatus.BLOCKED or a.traffic_version!=state.traffic_version: errors.append('blocked_or_stale_edge')
@@ -83,6 +85,11 @@ def validate_plan(state: State,plan: Plan) -> Report:
                             locations[oid]=('delivered',oid); seen.add(oid)
                 elif a.kind=='finish':
                     if positions[key]!=car.base or duration!=0 or a.ids or any(loc==('vehicle',key) for loc in locations.values()): errors.append('return_with_cargo')
+                elif a.kind=='return_cancelled':
+                    if positions[key]!=car.base or not duration_is(t['unloading']) or not a.ids: errors.append('cancelled_return')
+                    for oid in a.ids:
+                        if state.orders[oid].status not in ('cancelled','expired') or locations.get(oid)!=('vehicle',key): errors.append('cancelled_return_inventory')
+                        locations[oid]=('returned',car.base)
                 elif a.kind=='wait':
                     if a.ids: errors.append('wait_manifest')
                 else: errors.append('unknown_action')

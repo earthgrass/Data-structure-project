@@ -20,20 +20,20 @@ def _audit_session(session: Session) -> Report:
     """Replay completed actions only, independently of program cursors. O(A*N), Space O(N+K)."""
     state=session.state; orders=dict(session._initial_orders); loc=dict(session._initial_locations)
     pos=dict(session._initial_positions); clock={k:0.0 for k in pos}; released={k:0.0 for k in loc}; lower={k:False for k in pos}
-    errors=[]; delivered=set(); cancelled=set()
+    errors=[]; delivered=set(); cancelled=set(); cancelled_at={}
     for event in session.events:
         kind=event['kind']
         if kind=='create':
             o=event['order']
             if o.id in orders: errors.append('reused_order_id')
             orders[o.id]=o; loc[o.id]=event['location']; released[o.id]=event['time']
-        elif kind=='cancel': cancelled.add(event['id'])
+        elif kind=='cancel': cancelled.add(event['id']);cancelled_at[event['id']]=event['time']
         elif kind=='priority':
             from dataclasses import replace
             orders[event['id']]=replace(orders[event['id']],priority=event['priority'])
         elif kind=='action':
             a=event['action']; car=state.vehicles[a.vehicle]; key=car.id
-            if a.kind not in ('drive','wait','load','unload','deliver','finish'): errors.append('history_unknown_action')
+            if a.kind not in ('drive','wait','load','unload','deliver','return_cancelled','finish'): errors.append('history_unknown_action')
             if not all(math.isfinite(float(x)) and x>=0 for x in (a.start,a.end,a.distance,a.travel_time,a.cost,event['time'])) or event['time']!=a.end: errors.append('history_nonfinite_time_metrics')
             if a.kind!='drive' and (a.source!=a.target or a.distance!=0 or a.travel_time!=0 or a.cost!=0): errors.append('history_nontravel_metrics')
             if a.kind in ('wait','finish') and a.ids: errors.append('history_idle_manifest')
@@ -46,7 +46,7 @@ def _audit_session(session: Session) -> Report:
                 source=('warehouse' if car.role=='trunk' else 'hub',car.base)
                 if pos[key]!=car.base or a.end!=a.start+state.config['timing']['loading'] or len(set(a.ids))!=len(a.ids): errors.append('history_load')
                 for oid in a.ids:
-                    if loc[oid]!=source or released[oid]>a.start or oid in cancelled: errors.append('history_inventory')
+                    if loc[oid]!=source or released[oid]>a.start or (oid in cancelled and a.start>cancelled_at[oid]): errors.append('history_inventory')
                     loc[oid]=('vehicle',key)
                 lower[key]=False
             elif a.kind in ('deliver','unload'):
@@ -62,6 +62,11 @@ def _audit_session(session: Session) -> Report:
                         o=orders[oid]
                         if car.role!='delivery' or pos[key]!=o.destination or a.start<o.earliest or (a.end>o.deadline and hard_deadline(state.config,o.priority,o.allow_late)) or a.end!=a.start+state.config['timing']['service'] or oid in delivered: errors.append('history_signoff')
                         loc[oid]=('delivered',oid); delivered.add(oid)
+            elif a.kind=='return_cancelled':
+                if pos[key]!=car.base or a.end!=a.start+state.config['timing']['unloading'] or not a.ids: errors.append('history_cancelled_return')
+                for oid in a.ids:
+                    if oid not in cancelled or loc[oid]!=('vehicle',key): errors.append('history_cancelled_return_inventory')
+                    loc[oid]=('returned',car.base)
             elif a.kind=='finish' and (pos[key]!=car.base or any(l==('vehicle',key) for l in loc.values())): errors.append('history_return')
             clock[key]=a.end
             if exact_sum(orders[o].demand for o,l in loc.items() if l==('vehicle',key))>car.capacity: errors.append('history_capacity')

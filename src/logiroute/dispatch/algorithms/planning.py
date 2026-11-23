@@ -41,6 +41,8 @@ def _schedule(state: State,assign: dict[str,str],objective: str,paths: Paths,
     release={k:state.now for k in assign if state.locations[k][0]=='hub'}
     def append_trip(car_id: str,ids: list[str],start: str,begin: float,batch: int,load: bool) -> str:
         car=state.vehicles[car_id]; actions=programs[car_id]
+        returned=[k for k in ordered_strings(state.orders)
+                  if state.locations[k]==('vehicle',car_id) and state.orders[k].status in ('cancelled','expired')] if batch==0 else []
         if load:
             demand=exact_sum(state.orders[k].demand for k in ids)
             if demand>car.capacity:
@@ -65,7 +67,15 @@ def _schedule(state: State,assign: dict[str,str],objective: str,paths: Paths,
                     detail=replace(detail,order_ids=tuple(k for k in detail.order_ids if state.orders[k].deadline<detail.service_end))
                 details.append(detail)
             return failed[first]
-        actions.extend(route.actions); ready[car_id]=route.end_time
+        if returned:
+            actions.extend(route.actions[:-1])
+            back=route.actions[-1]
+            end=back.end+t['unloading']
+            actions.append(Action(car_id,'return_cancelled',back.start,end,car.base,car.base,tuple(returned),batch=batch))
+            actions.append(Action(car_id,'finish',end,end,car.base,car.base,batch=batch))
+            ready[car_id]=end
+        else:
+            actions.extend(route.actions);ready[car_id]=route.end_time
         for a in route.actions:
             if a.kind=='unload':
                 for oid in a.ids: release[oid]=a.end
@@ -73,7 +83,8 @@ def _schedule(state: State,assign: dict[str,str],objective: str,paths: Paths,
     # Existing cargo first: it cannot be re-created at the warehouse or reassigned.
     for key in ordered_strings(state.vehicles):
         ids=[k for k in ordered_strings(assign) if state.locations[k]==('vehicle',key)]
-        if ids or state.positions[key]!=state.vehicles[key].base:
+        returned=any(state.locations[k]==('vehicle',key) and state.orders[k].status in ('cancelled','expired') for k in state.orders)
+        if ids or returned or state.positions[key]!=state.vehicles[key].base:
             error=append_trip(key,ids,state.positions[key],state.now,0,False)
             if error: return None,error
     trunk=next(v for v in state.vehicles.values() if v.role=='trunk')
