@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 from logiroute.core import Edge
 from logiroute.dispatch.scenario import State,make_state
+from logiroute.dispatch.models import RANK
 from logiroute.dispatch.real_map import map_config
 from logiroute.dispatch.session import Session,ConflictError
 from logiroute.dispatch.time_windows import calibrate_windows,load_window_policy
@@ -79,21 +80,48 @@ def studio_state(seed: int,parameters: dict[str,Any],window_mode: str = 'strict'
     if operational:
         c.update(json.loads((Path(__file__).resolve().parents[3]/'config/dispatch_bjut_operational.json').read_text(encoding='utf-8')))
     s=configure(make_state(seed,c),parameters)
-    if window_mode=='pressure':
+    if operational:
+        schedule=s.config['simulated_traffic']
+        if (not isinstance(schedule,dict) or set(schedule)!={'interval_seconds','seed'}
+                or isinstance(schedule['interval_seconds'],bool) or not isinstance(schedule['interval_seconds'],int)
+                or not 1<=schedule['interval_seconds']<=3600
+                or isinstance(schedule['seed'],bool) or not isinstance(schedule['seed'],int)):
+            raise ValueError('invalid simulated traffic schedule')
+    if window_mode in ('pressure','rush'):
         if not operational:raise ValueError('pressure windows require operational campus profile')
-        bounds=s.config['pressure_windows'];rng=RandomSource(seed)
-        for priority in ('critical','urgent','normal'):
-            limits=bounds[priority]
-            if (not isinstance(limits,list) or len(limits)!=2 or any(isinstance(x,bool) or not isinstance(x,int) for x in limits)
-                    or limits[0]<=0 or limits[1]<limits[0]):raise ValueError('invalid pressure window bounds')
+        rng=RandomSource(seed)
+        if window_mode=='pressure':
+            bounds=s.config['pressure_windows']
+            for priority in ('critical','urgent','normal'):
+                due=bounds[priority]
+                if (not isinstance(due,list) or len(due)!=2 or any(isinstance(x,bool) or not isinstance(x,int) for x in due)
+                        or due[0]<=0 or due[1]<due[0]):raise ValueError('invalid pressure window bounds')
+        else:
+            lengths=s.config['rush_window_lengths_minutes'];starts=s.config['rush_earliest_offsets_minutes']
+            if not isinstance(lengths,dict) or not isinstance(starts,dict) or set(lengths)!=set(RANK) or set(starts)!=set(RANK):raise ValueError('invalid rush priority windows')
+            for priority in ('critical','urgent','normal'):
+                length=lengths[priority];start=starts[priority]
+                if (not isinstance(length,list) or len(length)!=2 or any(isinstance(x,bool) or not isinstance(x,int) for x in length)
+                        or length[0]<=0 or length[1]<length[0]):raise ValueError('invalid rush window lengths')
+                if (not isinstance(start,list) or len(start)!=2 or any(isinstance(x,bool) or not isinstance(x,int) for x in start)
+                        or start[0]<0 or start[1]<start[0]
+                        or (priority=='critical' and (start[1]>=10 or length[1]>=15))
+                        or (priority=='urgent' and (start[1]>=15 or length[1]>=20))):raise ValueError('invalid rush earliest offsets')
         deadline_policy=s.config['pressure_deadline_policy']
         if deadline_policy.get('mode')!='pressure' or deadline_policy.get('hard_priorities')!=['critical']:
             raise ValueError('invalid pressure deadline policy')
         s.config['late_delivery']=deepcopy(deadline_policy)
+        s.config['operational_window_mode']=window_mode
         for key in ordered_strings(s.orders):
-            order=s.orders[key];width=rng.randint(*bounds[order.priority])
-            s.orders[key]=replace(order,earliest=s.now,deadline=s.now+width)
-        s.config['window_evidence']={'mode':'pressure','initial_only':True,'initial_time':s.now,
+            order=s.orders[key]
+            if window_mode=='pressure':
+                width=rng.randint(*bounds[order.priority]);earliest=s.now;deadline=s.now+width
+            else:
+                start=rng.randint(*starts[order.priority]);length=rng.randint(*lengths[order.priority])
+                earliest=s.now+start;deadline=earliest+length
+            s.orders[key]=replace(order,earliest=earliest,deadline=deadline,
+                                  allow_late=window_mode=='rush' and order.priority=='critical')
+        s.config['window_evidence']={'mode':window_mode,'initial_only':True,'initial_time':s.now,
                                      'initial_traffic_version':s.traffic_version,'changed_vehicles':[],
                                      'baseline_late_orders':[],'window_min_minutes':min(o.deadline-o.earliest for o in s.orders.values()),
                                      'window_max_minutes':max(o.deadline-o.earliest for o in s.orders.values())}

@@ -1,6 +1,9 @@
 {
   "scenario_variant": "heavy_slow_roads",
   "pressure_windows": {"critical": [30, 45], "urgent": [28, 48], "normal": [23, 37]},
+  "rush_window_lengths_minutes": {"critical": [5, 14], "urgent": [6, 19], "normal": [23, 37]},
+  "rush_earliest_offsets_minutes": {"critical": [0, 9], "urgent": [0, 14], "normal": [0, 8]},
+  "simulated_traffic": {"interval_seconds": 12, "seed": 42},
   "pressure_deadline_policy": {"mode": "pressure", "hard_priorities": ["critical"]},
   "heavy_order_demands_by_zone": {"campus": [20], "surrounding": [30]},
   "road_speed_kmh": {

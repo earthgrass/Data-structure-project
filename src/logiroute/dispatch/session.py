@@ -160,6 +160,11 @@ class Session:
         if 'candidate_ids' in self.state.config and destination not in self.state.config['candidate_ids']: raise ValueError('destination must be a candidate stop')
         if any(isinstance(x,bool) or not isinstance(x,(int,float,Decimal)) for x in (earliest,deadline)): raise ValueError('numeric times required')
         order=Parcel(key,destination,demand,float(earliest),float(deadline),priority,allow_late=allow_late)
+        if self.state.config.get('operational_window_mode')=='rush' and priority in ('critical','urgent'):
+            start_limit=10 if priority=='critical' else 15
+            length_limit=15 if priority=='critical' else 20
+            if earliest<self.state.now or earliest-self.state.now>=start_limit or deadline-earliest>=length_limit:
+                raise ValueError('rush order window opening or length exceeds priority limit')
         if deadline<=self.state.now and not allow_late: raise ValueError('deadline is not in the future')
         self.state.orders[key]=order; location=('warehouse',self.state.config['warehouse_ids'][0]); self.state.locations[key]=location
         self.events.append({'kind':'create','time':self.state.now,'order':order,'location':location}); self.state.revision+=1
@@ -177,8 +182,13 @@ class Session:
             while True:
                 self._auto_counter+=1; key=self.state.config['dynamic_prefix']+str(self._auto_counter)
                 if key not in self.state.orders: break
-            self.add_order(key,rng.choice(customers),rng.choice(self.state.config['demand_choices']),self.state.now,
-                           self.state.now+float(self.state.config['automatic_window_width']),priority)
+            earliest=self.state.now;deadline=earliest+float(self.state.config['automatic_window_width'])
+            if self.state.config.get('operational_window_mode')=='rush':
+                length=self.state.config['rush_window_lengths_minutes'][priority]
+                start=self.state.config['rush_earliest_offsets_minutes'][priority]
+                earliest=self.state.now+rng.randint(*start);deadline=earliest+rng.randint(*length)
+            self.add_order(key,rng.choice(customers),rng.choice(self.state.config['demand_choices']),earliest,
+                           deadline,priority,allow_late=priority=='critical' and self.state.config.get('operational_window_mode')=='rush')
         if self._order_control_enabled:self._order_change_kind='automatic'
 
     def cancel(self,key: str,*,expired: bool = False) -> None:
@@ -226,6 +236,7 @@ class Session:
                 'running':self.running,'ready':self._ready,'needs_replan':self._pausing,'nodes':nodes,'edges':edges,'vehicles':cars,
                 'orders':[{**json_value(o),'location':list(state.locations[k])} for k,o in state.orders.items()],
                 'events':json_value(self.events),'plan':None if self.plan is None else self.plan.to_dict(),
-                'audit':json_value(self.audit()),'settings':{'automatic_window_width':float(state.config['automatic_window_width'])},
+                'audit':json_value(self.audit()),'settings':{'automatic_window_width':float(state.config['automatic_window_width']),
+                                                             **({'simulated_traffic':state.config['simulated_traffic']} if 'simulated_traffic' in state.config else {})},
                 **({'time_windows':state.config['window_evidence']} if 'window_evidence' in state.config else {}),
                 **({'map':state.config['map']} if 'map' in state.config else {})}
