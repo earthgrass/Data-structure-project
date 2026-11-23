@@ -137,7 +137,7 @@ def studio_state(seed: int,parameters: dict[str,Any],window_mode: str = 'strict'
                 start=rng.randint(*starts[order.priority]);length=rng.randint(*lengths[order.priority])
                 earliest=s.now+start;deadline=earliest+length
             s.orders[key]=replace(order,earliest=earliest,deadline=deadline,
-                                  allow_late=window_mode=='rush' and order.priority=='critical')
+                                  allow_late=not single_vehicle and window_mode=='rush' and order.priority=='critical')
         s.config['window_evidence']={'mode':window_mode,'initial_only':True,'initial_time':s.now,
                                      'initial_traffic_version':s.traffic_version,'changed_vehicles':[],
                                      'baseline_late_orders':[],'window_min_minutes':min(o.deadline-o.earliest for o in s.orders.values()),

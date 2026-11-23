@@ -33,6 +33,40 @@ class TestSingleVehicleDispatch(unittest.TestCase):
                 delivered = [action.ids[0] for action in route.actions if action.kind == 'deliver']
                 self.assertCountEqual(delivered, session.state.orders.keys())
                 self.assertEqual(session.state.orders[delivered[0]].priority, 'critical')
+                for action in route.actions:
+                    if action.kind == 'deliver' and session.state.orders[action.ids[0]].priority == 'critical':
+                        order = session.state.orders[action.ids[0]]
+                        self.assertGreaterEqual(action.start, order.earliest)
+                        self.assertLessEqual(action.end, order.deadline)
+                        self.assertFalse(order.allow_late)
+
+    def test_generated_critical_orders_cannot_opt_out_of_the_deadline(self) -> None:
+        session = self.make_session()
+        initial_orders = set(session.state.orders)
+        session.automatic(1, 42, 'critical')
+        (key,) = set(session.state.orders) - initial_orders
+        self.assertFalse(session.state.orders[key].allow_late)
+
+    def test_api_rejects_late_critical_atomically_even_with_a_legacy_override(self) -> None:
+        with TestClient(create_app()) as client:
+            initial = client.post('/api/v2/sessions', json={
+                'profile':'bjut-studio-single', 'seed':42, 'auto_replan':True,
+            }).json()
+            endpoint = f"/api/v2/sessions/{initial['id']}/commands"
+            response = client.post(endpoint, json={'revision':initial['revision'], 'command':'plan', 'objective':'cost'})
+            self.assertEqual(response.status_code, 200, response.text)
+            planned = response.json()
+            for override in ({}, {'protect_critical':True, 'allow_late':True}):
+                response = client.post(endpoint, json={
+                    'revision':planned['revision'], 'command':'add', 'id':'TOO-SOON',
+                    'destination':'P01', 'demand':1, 'earliest':0, 'deadline':1,
+                    'priority':'critical', **override,
+                })
+                self.assertEqual(response.status_code, 422, response.text[:1000])
+                self.assertEqual(response.json()['error']['kind'], 'critical_unavailable')
+            restored = client.get(f"/api/v2/sessions/{initial['id']}").json()
+            for field in ('revision', 'now', 'orders', 'plan', 'events'):
+                self.assertEqual(restored[field], planned[field])
 
     def test_in_transit_insert_keeps_cargo_and_executes_one_vehicle_to_return(self) -> None:
         session = self.make_session()
@@ -44,7 +78,7 @@ class TestSingleVehicleDispatch(unittest.TestCase):
         locations = dict(session.state.locations)
         destination = next(iter(session.state.orders.values())).destination
         start = session.state.now
-        admit_critical(session, 'NEW', destination, Decimal('0.25'), start + 1, start + 10, allow_late=True)
+        admit_critical(session, 'NEW', destination, Decimal('0.25'), start + 5, start + 18)
         self.assertTrue(all(session.state.locations[key] == loc for key, loc in locations.items()))
         while session.running:
             session.step()
@@ -57,6 +91,8 @@ class TestSingleVehicleDispatch(unittest.TestCase):
         new_delivery = next(i for i, action in enumerate(route.actions)
                             if action.kind == 'deliver' and 'NEW' in action.ids)
         self.assertLess(new_load, new_delivery)
+        self.assertGreaterEqual(route.actions[new_delivery].start, start + 5)
+        self.assertLessEqual(route.actions[new_delivery].end, start + 18)
         self.assertEqual(route.actions[new_load].source, session.state.vehicles[vehicle_id].base)
         lower_deliveries = [i for i, action in enumerate(route.actions)
                             if action.kind == 'deliver'

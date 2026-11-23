@@ -167,6 +167,8 @@ class Session:
         if self.state.graph.get_node(destination).node_type is not NodeType.CUSTOMER: raise ValueError('customer destination required')
         if 'candidate_ids' in self.state.config and destination not in self.state.config['candidate_ids']: raise ValueError('destination must be a candidate stop')
         if any(isinstance(x,bool) or not isinstance(x,(int,float,Decimal)) for x in (earliest,deadline)): raise ValueError('numeric times required')
+        if priority == 'critical' and self.state.config.get('single_vehicle'):
+            allow_late = False
         order=Parcel(key,destination,demand,float(earliest),float(deadline),priority,allow_late=allow_late)
         if self.state.config.get('operational_window_mode')=='rush' and priority in ('critical','urgent'):
             start_limit=10 if priority=='critical' else 15

@@ -28,6 +28,8 @@ def admit_critical(session: Session, key: str, destination: str,
     Time O(copy + K*step + 2*planner); Space O(session + plan).
     The preview never advances the real clock, vehicle or entered action.
     """
+    if session.state.config.get('single_vehicle'):
+        allow_late = False
     probe = deepcopy(session)
     probe.add_order(key, destination, demand, earliest, deadline, 'critical', allow_late=allow_late)
     probe.pause()

@@ -149,6 +149,8 @@ async def command(key: str,request: Request) -> Any:
             if 'protect_critical' in data and (not isinstance(data['protect_critical'],bool) or data['priority']!='critical'):raise ValueError('protect_critical requires a critical order and boolean value')
             if 'allow_late' in data and (not isinstance(data['allow_late'],bool) or data['priority']!='critical' or not data.get('protect_critical',False)):raise ValueError('allow_late requires protected critical admission')
             session=deepcopy(original); comparison=None
+            protected_add = kind == 'add' and (data.get('protect_critical', False) or
+                (session.state.config.get('single_vehicle') and data['priority'] == 'critical'))
             if data.get('auto_replan',False):session.enable_auto_replan()
             if kind=='plan':
                 proposal=session.prepare(data.get('objective','distance'))
@@ -160,7 +162,7 @@ async def command(key: str,request: Request) -> Any:
             elif kind=='pause': session.pause()
             elif kind=='add':
                 args=(data['id'],data['destination'],Decimal(data['demand']) if isinstance(data['demand'],str) else data['demand'],number(data['earliest']),number(data['deadline']))
-                if data.get('protect_critical',False):admit_critical(session,*args,allow_late=data.get('allow_late',False))
+                if protected_add:admit_critical(session,*args,allow_late=data.get('allow_late',False))
                 else:session.add_order(*args,data['priority'])
             elif kind=='automatic': session.automatic(data['count'],data['seed'],data.get('priority','normal'))
             elif kind in ('cancel','expire'): session.cancel(data['id'],expired=kind=='expire')
@@ -182,7 +184,7 @@ async def command(key: str,request: Request) -> Any:
                     session.apply(proposal);session._studio_auto_replan_status='已自动独立验证并应用续程；等待确认出发'
                 else:session._studio_auto_replan_status='自动续程无法安全应用；保留实际货物与旧历史，请人工检查'
             snapshot=service.snapshot(key,session)
-            if kind=='add' and data.get('protect_critical',False):snapshot['critical_admission']=session._critical_admission
+            if protected_add:snapshot['critical_admission']=session._critical_admission
             if comparison is not None: snapshot['comparison']=comparison
             service.sessions[key]=session
             return snapshot

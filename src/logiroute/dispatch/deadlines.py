@@ -7,8 +7,11 @@ from logiroute.dispatch.models import Job, Route, Parcel
 
 def hard_deadline(config: dict[str, Any], priority: str, allow_late: bool = False) -> bool:
     """Whether late completion is forbidden. Time/Space O(1)."""
-    if priority == 'critical' and allow_late:
-        return False
+    if priority == 'critical':
+        if config.get('single_vehicle'):
+            return True
+        if allow_late:
+            return False
     policy = config.get('late_delivery')
     return policy is None or priority in policy['hard_priorities']
 
