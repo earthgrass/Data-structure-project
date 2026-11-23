@@ -26,7 +26,11 @@ const lateSnapshot={...snapshot,planning_insights:{timeline:{...timeline,orders:
 assert.equal(dispatchQueue(lateSnapshot).find(row=>row.order.id==='N').delivery,'late_expected');
 assert.equal(dispatchQueue(lateSnapshot).find(row=>row.order.id==='DONE').delivery,'late_signed');
 assert.deepEqual(orderRoute(snapshot,'C1'),[{vehicle:'TRUNK',kind:'unload',points:['W','H']},{vehicle:'V',kind:'deliver',points:['H','P']}]);
+const direct={...snapshot,plan:{...snapshot.plan,routes:[{vehicle:'TRUNK',actions:[
+ {kind:'drive',source:'W',target:'P'},
+ {kind:'deliver',source:'P',target:'P',ids:['C1']}]}]}};
+assert.deepEqual(orderRoute(direct,'C1'),[{vehicle:'TRUNK',kind:'deliver',points:['W','P']}]);
 assert.equal(roadSummary(snapshot).counts.blocked,1);
 assert.equal(roadSummary(snapshot).affected,2);
 assert.deepEqual(roadSummary(snapshot).used.get('W\0H'),['TRUNK']);
-console.log('12 shared-snapshot road, order, timing, lateness and route view assertions passed');
+console.log('13 shared-snapshot road, order, timing, lateness and route view assertions passed');

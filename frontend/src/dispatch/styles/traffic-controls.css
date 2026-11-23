@@ -1,0 +1,16 @@
+.d-traffic-quick{border:1px solid var(--border-default);border-radius:10px;padding:14px;margin:0 0 18px;background:var(--surface-elevated)}
+.d-traffic-quick strong{display:block;font-size:14px;overflow-wrap:anywhere}
+.d-traffic-quick p,.d-traffic-auto p{font-size:12px;line-height:1.6;color:var(--text-secondary);margin:6px 0 10px}
+.d-traffic-quick [role="group"]{display:flex;flex-wrap:wrap;gap:7px}
+.d-traffic-quick .d-traffic-state{font-size:12px;min-height:36px;padding:6px 9px;border:1px solid var(--border-default);background:white}
+.d-traffic-quick .d-traffic-state[aria-pressed="true"]{border-color:var(--accent-primary);background:#fff0e4;color:var(--accent-primary);opacity:1;font-weight:700}
+.d-traffic-quick .d-traffic-state.congested{border-left:4px solid var(--traffic-congested)}
+.d-traffic-quick .d-traffic-state.blocked{border-left:4px solid var(--status-critical)}
+.d-traffic-reverse{margin-top:10px;font-size:12px}
+.d-traffic-auto{border-top:1px solid var(--border-default);padding-top:15px;margin-top:16px}
+.d-traffic-auto label{display:flex;align-items:center;gap:10px;font-weight:700;margin:0!important}
+.d-traffic-auto input{width:18px;height:18px}
+.d-map-world .d-road-hit:hover{stroke:#f97316aa;stroke-width:11;cursor:pointer}
+.d-traffic-planned-count{font-size:12px;line-height:1.5;margin:0 0 12px;padding:8px 10px;background:#eef6ff;border-radius:7px;color:#274867}
+.d-traffic-planned-count b{color:#173b61}
+.d-map-info>span{overflow-wrap:anywhere}

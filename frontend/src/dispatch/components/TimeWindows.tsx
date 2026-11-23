@@ -7,7 +7,7 @@ function InitialWindowComparison({data,showRelaxed,setShowRelaxed,onVehicle,sele
   const info=data.time_windows,live=windowEvidenceCurrent(data);
   if(!info&&data.studio)return <div className="d-window-panel"><h3>参数试算保留原签收窗口</h3><p>订单的最早服务和完成截止均未放宽；原参数下的初始宽松路线对照已失效，请在订单中查看真实窗口。</p></div>;
   if(!info)return <div className="d-window-panel"><h3>当前场景尚未启用严格时间窗</h3><p>在“场景与管理”选择严格预约窗，新建同一 Seed 的校内配送场景。</p></div>;
-  if(info.mode==='pressure')return <div className="d-window-panel"><h3>超时压力场景 · 分级签收截止</h3><p>初始订单从配置的优先级窗口范围独立抽样，不预先筛选“全部按时”。初始特急按时签收；手动新增特急可选择允许迟到，此时优先预计最快签收并记录迟到。紧急与普通可以迟到，规划先减少紧急订单的超时，再减少普通订单的超时。每张订单的预计与实际迟到请看上方时间轴，罚金见运营参数。</p><p>本场景初始窗口宽度为 {fmt(info.window_min_minutes)}–{fmt(info.window_max_minutes)} 分。路线仍以距离或道路成本为主目标，在同一优先级迟到结果下比较主目标。</p></div>;
+  if(info.mode==='pressure'||info.mode==='rush')return <div className="d-window-panel"><h3>{info.mode==='rush'?'短时紧急单场景':'超时压力场景'} · 分级签收截止</h3><p>{info.mode==='rush'?'特急窗口开始距当前小于 10 分钟，长度小于 15 分钟；紧急分别小于 15 和 20 分钟。':'初始订单从配置的优先级窗口范围独立抽样。'} 初始订单不预先筛选“全部按时”。{info.mode==='rush'?'特急可记录真实迟到，仍优先争取更早签收。':'初始特急按硬截止检查。'} 紧急与普通也可迟到，规划先减少高优先级订单的超时。每张订单的预计与实际迟到请看上方时间轴。</p><p>本场景初始窗口宽度为 {fmt(info.window_min_minutes)}–{fmt(info.window_max_minutes)} 分。起点是最早服务开始，终点是签收完成截止；路线仍以距离或道路成本为主目标。</p></div>;
   const probe=info.orders?.find(o=>o.id===info.probe_order_id);
   const original=info.relaxed_routes?.find(r=>r.vehicle===selected)?.service_order;
   const current=data.plan?.routes.find(r=>r.vehicle===selected)?.actions.filter(a=>a.kind==='deliver').flatMap(a=>a.ids);

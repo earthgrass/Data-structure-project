@@ -12,3 +12,14 @@ export function cancellationBlockReason(snapshot,order){
 export function cancellableOrders(snapshot){
  return snapshot.orders.filter(order=>!cancellationBlockReason(snapshot,order));
 }
+
+/** New removal workflow: in-flight cargo is returned at its vehicle base. */
+export function removalBlockReason(snapshot,order){
+ if(['delivered','cancelled','expired'].includes(order.status))return '订单已终结，保留身份记录';
+ if(snapshot.vehicles.some(vehicle=>vehicle.current?.kind==='deliver'&&vehicle.current.ids.includes(order.id)))return '签收动作已开始，无法撤销';
+ return '';
+}
+
+export function removableOrders(snapshot){
+ return snapshot.orders.filter(order=>!removalBlockReason(snapshot,order));
+}

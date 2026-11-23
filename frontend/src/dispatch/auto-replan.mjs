@@ -10,6 +10,6 @@ export function checkpointCommand(snapshot,{busy,connection}){
 
 /** Dashboard planning-input mutations opt in atomically. Time/Space O(F). */
 export function orderMutationFields(kind,fields={}){
- return kind==='add'||kind==='automatic'||kind==='cancel'||kind==='expire'||kind==='priority'||kind==='traffic'
+ return kind==='add'||kind==='automatic'||kind==='cancel'||kind==='remove'||kind==='expire'||kind==='priority'||kind==='traffic'
   ?{...fields,auto_replan:true}:fields;
 }

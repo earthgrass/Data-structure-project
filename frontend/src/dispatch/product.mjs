@@ -5,7 +5,7 @@ export function matchesOrder(order,nodes,query){
 }
 export function locationText(order,nodes){
   const [kind,id]=order.location;
-  const label={warehouse:'仓库',hub:'中转站',vehicle:'车辆载货',delivered:'已签收'}[kind]??kind;
+  const label={warehouse:'仓库',hub:'中转站',vehicle:'车辆载货',delivered:'已签收',returned:'已退回站点'}[kind]??kind;
   const name=nodes.find(n=>n.id===id)?.name;
   return `${label} · ${name?`${name} (${id})`:id}`;
 }

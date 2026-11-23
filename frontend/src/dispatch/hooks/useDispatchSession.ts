@@ -23,7 +23,7 @@ async function request(path:string,payload?:unknown,base='/api/v2'):Promise<Snap
     return value;
   }finally{clearTimeout(timer);}
 }
-const messages:Record<string,string>={plan:'新计划已独立验证并应用；签收进度仍以实际执行为准。',compare:'双目标比较已完成，结果绑定当前会话和版本。',depart:'配送已开始。',step:'已完成一个真实原子动作。',pause:'已请求暂停；进行中的原子动作将在检查点完成。',add:'订单已加入，已触发停靠与自动重规划。',automatic:'紧急订单已加入，已触发停靠与自动重规划。',cancel:'订单已移出待配送任务，历史保留；已触发自动重规划。',expire:'订单已过期并从地图移除，已触发自动重规划。',priority:'优先级已更新，已触发自动重规划。',traffic:'道路畅通状态已变化；系统将在安全检查点自动重规划剩余路线。'};
+const messages:Record<string,string>={plan:'新计划已独立验证并应用；签收进度仍以实际执行为准。',compare:'双目标比较已完成，结果绑定当前会话和版本。',depart:'配送已开始。',step:'已完成一个真实原子动作。',pause:'已请求暂停；进行中的原子动作将在检查点完成。',add:'订单已加入，已触发停靠与自动重规划。',automatic:'紧急订单已加入，已触发停靠与自动重规划。',cancel:'订单已移出待配送任务，历史保留；已触发自动重规划。',remove:'订单已移出路线；已装车货物返回所属站点，续程自动重规划。',expire:'订单已过期并从地图移除，已触发自动重规划。',priority:'优先级已更新，已触发自动重规划。',traffic:'道路畅通状态已变化；系统将在安全检查点自动重规划剩余路线。'};
 
 export function useDispatchSession(){
   const [snapshot,setSnapshot]=useState<Snapshot|null>(null),[comparison,setComparison]=useState<Comparison|null>(null);
@@ -65,7 +65,7 @@ export function useDispatchSession(){
     const timer=setInterval(()=>{if(!locked.current)void refresh(false);},2000);
     return()=>clearInterval(timer);
   },[refresh]);
-  const create=useCallback(async(seed:string,windowMode:WindowMode='pressure')=>{
+  const create=useCallback(async(seed:string,windowMode:WindowMode='rush')=>{
     if(locked.current)return false;
     locked.current=true;setBusy('create');setPlaying(false);setError('');setMessage('');setConnection('connecting');setRejectedPlan(null);
     const ticket=++epoch.current;

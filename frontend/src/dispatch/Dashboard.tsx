@@ -3,6 +3,7 @@ import type {Workspace,WindowMode} from './types';
 import {windowEvidenceCurrent} from './windows.mjs';
 import {rejectionContext} from './planning-insights.mjs';
 import {useDispatchSession} from './hooks/useDispatchSession';
+import {useAutoTraffic} from './hooks/useAutoTraffic';
 import {AppShell,workspaces} from './components/AppShell';
 import {ConfirmDialog,Empty,type Confirmation} from './components/Common';
 import {KPIStrip,DispatchToolbar,PlanCoverage} from './components/Operations';
@@ -23,6 +24,7 @@ import {latestTrafficRoad} from './map-state.mjs';
 
 export function DispatchDashboard(){
   const session=useDispatchSession(),data=session.snapshot;
+  const autoTraffic=useAutoTraffic(data,session.connection,session.busy,session.command);
   const [workspace,setWorkspace]=useState<Workspace>('overview'),[seed,setSeed]=useState(''),[objective,setObjective]=useState('cost');
   const lastWorkspace=useRef<Workspace>('fleet');
   const [selected,setSelected]=useState(''),[road,setRoad]=useState(''),[confirmation,setConfirmation]=useState<Confirmation|null>(null);
@@ -38,7 +40,7 @@ export function DispatchDashboard(){
   const [routeView,setRouteView]=useState<'before'|'after'|'changes'>('after');
   // Every applied plan opens on the live route. Historical overlays are opt-in.
   useEffect(()=>setRouteView('after'),[data?.id,session.routeChanges?.baselineRevision,session.routeChanges?.appliedRevision]);
-  const [windowMode,setWindowMode]=useState<WindowMode>('pressure'),[showRelaxed,setShowRelaxed]=useState(false);
+  const [windowMode,setWindowMode]=useState<WindowMode>('rush'),[showRelaxed,setShowRelaxed]=useState(false);
   useEffect(()=>setShowRelaxed(false),[data?.id]);
   useEffect(()=>{
     const read=()=>{const value=window.location.hash.slice(1);if(workspaces.some(w=>w.id===value)){setWorkspace(value as Workspace);if(value!=='overview')lastWorkspace.current=value as Workspace;}};
@@ -56,13 +58,13 @@ export function DispatchDashboard(){
   const selectVehicleView=(id:string)=>{setSelected(id);setMapView(id);};
   const recentRoad=data?latestTrafficRoad(data)?.road:null;
   const mapTrafficRoad=road||(recentRoad?recentRoad.source+'|'+recentRoad.target:'');
-  const map=data&&car?<NetworkCanvas key={data.id} data={data} orderFocus={orderFocus?.sessionId===data.id?orderFocus:null} changes={session.routeChanges} routeView={routeView} selected={car.id} viewMode={mapView} onViewMode={setMapView} clock={session.motionClock} showRelaxed={showRelaxed&&windowEvidenceCurrent(data)} onVehicle={selectVehicleView} onCandidate={id=>{session.setPlaying(false);setDestination(id);}} onRoad={r=>{setRoad(r.source+'|'+r.target);setTrafficFocusRequest(n=>n+1);}} onCancelOrder={id=>setConfirmation({title:`取消订单 ${id}？`,description:'仅取消尚未进入装货的仓库订单。确认后从地图移除，并自动停靠重规划其余任务。',confirm:'确认取消',action:()=>void session.command('cancel',{id})})}/>:null;
+  const map=data&&car?<NetworkCanvas key={data.id} data={data} orderFocus={orderFocus?.sessionId===data.id?orderFocus:null} changes={session.routeChanges} routeView={routeView} selected={car.id} viewMode={mapView} onViewMode={setMapView} clock={session.motionClock} showRelaxed={showRelaxed&&windowEvidenceCurrent(data)} onVehicle={selectVehicleView} onCandidate={id=>{session.setPlaying(false);setDestination(id);}} onRoad={r=>{setRoad(r.source+'|'+r.target);setTrafficFocusRequest(n=>n+1);}} onCancelOrder={id=>setConfirmation({title:`移除订单 ${id}？`,description:'已装车货物随车返回所属站点；已进入动作先完成，然后自动重规划。',confirm:'确认移除',action:()=>void session.command('remove',{id})})}/>:null;
   const playback=data?<DemoPlayback data={data} playing={session.playing} busy={session.busy} clock={session.motionClock} speed={session.speed} setSpeed={session.setSpeed} toggle={session.togglePlayback}/>:null;
   const transportControl=<GlobalPlaybackControl data={data} playing={session.playing} busy={session.busy} connected={session.connection==='connected'} objective={objective} toggle={session.togglePlayback} plan={()=>session.command('plan',{objective})}/>;
   const inspector=data&&car?<VehicleInspector data={data} car={car}/>:null;
   const changeNotice=data?.rejected_proposal?`${data.id}:rejected:${data.rejected_proposal.input_revision}`:session.routeChanges?`${data?.id}:${session.routeChanges.baselineRevision}:${session.routeChanges.appliedRevision}`:data&&rejectionContext(data).items.length?`${data.id}:rejections:${rejectionContext(data).revision}`:'';
   if(workspace==='overview'&&data)return <><MapWorkbench mapFocusRequest={mapFocusRequest} trafficFocusRequest={trafficFocusRequest} changeKey={changeNotice} changes={<RouteChangesPanel data={data} changes={session.routeChanges} view={routeView} setView={v=>{setRouteView(v);setMapFocusRequest(n=>n+1);}} busy={disabled} onOrder={id=>{focusOrder(id);setMapFocusRequest(n=>n+1);}} onPlan={()=>void session.command('plan',{objective})} onVehicle={setSelected}/>} data={data} map={map} playback={playback} transportControl={transportControl}
-    traffic={<TrafficPanel data={data} road={mapTrafficRoad} setRoad={setRoad} busy={disabled} command={session.command} confirm={setConfirmation}/>}
+    traffic={<TrafficPanel data={data} road={mapTrafficRoad} setRoad={setRoad} busy={disabled} command={session.command} confirm={setConfirmation} autoTraffic={autoTraffic}/>}
     economics={<EconomicsPanel key={data.id} data={data} busy={disabled} error={session.error} onTrial={async p=>{const ok=await session.trial(p);if(ok)setObjective('cost');return ok;}} onCreate={create}/>}
     windows={<TimeWindowPanel data={data} showRelaxed={showRelaxed} setShowRelaxed={setShowRelaxed} onVehicle={setSelected} selected={car?.id??''}/>} windowMode={windowMode} setWindowMode={setWindowMode}
     toolbar={<DispatchToolbar data={data} objective={objective} setObjective={setObjective} busy={session.busy} connection={session.connection} command={session.command} onCreate={create} onResults={()=>navigate('audit')} playing={session.playing} setPlaying={session.setPlaying}/>}
@@ -80,7 +82,7 @@ export function DispatchDashboard(){
       {workspace==='fleet'&&<><FleetStage data={data} clock={session.motionClock??data.now} selected={car?.id??''} onSelect={setSelected}/>{playback}<DispatchToolbar data={data} objective={objective} setObjective={setObjective} busy={session.busy} connection={session.connection} command={session.command} onCreate={create} onResults={()=>navigate('audit')} playing={session.playing} setPlaying={session.setPlaying}/><FleetList data={data} selected={car?.id??''} onSelect={setSelected}/><div className="d-fleet-workspace">{map}{inspector}</div></>}
       {workspace==='orders'&&<><OrderDispatchBoard data={data}/><OrderTable seed={seed} data={data} busy={disabled} command={session.command} confirm={setConfirmation} error={session.error}/></>}
       {workspace==='inventory'&&<InventoryPanel data={data}/>}
-      {workspace==='traffic'&&<><RoadDashboard data={data} onRoad={setRoad}/><div className="d-traffic-workspace">{map}<TrafficPanel data={data} road={road} setRoad={setRoad} busy={disabled} command={session.command} confirm={setConfirmation}/></div><div className="d-lower-toolbar"><DispatchToolbar data={data} objective={objective} setObjective={setObjective} busy={session.busy} connection={session.connection} command={session.command} onCreate={create} onResults={()=>navigate('audit')} playing={session.playing} setPlaying={session.setPlaying}/></div></>}
+      {workspace==='traffic'&&<><RoadDashboard data={data} onRoad={setRoad}/><div className="d-traffic-workspace">{map}<TrafficPanel data={data} road={road} setRoad={setRoad} busy={disabled} command={session.command} confirm={setConfirmation} autoTraffic={autoTraffic}/></div><div className="d-lower-toolbar"><DispatchToolbar data={data} objective={objective} setObjective={setObjective} busy={session.busy} connection={session.connection} command={session.command} onCreate={create} onResults={()=>navigate('audit')} playing={session.playing} setPlaying={session.setPlaying}/></div></>}
       {workspace==='audit'&&<div className="d-audit-workspace"><ControlledExperiment/><ObjectiveComparison data={data} comparison={session.connection==='connected'?session.comparison:null} busy={disabled} command={session.command}/><EventHistory data={data}/></div>}
     </>}
     {session.message&&!session.error&&<div className="d-toast" role="status"><span>✓</span>{session.message}</div>}

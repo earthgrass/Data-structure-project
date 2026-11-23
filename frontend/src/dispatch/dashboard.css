@@ -10,6 +10,7 @@
 
 @import './styles/map-orders.css';
 @import './styles/route-changes.css';
+@import './styles/traffic-controls.css';
 
 @import './styles/planning-insights.css';
 @import './styles/workspace-dashboards.css';

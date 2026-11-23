@@ -9,7 +9,7 @@ export type Comparison={sessionId:string;revision:number;trafficVersion:number;f
 export type RejectedPlanEvidence={session_id:string;input_revision:number;traffic_version:number;report:Plan};
 export type Workspace='overview'|'fleet'|'orders'|'inventory'|'traffic'|'audit';
 export type Connection='connecting'|'connected'|'failed'|'missing';
-export type WindowMode='strict'|'relaxed'|'pressure';
+export type WindowMode='strict'|'relaxed'|'pressure'|'rush';
 export type WindowEvidence={mode:WindowMode;initial_only:boolean;initial_time:number;initial_traffic_version:number;comparison_objective?:string;changed_vehicles:string[];baseline_late_orders:{order_id:string;baseline_end:number;deadline:number}[];window_min_minutes:number;window_max_minutes:number;minimum_completion_slack_minutes?:number;probe_order_id?:string;probe_old_end?:number;probe_deadline?:number;relaxed_routes?:{vehicle:string;edges:{source:string;target:string}[];service_order:string[]}[];orders?:{id:string;destination:string;demand:string;priority:string;earliest:number;deadline:number;baseline_end:number;strict_end:number}[]};
 export type Command=(command:string,fields?:Record<string,unknown>)=>Promise<boolean>;
 export type Vehicle=Snapshot['vehicles'][number];
@@ -29,5 +29,5 @@ export type Snapshot = {
   orders:{id:string;destination:string;demand:string;earliest:number;deadline:number;priority:string;status:string;hub:string;allow_late?:boolean;location:[string,string]}[];
   plan:Plan|null;audit:Report;comparison?:Plan[];
   events:{kind:string;time:number;action?:Action;id?:string;status?:string;priority?:string}[];
-  settings:{automatic_window_width:number};
+  settings:{automatic_window_width:number;simulated_traffic?:{interval_seconds:number;seed:number}};
 };

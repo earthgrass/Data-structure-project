@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import type {Snapshot,Command,Comparison} from '../types';
+import type {Snapshot,Command,Comparison,Road} from '../types';
 import {Badge,Icon,type Confirmation} from './Common';
 import {fmt,labels,trafficLabels} from '../presentation';
 import {inventoryNodes} from '../product.mjs';
@@ -11,12 +11,22 @@ export function InventoryPanel({data}:{data:Snapshot}){
     return <section className="d-card" key={n.id}><div className="d-card-head"><div><h2>{n.name??n.id} <small>{n.type==='warehouse'?'仓库':'中转站'}</small></h2><p>{n.id} · {car?`${car.id} · ${car.role==='trunk'?'干线补货':'末端配送'}`:'无绑定配送车辆'}</p></div><Badge>{orders.length} 张在库订单</Badge></div><div className="d-stock-list">{orders.map(o=><div key={o.id}><span><b>{o.id}</b><small>{o.destination} · {labels[o.status]}</small></span><span className="d-mono">{o.demand}</span></div>)}{!orders.length&&<p className="d-muted">暂无此位置的订单库存。</p>}</div></section>;
   })}</div></>;
 }
-export function TrafficPanel({data,road,setRoad,busy,command,confirm}:{data:Snapshot;road:string;setRoad:(v:string)=>void;busy:boolean;command:Command;confirm:(v:Confirmation)=>void}){
+export function TrafficPanel({data,road,setRoad,busy,command,confirm,autoTraffic}:{data:Snapshot;road:string;setRoad:(v:string)=>void;busy:boolean;command:Command;confirm:(v:Confirmation)=>void;autoTraffic:{enabled:boolean;setEnabled:(value:boolean)=>void;count:number}}){
   const [status,setStatus]=useState('congested');
   const selected=data.edges.find(e=>e.source+'|'+e.target===road);
+  const reverse=selected&&data.edges.find(e=>e.source===selected.target&&e.target===selected.source);
   const affected=data.plan?.routes.filter(r=>r.actions.some(a=>a.kind==='drive'&&a.source===selected?.source&&a.target===selected?.target)).map(r=>r.vehicle)??[];
-  return <aside className="d-card d-traffic-panel"><div className="d-card-head"><div><h2>模拟交通控制</h2><p>只修改所选道路方向</p></div><Badge tone="info">v{data.traffic_version}</Badge></div><div className="d-pad"><label>有向道路<select aria-label="有向道路" value={road} onChange={e=>setRoad(e.target.value)}><option value="">选择或点击地图道路</option>{data.edges.map(e=><option key={e.source+e.target} value={e.source+'|'+e.target}>{e.source} → {e.target} · {trafficLabels[e.status]}</option>)}</select></label><label>道路状态<select aria-label="道路状态" value={status} onChange={e=>setStatus(e.target.value)}>{Object.entries(trafficLabels).map(([v,label])=><option value={v} key={v}>{label}</option>)}</select></label>
+  const plannedKeys=new Set<string>();
+  for(const route of data.plan?.routes??[])for(const action of route.actions){
+    if(action.kind==='drive'&&action.end>data.now)plannedKeys.add(action.source+'|'+action.target);
+  }
+  const planned=data.edges.filter(e=>plannedKeys.has(e.source+'|'+e.target));
+  const others=data.edges.filter(e=>!plannedKeys.has(e.source+'|'+e.target));
+  const option=(e:Road)=><option key={e.source+'|'+e.target} value={e.source+'|'+e.target}>{e.source}|{e.target} · {e.name??'道路'} · {trafficLabels[e.status]}</option>;
+  return <aside className="d-card d-traffic-panel"><div className="d-card-head"><div><h2>模拟交通控制</h2><p>点击地图中可编辑的路段，直接选择畅通程度</p></div><Badge tone="info">v{data.traffic_version}</Badge></div><div className="d-pad"><p className="d-traffic-planned-count">当前计划尚未行驶的路段：<b>{planned.length}</b> 条。优先从下方“规划中”列表选路，或点击地图上的对应路线。</p><label>有向道路编号<select aria-label="有向道路" value={road} onChange={e=>setRoad(e.target.value)}><option value="">选择或点击地图道路</option><optgroup label={`规划中的路段（${planned.length}）`}>{planned.map(option)}</optgroup><optgroup label="其他道路">{others.map(option)}</optgroup></select></label><label>道路状态<select aria-label="道路状态" value={status} onChange={e=>setStatus(e.target.value)}>{Object.entries(trafficLabels).map(([v,label])=><option value={v} key={v}>{label}</option>)}</select></label>
     {selected&&<dl><div><dt>道路类型 / 模拟速度</dt><dd>{selected.highway??'普通道路'} / {selected.travel_time>0?fmt(selected.distance/selected.travel_time*60)+' km/h':'不可通行'}</dd></div><div><dt>当前通行时间</dt><dd>{fmt(selected.travel_time)} 分钟</dd></div><div><dt>距离 / 成本</dt><dd>{fmt(selected.distance)} km / {fmt(selected.cost)} 元</dd></div><div><dt>上次计划使用此路</dt><dd>{affected.join('、')||'无车辆'}</dd></div></dl>}
+    {selected&&<div className="d-traffic-quick"><strong>编号 {selected.source}|{selected.target} · {selected.name||'所选路段'}</strong><p>{plannedKeys.has(road)?'当前计划将使用此方向。':'此方向不在当前剩余计划中。'} 点击下方状态即可更新，并在安全检查点重新规划。</p><div role="group" aria-label="地图所选道路的快速路况设置">{Object.entries(trafficLabels).map(([value,label])=><button key={value} className={'d-traffic-state '+value} disabled={busy||selected.status===value} aria-pressed={selected.status===value} onClick={()=>void command('traffic',{source:selected.source,target:selected.target,status:value})}>{label}</button>)}</div>{reverse&&<button className="d-traffic-reverse" onClick={()=>setRoad(reverse.source+'|'+reverse.target)}>查看反向 {reverse.source} → {reverse.target}</button>}</div>}
+    {data.settings.simulated_traffic&&<div className="d-traffic-auto"><label><input type="checkbox" checked={autoTraffic.enabled} disabled={!data.plan||!data.plan.report.safe_to_apply} onChange={e=>autoTraffic.setEnabled(e.target.checked)}/>定时模拟路况</label><p>开启后每 {data.settings.simulated_traffic.interval_seconds} 秒，从当前计划尚未行驶的道路中按固定 Seed {data.settings.simulated_traffic.seed} 抽取一条，自动改变畅通程度并重规划。已更新 {autoTraffic.count} 次；关闭即停止。每轮变化和计划均由后端记录。</p></div>}
     <button className="d-primary" disabled={busy||!selected||selected.status===status} title={!selected?'请先选择有向道路':selected.status===status?'请选择与当前不同的道路状态':''} onClick={()=>selected&&selected.status!==status&&confirm({title:`更新 ${selected.source} → ${selected.target}？`,description:`将模拟状态从${trafficLabels[selected.status]}改为${trafficLabels[status]}。已进入动作按旧状态完成，到安全检查点自动重规划剩余路线。`,confirm:'更新并重规划',action:()=>void command('traffic',{source:selected.source,target:selected.target,status})})}>更新道路状态并重规划</button><p className="d-muted">{!selected?'先选择道路，才能应用路况。':selected.status===status?'请选择与当前不同的畅通状态。':'任何畅通状态变化都会触发剩余路线重规划；封路在所有目标下都排除。'} 已进入动作不会瞬移；当前路况不能追溯改写已发生历史。</p></div></aside>;
 }
 export function ObjectiveComparison({data,comparison,busy,command}:{data:Snapshot;comparison:Comparison|null;busy:boolean;command:Command}){
