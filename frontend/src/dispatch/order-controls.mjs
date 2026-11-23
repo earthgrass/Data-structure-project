@@ -7,3 +7,8 @@ export function cancellationBlockReason(snapshot,order){
  if(snapshot.vehicles.some(vehicle=>vehicle.current?.kind==='load'&&vehicle.current.ids.includes(order.id)))return '装货动作已开始，不能取消';
  return '';
 }
+
+/** Select by order ID even when several orders share one destination. O(N*K). */
+export function cancellableOrders(snapshot){
+ return snapshot.orders.filter(order=>!cancellationBlockReason(snapshot,order));
+}

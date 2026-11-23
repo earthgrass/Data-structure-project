@@ -17,3 +17,4 @@
 @media(max-width:760px){.d-map-drawer.changes{left:10px;right:10px;top:136px;bottom:12px;width:auto;z-index:6}.d-map-top-actions{overflow-x:auto}.d-map-top-actions button{flex-shrink:0;white-space:nowrap;min-height:44px;font-size:11px}.d-map-world .d-map-legend .r-map-key,.d-map-world .d-map-legend .r-map-mode{display:inline}.d-map-world .r-order-info{bottom:246px;max-height:calc(100% - 390px);overflow:auto}.r-node-orders{max-height:180px}}
 @media(max-width:760px){.d-map-world .d-map-legend .d-map-traffic-key{display:inline-flex;flex-wrap:wrap;white-space:normal}}
 @media(max-width:760px){.d-map-view-picker select{width:138px}.d-map-workbench:has(.r-map-focused) .d-map-tools{left:8px;right:8px;top:112px;justify-content:space-between}.d-map-workbench:has(.r-map-focused) .d-map-tools button{min-width:34px;padding:4px 5px}}
+.d-delete-order .d-delete-order-choice{grid-column:1/-1}.d-delete-order select{width:100%}

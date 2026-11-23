@@ -55,6 +55,7 @@ class TestDispatchOrderReplan(unittest.TestCase):
 
     def test_checkpoint_add_and_cancel_replan_without_departing_and_keep_identity(self) -> None:
         self.ok('plan',objective='cost');first=self.snapshot['orders'][0]['id']
+        road_nodes=self.snapshot['nodes'];road_edges=self.snapshot['edges'];traffic_version=self.snapshot['traffic_version']
         self.add('SAME_SITE',auto_replan=True)
         self.assertIn(first,self.snapshot['plan']['accepted']);self.assertIn('SAME_SITE',self.snapshot['plan']['accepted'])
         version=self.snapshot['order_control']['order_version']
@@ -63,6 +64,9 @@ class TestDispatchOrderReplan(unittest.TestCase):
         self.assertEqual(self.snapshot['order_control']['status'],'applied')
         self.assertTrue(self.snapshot['ready']);self.assertFalse(self.snapshot['running'])
         self.assertNotIn('SAME_SITE',self.snapshot['plan']['accepted']);self.assertIn(first,self.snapshot['plan']['accepted'])
+        self.assertEqual(self.snapshot['nodes'],road_nodes)
+        self.assertEqual(self.snapshot['edges'],road_edges)
+        self.assertEqual(self.snapshot['traffic_version'],traffic_version)
         self.assertEqual(next(o for o in self.snapshot['orders'] if o['id']=='SAME_SITE')['status'],'cancelled')
         self.assertTrue(any(e['kind']=='cancel' and e['id']=='SAME_SITE' for e in self.snapshot['events']))
         before=self.snapshot

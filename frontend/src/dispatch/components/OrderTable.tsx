@@ -5,7 +5,7 @@ import {labels,priorities,fmt} from '../presentation';
 import {matchesOrder,locationText} from '../product.mjs';
 import {RejectionDetails} from './PlanningInsights';
 import {rejectionContext} from '../planning-insights.mjs';
-import {cancellationBlockReason} from '../order-controls.mjs';
+import {cancellationBlockReason,cancellableOrders} from '../order-controls.mjs';
 
 export function AddOrder({data,busy,command,close,error,destination}:{data:Snapshot;busy:boolean;command:Command;close:()=>void;error:string;destination?:string}){
   const dialog=useRef<HTMLDialogElement>(null);
@@ -24,15 +24,33 @@ export function AddOrder({data,busy,command,close,error,destination}:{data:Snaps
       <p className="d-form-note">特急优先：冲突时尚未装车的普通／紧急订单可退回待规划；既有特急与已进入动作的货物保持保护。允许迟到时，可填写已过截止的有效时间窗；载重不足或道路不可达仍可能无法接纳。</p>{attempted&&error&&<p ref={errorBox} tabIndex={-1} role="alert" className="d-inline-error">{error}</p>}<div className="d-actions"><button type="button" onClick={close}>返回</button><button className="d-primary" disabled={busy}>{busy?'提交中…':'加入待处理队列'}</button></div>
     </form></dialog>;
 }
+export function DeleteOrder({data,busy,command,close,error}:{data:Snapshot;busy:boolean;command:Command;close:()=>void;error:string}){
+  const dialog=useRef<HTMLDialogElement>(null);
+  const [id,setId]=useState(''),[attempted,setAttempted]=useState(false);
+  const errorBox=useRef<HTMLParagraphElement>(null);
+  const eligible=cancellableOrders(data),selected=eligible.find(order=>order.id===id);
+  useEffect(()=>{dialog.current?.showModal();},[]);
+  useEffect(()=>{if(attempted&&error)errorBox.current?.focus();},[attempted,error,busy]);
+  async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();if(!selected)return;setAttempted(true);if(await command('cancel',{id:selected.id}))close();}
+  return <dialog ref={dialog} className="d-order-dialog d-delete-order" aria-labelledby="delete-order-title" onCancel={close}><div className="d-card-head"><div><h2 id="delete-order-title">删除待配送订单</h2><p>按订单 ID 移出配送任务并自动重新规划</p></div><button onClick={close} aria-label="关闭删除订单">×</button></div>
+    <form onSubmit={e=>void submit(e)}><label className="d-delete-order-choice">选择待删除订单<select aria-label="选择待删除订单" autoFocus value={id} onChange={e=>setId(e.target.value)} required><option value="">请选择订单 ID</option>{eligible.map(order=><option key={order.id} value={order.id}>{order.id} · {data.nodes.find(node=>node.id===order.destination)?.name??order.destination} · {order.demand} kg</option>)}</select></label>
+      {selected&&<p className="d-form-note">将删除待配送任务 <b>{selected.id}</b>（目的地 {selected.destination}）。同一地点的其他订单继续保留。</p>}
+      <p className="d-form-note">仅可删除货物仍在仓库、且未开始装货的订单。订单 ID 和历史保留；道路节点与边不删除。删除后先停靠，再对剩余订单重新规划，地图待配送标记随之更新。</p>
+      {eligible.length===0&&<p className="d-form-note d-muted">当前没有可删除的订单。已签收、已出仓或正在装货的订单不能删除。</p>}
+      {attempted&&error&&<p ref={errorBox} tabIndex={-1} role="alert" className="d-inline-error">{error}</p>}
+      <div className="d-actions"><button type="button" onClick={close}>返回</button><button className="d-primary" disabled={busy||!selected}>{busy?'处理中…':'确认删除并重规划'}</button></div>
+    </form></dialog>;
+}
 export function OrderTable({data,busy,command,confirm,error,seed}:{data:Snapshot;busy:boolean;command:Command;confirm:(v:Confirmation)=>void;error:string;seed:string}){
-  const [search,setSearch]=useState(''),[status,setStatus]=useState('all'),[priority,setPriority]=useState('all'),[adding,setAdding]=useState(false);
+  const [search,setSearch]=useState(''),[status,setStatus]=useState('all'),[priority,setPriority]=useState('all'),[adding,setAdding]=useState(false),[deleting,setDeleting]=useState(false);
   const deferred=new Map(data.plan?.deferred??[]);
   for(const item of rejectionContext(data).items)deferred.set(item.order_id,item.reason);
   const rows=data.orders.filter(o=>(status==='all'||status==='deferred'&&deferred.has(o.id)||o.status===status)&&(priority==='all'||o.priority===priority)&&matchesOrder(o,data.nodes,search));
   function reason(o:Snapshot['orders'][number]){return cancellationBlockReason(data,o);}
-  return <section className="d-card d-orders-view"><div className="d-card-head"><div><h2>逐订单管理</h2><p>{data.orders.length} 张独立订单；同一目的地可有多张订单</p></div><div className="d-actions"><button disabled={busy} onClick={()=>void command('automatic',{count:1,seed:Number(seed||0),priority:'urgent'})}>自动生成紧急单</button><button className="d-primary" disabled={busy} onClick={()=>setAdding(true)}>＋ 新增订单</button></div></div>
+  return <section className="d-card d-orders-view"><div className="d-card-head"><div><h2>逐订单管理</h2><p>{data.orders.length} 张历史订单 · {data.orders.filter(o=>['pending','planned','in_transit'].includes(o.status)).length} 张待完成；同址订单按 ID 独立管理</p></div><div className="d-actions"><button disabled={busy} onClick={()=>void command('automatic',{count:1,seed:Number(seed||0),priority:'urgent'})}>自动生成紧急单</button><button className="d-primary" disabled={busy} onClick={()=>setAdding(true)}>＋ 新增订单</button><button disabled={busy} onClick={()=>setDeleting(true)}>－ 删除订单</button></div></div>
     <div className="d-filters"><label>搜索<input placeholder="订单 ID / 客户 / 中转站" value={search} onChange={e=>setSearch(e.target.value)}/></label><label>状态<select aria-label="状态筛选" value={status} onChange={e=>setStatus(e.target.value)}><option value="all">全部状态</option>{['pending','planned','in_transit','delivered','cancelled','expired'].map(s=><option value={s} key={s}>{labels[s]}</option>)}<option value="deferred">上次计划未接纳</option></select></label><label>优先级筛选<select aria-label="优先级筛选" value={priority} onChange={e=>setPriority(e.target.value)}><option value="all">全部优先级</option>{priorities.map(([v,l])=><option value={v} key={v}>{l}</option>)}</select></label><span>筛选结果 {rows.length} 单</span></div>
     <p className="d-table-hint">窄屏可横向滚动查看完整订单及操作列；地图上点击待完成订单也可直接取消尚未装车的订单。</p><div className="d-table-scroll" tabIndex={0} aria-label="订单表，可横向滚动"><table><thead><tr><th>订单 / 目的地</th><th>优先级</th><th>签收窗口</th><th>需求量</th><th>实际状态 / 位置</th><th>订单操作</th></tr></thead><tbody>{rows.map(o=>{const disabledReason=reason(o);return <tr key={o.id}><td><b>{o.id}</b><small>{data.nodes.find(n=>n.id===o.destination)?.name??o.destination} · {o.destination} · {o.hub||'未分配中转站'}</small></td><td><Badge tone={o.priority==='critical'?'warn':o.priority==='urgent'?'info':'neutral'}>{priorities.find(([v])=>v===o.priority)?.[1]}</Badge></td><td>{fmt(o.earliest)} – {fmt(o.deadline)}<small>{o.allow_late?'允许迟到，优先最快可行车辆':'截止约束签收完成'}</small></td><td className="d-mono">{o.demand}</td><td><Badge tone={o.status==='delivered'?'good':o.status==='expired'?'danger':'neutral'}>{labels[o.status]}</Badge><small>{locationText(o,data.nodes)}</small>{deferred.has(o.id)&&<small className="d-warning-text">上次未接纳：{deferred.get(o.id)}</small>}<RejectionDetails data={data} orderId={o.id}/></td><td>{disabledReason?<span className="d-muted">{disabledReason}</span>:<div className="d-row-actions"><select aria-label={`${o.id} 优先级`} disabled={busy} value={o.priority} onChange={e=>{const value=e.target.value;confirm({title:`更新 ${o.id} 优先级？`,description:'更新后自动停靠并重新规划；进行中的动作会先完成。',confirm:'确认更新',action:()=>void command('priority',{id:o.id,priority:value})});}}>{priorities.map(([v,l])=><option value={v} key={v}>{l}</option>)}</select><button disabled={busy} onClick={()=>confirm({title:`取消订单 ${o.id}？`,description:'仅取消尚未进入装货的仓库订单。确认后从地图移除，并自动停靠重规划其余任务。',confirm:'确认取消',action:()=>void command('cancel',{id:o.id})})}>取消</button><button disabled={busy} onClick={()=>confirm({title:`显式过期 ${o.id}？`,description:'此操作将订单设为过期终态；不会触发自动计时，也不会回收该 ID。',confirm:'确认过期',action:()=>void command('expire',{id:o.id})})}>过期</button></div>}</td></tr>;})}</tbody></table>{rows.length===0&&<p className="d-pad d-muted">没有符合筛选条件的订单。</p>}</div>
     {adding&&<AddOrder data={data} busy={busy} command={command} close={()=>setAdding(false)} error={error}/>}
+    {deleting&&<DeleteOrder data={data} busy={busy} command={command} close={()=>setDeleting(false)} error={error}/>}
   </section>;
 }
