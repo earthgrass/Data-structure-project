@@ -1,4 +1,9 @@
 import type {Snapshot} from '../types';
+import {fmt} from '../presentation';
+
+export function SimulationClock({minutes}:{minutes:number}){
+  return <span className="d-sim-clock"><span>模拟时间</span> <strong>{fmt(minutes)}</strong> 分</span>;
+}
 
 export function GlobalPlaybackControl({data,playing,busy,connected,objective,toggle,plan}:{data:Snapshot|null;playing:boolean;busy:string;connected:boolean;objective:string;toggle:()=>Promise<void>;plan:()=>Promise<boolean>}){
   const automatic=data?.order_control?.status==='waiting_checkpoint';

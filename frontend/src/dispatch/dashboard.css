@@ -14,3 +14,31 @@
 
 @import './styles/planning-insights.css';
 @import './styles/workspace-dashboards.css';
+
+.d-sim-clock {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.d-sim-clock strong,
+.d-map-title .d-sim-clock strong {
+  display: inline;
+  color: var(--text-primary);
+  font-size: inherit;
+}
+
+.d-map-title .d-sim-clock {
+  margin-top: 2px;
+}
+
+@media (max-width: 760px) {
+  .d-map-title .d-sim-clock {
+    font-size: 10px;
+  }
+}
